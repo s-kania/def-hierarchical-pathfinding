@@ -102,6 +102,15 @@ class ChunkMapGenerator {
     
     generateChunkTiles() {
         const size = this.settings.chunkSize;
+        
+        // Use Lua island generator if available
+        if (window.LuaIslandGenerator) {
+            console.log('Using Lua island generator');
+            return window.LuaIslandGenerator.generateChunkTilesForJS(size);
+        }
+        
+        // Fallback to JavaScript implementation
+        console.log('Using JavaScript fallback for island generation');
         let tiles = [];
         
         // Initial random generation - 45% chance for island
