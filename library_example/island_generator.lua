@@ -128,10 +128,20 @@ function IslandGenerator.generateChunkTilesForJS(chunkSize)
     -- Convert JS argument to Lua number
     local size = tonumber(chunkSize) or 6
     
-    -- Use simple version that creates proper JS array
-    local result = IslandGenerator.generateChunkTilesSimple(size)
+    -- Use real island generator with cellular automata
+    local luaTiles = IslandGenerator.generateChunkTiles(size)
     
-    return result
+    if luaTiles and #luaTiles > 0 then
+        -- Convert Lua array to JavaScript array
+        local jsArray = js.new(js.global.Array)
+        for i = 1, #luaTiles do
+            jsArray:push(luaTiles[i])
+        end
+        return jsArray
+    else
+        -- Fallback to simple pattern if generation fails
+        return IslandGenerator.generateChunkTilesSimple(size)
+    end
 end
 
 -- Initialize random seed
