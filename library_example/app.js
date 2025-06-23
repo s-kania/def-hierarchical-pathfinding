@@ -60,6 +60,10 @@ class ChunkMapGenerator {
         this.canvas = null;
         this.ctx = null;
         
+        // Store base map for smoothing operations
+        this.baseMap = null;
+        this.mapDimensions = { width: 0, height: 0 };
+        
         this.init();
     }
     
@@ -83,7 +87,7 @@ class ChunkMapGenerator {
         chunkSizeSlider.addEventListener('input', (e) => {
             this.settings.chunkSize = parseInt(e.target.value);
             document.getElementById('chunkSizeValue').textContent = `${e.target.value}x${e.target.value}`;
-            this.generateMap();
+            this.generateMap(); // Full regeneration needed
             this.renderMap();
             this.updateStats();
         });
@@ -91,7 +95,7 @@ class ChunkMapGenerator {
         chunkColsSlider.addEventListener('input', (e) => {
             this.settings.chunkCols = parseInt(e.target.value);
             document.getElementById('chunkColsValue').textContent = e.target.value;
-            this.generateMap();
+            this.generateMap(); // Full regeneration needed
             this.renderMap();
             this.updateStats();
         });
@@ -99,7 +103,7 @@ class ChunkMapGenerator {
         chunkRowsSlider.addEventListener('input', (e) => {
             this.settings.chunkRows = parseInt(e.target.value);
             document.getElementById('chunkRowsValue').textContent = e.target.value;
-            this.generateMap();
+            this.generateMap(); // Full regeneration needed
             this.renderMap();
             this.updateStats();
         });
@@ -107,7 +111,7 @@ class ChunkMapGenerator {
         tileSizeSlider.addEventListener('input', (e) => {
             this.settings.tileSize = parseInt(e.target.value);
             document.getElementById('tileSizeValue').textContent = `${e.target.value}px`;
-            this.renderMap();
+            this.renderMap(); // Only rendering update needed
         });
         
         // New island generation controls
@@ -121,7 +125,7 @@ class ChunkMapGenerator {
         islandPresetSelect.addEventListener('change', (e) => {
             this.islandSettings.preset = e.target.value;
             this.updatePresetValues();
-            this.generateMap();
+            this.generateMap(); // Full regeneration needed for preset change
             this.renderMap();
             this.updateStats();
         });
@@ -131,7 +135,7 @@ class ChunkMapGenerator {
             this.islandSettings.preset = 'custom';
             document.getElementById('landDensityValue').textContent = `${e.target.value}%`;
             document.getElementById('islandPreset').value = 'custom';
-            this.generateMap();
+            this.generateMap(); // Full regeneration needed for land density change
             this.renderMap();
             this.updateStats();
         });
@@ -141,7 +145,7 @@ class ChunkMapGenerator {
             this.islandSettings.preset = 'custom';
             document.getElementById('iterationsValue').textContent = e.target.value;
             document.getElementById('islandPreset').value = 'custom';
-            this.generateMap();
+            this.applySmoothingToExistingMap(); // Only smoothing update
             this.renderMap();
             this.updateStats();
         });
@@ -151,7 +155,7 @@ class ChunkMapGenerator {
             this.islandSettings.preset = 'custom';
             document.getElementById('neighborThresholdValue').textContent = e.target.value;
             document.getElementById('islandPreset').value = 'custom';
-            this.generateMap();
+            this.applySmoothingToExistingMap(); // Only smoothing update
             this.renderMap();
             this.updateStats();
         });
@@ -160,7 +164,7 @@ class ChunkMapGenerator {
             this.islandSettings.archipelagoMode = e.target.checked;
             this.islandSettings.preset = 'custom';
             document.getElementById('islandPreset').value = 'custom';
-            this.generateMap();
+            this.applySmoothingToExistingMap(); // Only smoothing update
             this.renderMap();
             this.updateStats();
         });
@@ -170,14 +174,14 @@ class ChunkMapGenerator {
             this.islandSettings.preset = 'custom';
             document.getElementById('islandSizeValue').textContent = this.capitalizeFirst(e.target.value);
             document.getElementById('islandPreset').value = 'custom';
-            this.generateMap();
+            this.generateMap(); // Full regeneration needed for island size change
             this.renderMap();
             this.updateStats();
         });
         
         // Original buttons
         document.getElementById('regenerateBtn').addEventListener('click', () => {
-            this.generateMap();
+            this.generateMap(); // Full regeneration
             this.renderMap();
             this.updateStats();
         });
@@ -225,83 +229,104 @@ class ChunkMapGenerator {
         // Calculate total map size
         const totalWidth = this.settings.chunkCols * this.settings.chunkSize;
         const totalHeight = this.settings.chunkRows * this.settings.chunkSize;
+        this.mapDimensions = { width: totalWidth, height: totalHeight };
         
         console.log(`Map size: ${totalWidth}x${totalHeight} tiles (${this.settings.chunkCols}x${this.settings.chunkRows} chunks of ${this.settings.chunkSize}x${this.settings.chunkSize})`);
         
-        // Generate one big unified map
-        const unifiedMap = this.generateUnifiedMap(totalWidth, totalHeight);
+        // Generate base map (without smoothing)
+        this.baseMap = this.generateBaseMap(totalWidth, totalHeight);
         
-        // Split the unified map into chunks
-        this.chunks = this.splitMapIntoChunks(unifiedMap, totalWidth, totalHeight);
+        // Apply smoothing to get final map
+        const finalMap = this.applySmoothing(this.baseMap, totalWidth, totalHeight);
+        
+        // Split the final map into chunks
+        this.chunks = this.splitMapIntoChunks(finalMap, totalWidth, totalHeight);
         
         console.log(`✓ Generated ${this.chunks.length} chunks from unified map`);
     }
     
-    generateUnifiedMap(width, height) {
-        console.log('✓ JavaScript Island Generator active with advanced parameters');
+    applySmoothingToExistingMap() {
+        if (!this.baseMap || !this.mapDimensions.width || !this.mapDimensions.height) {
+            console.warn('No base map available, generating new map...');
+            this.generateMap();
+            return;
+        }
+        
+        console.log('🎨 Applying smoothing to existing map...');
+        
+        // Apply smoothing to existing base map
+        const finalMap = this.applySmoothing(this.baseMap, this.mapDimensions.width, this.mapDimensions.height);
+        
+        // Split the final map into chunks
+        this.chunks = this.splitMapIntoChunks(finalMap, this.mapDimensions.width, this.mapDimensions.height);
+        
+        console.log(`✓ Applied smoothing to existing ${this.mapDimensions.width}x${this.mapDimensions.height} map`);
+    }
+    
+    generateBaseMap(width, height) {
+        console.log('✓ JavaScript Island Generator - generating base map');
         
         if (this.islandSettings.preset !== 'custom') {
-            // Use preset
-            return this.generateUnifiedMapWithPreset(width, height, this.islandSettings.preset);
+            return this.generateBaseMapWithPreset(width, height, this.islandSettings.preset);
         } else {
-            // Use custom parameters
-            return this.generateUnifiedMapAdvanced(
+            return this.generateBaseMapAdvanced(
                 width,
                 height,
-                this.islandSettings.landDensity / 100, // Convert percentage to decimal
-                this.islandSettings.iterations,
-                this.islandSettings.neighborThreshold,
-                this.islandSettings.archipelagoMode,
+                this.islandSettings.landDensity / 100,
                 this.islandSettings.islandSize
             );
         }
     }
     
-    generateUnifiedMapWithPreset(width, height, presetName) {
+    generateBaseMapWithPreset(width, height, presetName) {
         const preset = this.presets[presetName];
         if (!preset) {
             console.warn(`Unknown preset: ${presetName}, using default`);
-            return this.generateUnifiedMapAdvanced(width, height, 0.35, 4, 4, true, 'medium');
+            return this.generateBaseMapAdvanced(width, height, 0.35, 'medium');
         }
         
-        return this.generateUnifiedMapAdvanced(
+        return this.generateBaseMapAdvanced(
             width,
             height,
             preset.landDensity,
-            preset.iterations,
-            preset.neighborThreshold,
-            preset.archipelagoMode,
             preset.islandSize
         );
     }
     
-    generateUnifiedMapAdvanced(width, height, landDensity, iterations, neighborThreshold, archipelagoMode, islandSize) {
-        let tiles = [];
-        
+    generateBaseMapAdvanced(width, height, landDensity, islandSize) {
         // Adjust land density based on island size
         const sizeMultiplier = this.getIslandSizeMultiplier(islandSize);
         const adjustedLandDensity = Math.min(1.0, landDensity * sizeMultiplier);
         
-        console.log(`Generating with land density: ${Math.round(adjustedLandDensity * 100)}%, iterations: ${iterations}, threshold: ${neighborThreshold}`);
+        console.log(`Generating base map with land density: ${Math.round(adjustedLandDensity * 100)}%`);
         
         // Initial random generation based on adjusted land density
+        const tiles = [];
         for (let i = 0; i < width * height; i++) {
             tiles[i] = Math.random() < adjustedLandDensity ? 1 : 0;
         }
         
+        return tiles;
+    }
+    
+    applySmoothing(baseMap, width, height) {
+        let tiles = [...baseMap]; // Start with copy of base map
+        
+        console.log(`Applying smoothing: ${this.islandSettings.iterations} iterations, threshold: ${this.islandSettings.neighborThreshold}, archipelago: ${this.islandSettings.archipelagoMode}`);
+        
         // Apply cellular automata for specified iterations
-        for (let iteration = 0; iteration < iterations; iteration++) {
-            console.log(`Applying cellular automata iteration ${iteration + 1}/${iterations}...`);
-            tiles = this.applyCellularAutomataUnified(tiles, width, height, neighborThreshold, archipelagoMode);
+        for (let iteration = 0; iteration < this.islandSettings.iterations; iteration++) {
+            console.log(`Applying cellular automata iteration ${iteration + 1}/${this.islandSettings.iterations}...`);
+            tiles = this.applyCellularAutomataUnified(tiles, width, height, this.islandSettings.neighborThreshold, this.islandSettings.archipelagoMode);
         }
         
         // Post-processing based on island size and archipelago mode
-        if (archipelagoMode) {
+        if (this.islandSettings.archipelagoMode) {
             console.log('Applying archipelago effects...');
-            tiles = this.applyArchipelagoEffectUnified(tiles, width, height, islandSize);
+            tiles = this.applyArchipelagoEffectUnified(tiles, width, height, this.islandSettings.islandSize);
         } else {
             console.log('Applying continent effects...');
-            tiles = this.applyContinentEffectUnified(tiles, width, height, islandSize);
+            tiles = this.applyContinentEffectUnified(tiles, width, height, this.islandSettings.islandSize);
         }
         
         return tiles;
@@ -641,6 +666,7 @@ class ChunkMapGenerator {
         document.getElementById('neighborThresholdValue').textContent = '4';
         document.getElementById('islandSizeValue').textContent = 'Medium';
         
+        // Reset requires full regeneration since settings changed
         this.generateMap();
         this.renderMap();
         this.updateStats();
