@@ -101,6 +101,28 @@
         </div>
     </div>
 
+    <!-- Fengari Lua in Browser -->
+    <script src="https://cdn.jsdelivr.net/npm/fengari-web@0.1.4/dist/fengari-web.js"></script>
+    
+    <!-- Lua Script Example -->
+    <script type="application/lua">
+        print("Fengari Lua is working!")
+        
+        -- Simple pathfinding example
+        local function distance(x1, y1, x2, y2)
+            return math.sqrt((x2 - x1)^2 + (y2 - y1)^2)
+        end
+        
+        local start_x, start_y = 0, 0
+        local end_x, end_y = 10, 10
+        local dist = distance(start_x, start_y, end_x, end_y)
+        
+        print("Distance from (" .. start_x .. "," .. start_y .. ") to (" .. end_x .. "," .. end_y .. "): " .. dist)
+    </script>
+    
+    <!-- Load external Lua file -->
+    <script src="../pathfinding_example.lua" type="application/lua" async></script>
+    
     <script src="app.js"></script>
 </body>
 </html>
