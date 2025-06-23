@@ -220,32 +220,34 @@ class ChunkMapGenerator {
     }
     
     generateMap() {
-        this.chunks = [];
+        console.log('🗺️ Generating unified map...');
         
-        for (let y = 0; y < this.settings.chunkRows; y++) {
-            for (let x = 0; x < this.settings.chunkCols; x++) {
-                const chunk = {
-                    id: `${x},${y}`,
-                    x: x,
-                    y: y,
-                    tiles: this.generateChunkTiles()
-                };
-                this.chunks.push(chunk);
-            }
-        }
+        // Calculate total map size
+        const totalWidth = this.settings.chunkCols * this.settings.chunkSize;
+        const totalHeight = this.settings.chunkRows * this.settings.chunkSize;
+        
+        console.log(`Map size: ${totalWidth}x${totalHeight} tiles (${this.settings.chunkCols}x${this.settings.chunkRows} chunks of ${this.settings.chunkSize}x${this.settings.chunkSize})`);
+        
+        // Generate one big unified map
+        const unifiedMap = this.generateUnifiedMap(totalWidth, totalHeight);
+        
+        // Split the unified map into chunks
+        this.chunks = this.splitMapIntoChunks(unifiedMap, totalWidth, totalHeight);
+        
+        console.log(`✓ Generated ${this.chunks.length} chunks from unified map`);
     }
     
-    generateChunkTiles() {
-        const size = this.settings.chunkSize;
+    generateUnifiedMap(width, height) {
         console.log('✓ JavaScript Island Generator active with advanced parameters');
         
         if (this.islandSettings.preset !== 'custom') {
             // Use preset
-            return this.generateChunkTilesWithPreset(size, this.islandSettings.preset);
+            return this.generateUnifiedMapWithPreset(width, height, this.islandSettings.preset);
         } else {
             // Use custom parameters
-            return this.generateChunkTilesAdvanced(
-                size,
+            return this.generateUnifiedMapAdvanced(
+                width,
+                height,
                 this.islandSettings.landDensity / 100, // Convert percentage to decimal
                 this.islandSettings.iterations,
                 this.islandSettings.neighborThreshold,
@@ -255,15 +257,16 @@ class ChunkMapGenerator {
         }
     }
     
-    generateChunkTilesWithPreset(size, presetName) {
+    generateUnifiedMapWithPreset(width, height, presetName) {
         const preset = this.presets[presetName];
         if (!preset) {
             console.warn(`Unknown preset: ${presetName}, using default`);
-            return this.generateChunkTilesAdvanced(size, 0.35, 4, 4, true, 'medium');
+            return this.generateUnifiedMapAdvanced(width, height, 0.35, 4, 4, true, 'medium');
         }
         
-        return this.generateChunkTilesAdvanced(
-            size,
+        return this.generateUnifiedMapAdvanced(
+            width,
+            height,
             preset.landDensity,
             preset.iterations,
             preset.neighborThreshold,
@@ -272,49 +275,45 @@ class ChunkMapGenerator {
         );
     }
     
-    generateChunkTilesAdvanced(size, landDensity, iterations, neighborThreshold, archipelagoMode, islandSize) {
+    generateUnifiedMapAdvanced(width, height, landDensity, iterations, neighborThreshold, archipelagoMode, islandSize) {
         let tiles = [];
         
         // Adjust land density based on island size
         const sizeMultiplier = this.getIslandSizeMultiplier(islandSize);
         const adjustedLandDensity = Math.min(1.0, landDensity * sizeMultiplier);
         
+        console.log(`Generating with land density: ${Math.round(adjustedLandDensity * 100)}%, iterations: ${iterations}, threshold: ${neighborThreshold}`);
+        
         // Initial random generation based on adjusted land density
-        for (let i = 0; i < size * size; i++) {
+        for (let i = 0; i < width * height; i++) {
             tiles[i] = Math.random() < adjustedLandDensity ? 1 : 0;
         }
         
         // Apply cellular automata for specified iterations
         for (let iteration = 0; iteration < iterations; iteration++) {
-            tiles = this.applyCellularAutomata(tiles, size, neighborThreshold, archipelagoMode);
+            console.log(`Applying cellular automata iteration ${iteration + 1}/${iterations}...`);
+            tiles = this.applyCellularAutomataUnified(tiles, width, height, neighborThreshold, archipelagoMode);
         }
         
         // Post-processing based on island size and archipelago mode
         if (archipelagoMode) {
-            tiles = this.applyArchipelagoEffect(tiles, size, islandSize);
+            console.log('Applying archipelago effects...');
+            tiles = this.applyArchipelagoEffectUnified(tiles, width, height, islandSize);
         } else {
-            tiles = this.applyContinentEffect(tiles, size, islandSize);
+            console.log('Applying continent effects...');
+            tiles = this.applyContinentEffectUnified(tiles, width, height, islandSize);
         }
         
         return tiles;
     }
     
-    getIslandSizeMultiplier(islandSize) {
-        switch (islandSize) {
-            case 'small': return 0.7;
-            case 'medium': return 1.0;
-            case 'large': return 1.3;
-            default: return 1.0;
-        }
-    }
-    
-    applyCellularAutomata(tiles, size, threshold, archipelagoMode) {
+    applyCellularAutomataUnified(tiles, width, height, threshold, archipelagoMode) {
         const newTiles = [...tiles];
         
-        for (let y = 0; y < size; y++) {
-            for (let x = 0; x < size; x++) {
-                const index = y * size + x;
-                const neighbors = this.countNeighbors(tiles, x, y, size);
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const index = y * width + x;
+                const neighbors = this.countNeighborsUnified(tiles, x, y, width, height);
                 
                 if (archipelagoMode) {
                     // More aggressive for archipelago - creates more fragmented islands
@@ -337,38 +336,38 @@ class ChunkMapGenerator {
         return newTiles;
     }
     
-    applyArchipelagoEffect(tiles, size, islandSize) {
+    applyArchipelagoEffectUnified(tiles, width, height, islandSize) {
         // For archipelago mode, apply some erosion to create more separate islands
         if (islandSize === 'small') {
             // More aggressive erosion for small islands
-            return this.applyErosion(tiles, size, 2);
+            return this.applyErosionUnified(tiles, width, height, 2);
         } else if (islandSize === 'medium') {
-            return this.applyErosion(tiles, size, 1);
+            return this.applyErosionUnified(tiles, width, height, 1);
         }
         return tiles; // Large islands don't need erosion in archipelago mode
     }
     
-    applyContinentEffect(tiles, size, islandSize) {
+    applyContinentEffectUnified(tiles, width, height, islandSize) {
         // For continent mode, apply dilation to create larger connected landmasses
         if (islandSize === 'large') {
-            return this.applyDilation(tiles, size, 2);
+            return this.applyDilationUnified(tiles, width, height, 2);
         } else if (islandSize === 'medium') {
-            return this.applyDilation(tiles, size, 1);
+            return this.applyDilationUnified(tiles, width, height, 1);
         }
         return tiles; // Small islands don't need dilation in continent mode
     }
     
-    applyErosion(tiles, size, intensity) {
+    applyErosionUnified(tiles, width, height, intensity) {
         let result = [...tiles];
         
         for (let i = 0; i < intensity; i++) {
             const newTiles = [...result];
             
-            for (let y = 0; y < size; y++) {
-                for (let x = 0; x < size; x++) {
-                    const index = y * size + x;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const index = y * width + x;
                     if (result[index] === 1) {
-                        const oceanNeighbors = this.countOceanNeighbors(result, x, y, size);
+                        const oceanNeighbors = this.countOceanNeighborsUnified(result, x, y, width, height);
                         if (oceanNeighbors >= 3) {
                             newTiles[index] = 0; // Erode to ocean
                         }
@@ -382,17 +381,17 @@ class ChunkMapGenerator {
         return result;
     }
     
-    applyDilation(tiles, size, intensity) {
+    applyDilationUnified(tiles, width, height, intensity) {
         let result = [...tiles];
         
         for (let i = 0; i < intensity; i++) {
             const newTiles = [...result];
             
-            for (let y = 0; y < size; y++) {
-                for (let x = 0; x < size; x++) {
-                    const index = y * size + x;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const index = y * width + x;
                     if (result[index] === 0) {
-                        const landNeighbors = this.countLandNeighbors(result, x, y, size);
+                        const landNeighbors = this.countLandNeighborsUnified(result, x, y, width, height);
                         if (landNeighbors >= 2) {
                             newTiles[index] = 1; // Expand land
                         }
@@ -406,7 +405,7 @@ class ChunkMapGenerator {
         return result;
     }
     
-    countNeighbors(tiles, x, y, size) {
+    countNeighborsUnified(tiles, x, y, width, height) {
         let count = 0;
         
         for (let dy = -1; dy <= 1; dy++) {
@@ -417,11 +416,11 @@ class ChunkMapGenerator {
                 const ny = y + dy;
                 
                 // Treat out-of-bounds as ocean
-                if (nx < 0 || nx >= size || ny < 0 || ny >= size) {
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
                     continue;
                 }
                 
-                const index = ny * size + nx;
+                const index = ny * width + nx;
                 if (tiles[index] === 1) {
                     count++;
                 }
@@ -431,7 +430,7 @@ class ChunkMapGenerator {
         return count;
     }
     
-    countOceanNeighbors(tiles, x, y, size) {
+    countOceanNeighborsUnified(tiles, x, y, width, height) {
         let count = 0;
         
         for (let dy = -1; dy <= 1; dy++) {
@@ -442,12 +441,12 @@ class ChunkMapGenerator {
                 const ny = y + dy;
                 
                 // Treat out-of-bounds as ocean
-                if (nx < 0 || nx >= size || ny < 0 || ny >= size) {
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
                     count++;
                     continue;
                 }
                 
-                const index = ny * size + nx;
+                const index = ny * width + nx;
                 if (tiles[index] === 0) {
                     count++;
                 }
@@ -457,7 +456,7 @@ class ChunkMapGenerator {
         return count;
     }
     
-    countLandNeighbors(tiles, x, y, size) {
+    countLandNeighborsUnified(tiles, x, y, width, height) {
         let count = 0;
         
         for (let dy = -1; dy <= 1; dy++) {
@@ -468,11 +467,11 @@ class ChunkMapGenerator {
                 const ny = y + dy;
                 
                 // Treat out-of-bounds as ocean
-                if (nx < 0 || nx >= size || ny < 0 || ny >= size) {
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
                     continue;
                 }
                 
-                const index = ny * size + nx;
+                const index = ny * width + nx;
                 if (tiles[index] === 1) {
                     count++;
                 }
@@ -480,6 +479,47 @@ class ChunkMapGenerator {
         }
         
         return count;
+    }
+    
+    splitMapIntoChunks(unifiedMap, totalWidth, totalHeight) {
+        const chunks = [];
+        const chunkSize = this.settings.chunkSize;
+        
+        for (let chunkY = 0; chunkY < this.settings.chunkRows; chunkY++) {
+            for (let chunkX = 0; chunkX < this.settings.chunkCols; chunkX++) {
+                const chunk = {
+                    id: `${chunkX},${chunkY}`,
+                    x: chunkX,
+                    y: chunkY,
+                    tiles: []
+                };
+                
+                // Extract tiles for this chunk from the unified map
+                for (let localY = 0; localY < chunkSize; localY++) {
+                    for (let localX = 0; localX < chunkSize; localX++) {
+                        const globalX = chunkX * chunkSize + localX;
+                        const globalY = chunkY * chunkSize + localY;
+                        const globalIndex = globalY * totalWidth + globalX;
+                        const localIndex = localY * chunkSize + localX;
+                        
+                        chunk.tiles[localIndex] = unifiedMap[globalIndex];
+                    }
+                }
+                
+                chunks.push(chunk);
+            }
+        }
+        
+        return chunks;
+    }
+    
+    getIslandSizeMultiplier(islandSize) {
+        switch (islandSize) {
+            case 'small': return 0.7;
+            case 'medium': return 1.0;
+            case 'large': return 1.3;
+            default: return 1.0;
+        }
     }
     
     renderMap() {
