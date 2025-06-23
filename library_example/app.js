@@ -69,11 +69,19 @@ class ChunkMapGenerator {
             ocean: '#0066cc',
             island: '#228b22',
             chunkBorder: '#333333',
-            chunkBackground: '#f0f0f0'
+            chunkBackground: '#f0f0f0',
+            transitionPoint: '#ff6b6b'
+        };
+        
+        // Ustawienia pathfinding
+        this.pathfindingSettings = {
+            maxTransitionPoints: 3,     // Maksymalna liczba punktów przejścia per granica
+            showTransitionPoints: true  // Pokazuj punkty przejścia na mapie
         };
         
         // GŁÓWNE DANE APLIKACJI:
         this.chunks = [];                           // Array chunków: [{id, x, y, tiles: [0,1,0,1...]}]
+        this.transitionPoints = [];                 // Array punktów przejścia: [{chunkA, chunkB, x, y, direction}]
         this.canvas = null;                         // Canvas element
         this.ctx = null;                           // Canvas context 2D
         
@@ -225,6 +233,25 @@ class ChunkMapGenerator {
         document.getElementById('exportBtn').addEventListener('click', () => {
             this.exportToPNG();
         });
+        
+        // === PARAMETRY PATHFINDING ===
+        const maxTransitionPointsSlider = document.getElementById('maxTransitionPoints');
+        const showTransitionPointsCheckbox = document.getElementById('showTransitionPoints');
+        
+        // Maksymalna liczba punktów przejścia
+        maxTransitionPointsSlider.addEventListener('input', (e) => {
+            this.pathfindingSettings.maxTransitionPoints = parseInt(e.target.value);
+            document.getElementById('maxTransitionPointsValue').textContent = e.target.value;
+            this.generateTransitionPoints(); // Regeneruj punkty przejścia
+            this.renderMap();
+            this.updateStats();
+        });
+        
+        // Pokazuj/ukryj punkty przejścia
+        showTransitionPointsCheckbox.addEventListener('change', (e) => {
+            this.pathfindingSettings.showTransitionPoints = e.target.checked;
+            this.renderMap(); // Tylko re-render
+        });
     }
     
     updatePresetValues() {
@@ -287,6 +314,10 @@ class ChunkMapGenerator {
         // KROK 3: Podziel mapę na chunki
         // INPUT: finalMap, OUTPUT: this.chunks = [{id, x, y, tiles: [0,1,0...]}, ...]
         this.chunks = this.splitMapIntoChunks(finalMap, totalWidth, totalHeight);
+        
+        // KROK 4: Generuj punkty przejścia między chunkami
+        // OUTPUT: this.transitionPoints = [{chunkA, chunkB, x, y, direction}, ...]
+        this.generateTransitionPoints();
         
         console.log(`✓ Generated ${this.chunks.length} chunks from unified map`);
     }
@@ -615,6 +646,181 @@ class ChunkMapGenerator {
         return chunks; // Array chunków gotowy do this.chunks
     }
     
+    /**
+     * GENERUJE PUNKTY PRZEJŚCIA MIĘDZY CHUNKAMI
+     * 
+     * ALGORYTM:
+     * 1. Sprawdza wszystkie granice między sąsiadującymi chunkami
+     * 2. Dla każdej granicy analizuje kafelki ocean/wyspa
+     * 3. Znajduje ciągłe segmenty oceanów (możliwości przejścia)
+     * 4. Umieszcza punkty przejścia na środku każdego segmentu
+     * 5. Ogranicza liczbę punktów do maxTransitionPoints
+     * 
+     * WYNIK: this.transitionPoints = [{chunkA, chunkB, x, y, direction}, ...]
+     */
+    generateTransitionPoints() {
+        console.log('🧭 Generating transition points between chunks...');
+        this.transitionPoints = [];
+        
+        const chunkSize = this.settings.chunkSize;
+        const maxPoints = this.pathfindingSettings.maxTransitionPoints;
+        
+        // Sprawdź wszystkie pary sąsiadujących chunków
+        for (let chunkY = 0; chunkY < this.settings.chunkRows; chunkY++) {
+            for (let chunkX = 0; chunkX < this.settings.chunkCols; chunkX++) {
+                const currentChunk = this.chunks.find(c => c.x === chunkX && c.y === chunkY);
+                if (!currentChunk) continue;
+                
+                // Sprawdź granicę z chunkiem po prawej (horizontal)
+                if (chunkX < this.settings.chunkCols - 1) {
+                    const rightChunk = this.chunks.find(c => c.x === chunkX + 1 && c.y === chunkY);
+                    if (rightChunk) {
+                        const points = this.findTransitionPointsOnBorder(
+                            currentChunk, rightChunk, 'horizontal', maxPoints
+                        );
+                        this.transitionPoints.push(...points);
+                    }
+                }
+                
+                // Sprawdź granicę z chunkiem poniżej (vertical)
+                if (chunkY < this.settings.chunkRows - 1) {
+                    const bottomChunk = this.chunks.find(c => c.x === chunkX && c.y === chunkY + 1);
+                    if (bottomChunk) {
+                        const points = this.findTransitionPointsOnBorder(
+                            currentChunk, bottomChunk, 'vertical', maxPoints
+                        );
+                        this.transitionPoints.push(...points);
+                    }
+                }
+            }
+        }
+        
+        console.log(`✓ Generated ${this.transitionPoints.length} transition points`);
+    }
+    
+    /**
+     * ZNAJDUJE PUNKTY PRZEJŚCIA NA GRANICY MIĘDZY DWOMA CHUNKAMI
+     * 
+     * @param {Object} chunkA - Pierwszy chunk
+     * @param {Object} chunkB - Drugi chunk (sąsiadujący)
+     * @param {string} direction - 'horizontal' lub 'vertical'
+     * @param {number} maxPoints - Maksymalna liczba punktów na tej granicy
+     * @returns {Array} Punkty przejścia [{chunkA, chunkB, x, y, direction}, ...]
+     */
+    findTransitionPointsOnBorder(chunkA, chunkB, direction, maxPoints) {
+        const chunkSize = this.settings.chunkSize;
+        const points = [];
+        
+        // Przygotuj tablicę do sprawdzania możliwości przejścia
+        const canPass = [];
+        
+        if (direction === 'horizontal') {
+            // Granica pionowa - sprawdzaj rzędy (Y)
+            for (let y = 0; y < chunkSize; y++) {
+                // Prawy brzeg chunkA (x = chunkSize-1)
+                const tileA = chunkA.tiles[y * chunkSize + (chunkSize - 1)];
+                // Lewy brzeg chunkB (x = 0)
+                const tileB = chunkB.tiles[y * chunkSize + 0];
+                
+                // Można przejść tylko jeśli oba kafelki to oceany (0)
+                canPass[y] = (tileA === 0 && tileB === 0);
+            }
+        } else if (direction === 'vertical') {
+            // Granica pozioma - sprawdzaj kolumny (X)
+            for (let x = 0; x < chunkSize; x++) {
+                // Dolny brzeg chunkA (y = chunkSize-1)
+                const tileA = chunkA.tiles[(chunkSize - 1) * chunkSize + x];
+                // Górny brzeg chunkB (y = 0)
+                const tileB = chunkB.tiles[0 * chunkSize + x];
+                
+                // Można przejść tylko jeśli oba kafelki to oceany (0)
+                canPass[x] = (tileA === 0 && tileB === 0);
+            }
+        }
+        
+        // Znajdź ciągłe segmenty przejścia
+        const segments = this.findPassableSegments(canPass);
+        
+        // Ogranicz liczbę segmentów do maxPoints
+        const selectedSegments = this.selectBestSegments(segments, maxPoints);
+        
+        // Utwórz punkty przejścia na środku każdego segmentu
+        selectedSegments.forEach(segment => {
+            const midPoint = Math.floor((segment.start + segment.end) / 2);
+            
+            let globalX, globalY;
+            
+            if (direction === 'horizontal') {
+                // Punkt na granicy między chunkami (na środku granicy)
+                globalX = chunkA.x * chunkSize + chunkSize; // Granica po prawej stronie chunkA
+                globalY = chunkA.y * chunkSize + midPoint;
+            } else if (direction === 'vertical') {
+                // Punkt na granicy między chunkami (na środku granicy)
+                globalX = chunkA.x * chunkSize + midPoint;
+                globalY = chunkA.y * chunkSize + chunkSize; // Granica poniżej chunkA
+            }
+            
+            points.push({
+                chunkA: chunkA.id,
+                chunkB: chunkB.id,
+                x: globalX,
+                y: globalY,
+                direction: direction,
+                segmentLength: segment.end - segment.start + 1
+            });
+        });
+        
+        return points;
+    }
+    
+    /**
+     * ZNAJDUJE CIĄGŁE SEGMENTY GDZ MOŻNA PRZEJŚĆ
+     * 
+     * @param {Array} canPass - Array boolean dla każdej pozycji na granicy
+     * @returns {Array} Segmenty [{start, end}, ...]
+     */
+    findPassableSegments(canPass) {
+        const segments = [];
+        let currentStart = null;
+        
+        for (let i = 0; i < canPass.length; i++) {
+            if (canPass[i] && currentStart === null) {
+                // Początek nowego segmentu
+                currentStart = i;
+            } else if (!canPass[i] && currentStart !== null) {
+                // Koniec bieżącego segmentu
+                segments.push({ start: currentStart, end: i - 1 });
+                currentStart = null;
+            }
+        }
+        
+        // Jeśli segment trwa do końca
+        if (currentStart !== null) {
+            segments.push({ start: currentStart, end: canPass.length - 1 });
+        }
+        
+        return segments;
+    }
+    
+    /**
+     * WYBIERA NAJLEPSZE SEGMENTY (NAJDŁUŻSZE)
+     * 
+     * @param {Array} segments - Wszystkie segmenty
+     * @param {number} maxCount - Maksymalna liczba segmentów
+     * @returns {Array} Wybrane segmenty
+     */
+    selectBestSegments(segments, maxCount) {
+        // Sortuj segmenty według długości (najdłuższe pierwsze)
+        const sortedSegments = segments.sort((a, b) => {
+            const lengthA = a.end - a.start + 1;
+            const lengthB = b.end - b.start + 1;
+            return lengthB - lengthA;
+        });
+        
+        // Wybierz maksymalnie maxCount najdłuższych segmentów
+        return sortedSegments.slice(0, maxCount);
+    }
+    
     getIslandSizeMultiplier(islandSize) {
         switch (islandSize) {
             case 'small': return 0.7;
@@ -657,6 +863,11 @@ class ChunkMapGenerator {
         this.chunks.forEach(chunk => {
             this.renderChunk(chunk, gapSize);
         });
+        
+        // Renderuj punkty przejścia jeśli włączone
+        if (this.pathfindingSettings.showTransitionPoints) {
+            this.renderTransitionPoints(gapSize);
+        }
     }
     
     renderChunk(chunk, gapSize) {
@@ -697,6 +908,60 @@ class ChunkMapGenerator {
     }
     
     /**
+     * RENDERUJE PUNKTY PRZEJŚCIA NA CANVAS
+     * 
+     * @param {number} gapSize - Wielkość przerwy między chunkami
+     */
+    renderTransitionPoints(gapSize) {
+        const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
+        const pointRadius = Math.max(4, this.settings.tileSize / 4);
+        
+        this.transitionPoints.forEach(point => {
+            // Konwertuj współrzędne globalne (w tiles) na piksele na canvas
+            const chunkAData = this.chunks.find(c => c.id === point.chunkA);
+            if (!chunkAData) return;
+            
+            let pixelX, pixelY;
+            
+            if (point.direction === 'horizontal') {
+                // Granica pionowa między chunkami
+                const chunkStartX = 20 + chunkAData.x * (chunkPixelSize + gapSize);
+                const chunkStartY = 20 + chunkAData.y * (chunkPixelSize + gapSize);
+                
+                pixelX = chunkStartX + chunkPixelSize; // Prawy brzeg chunkA
+                pixelY = chunkStartY + (point.y - chunkAData.y * this.settings.chunkSize) * this.settings.tileSize + this.settings.tileSize / 2;
+            } else if (point.direction === 'vertical') {
+                // Granica pozioma między chunkami
+                const chunkStartX = 20 + chunkAData.x * (chunkPixelSize + gapSize);
+                const chunkStartY = 20 + chunkAData.y * (chunkPixelSize + gapSize);
+                
+                pixelX = chunkStartX + (point.x - chunkAData.x * this.settings.chunkSize) * this.settings.tileSize + this.settings.tileSize / 2;
+                pixelY = chunkStartY + chunkPixelSize; // Dolny brzeg chunkA
+            }
+            
+            // Narysuj punkt przejścia jako koło
+            this.ctx.fillStyle = this.colors.transitionPoint;
+            this.ctx.beginPath();
+            this.ctx.arc(pixelX, pixelY, pointRadius, 0, 2 * Math.PI);
+            this.ctx.fill();
+            
+            // Dodaj obramowanie
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+            
+            // Opcjonalnie: dodaj numerek punktu (dla debugging)
+            if (this.settings.tileSize >= 16) {
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = 'bold 10px var(--font-family-base)';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('●', pixelX, pixelY + 3);
+                this.ctx.textAlign = 'left'; // Reset
+            }
+        });
+    }
+    
+    /**
      * AKTUALIZUJE STATYSTYKI NA PODSTAWIE this.chunks
      * 
      * OBLICZA:
@@ -725,6 +990,7 @@ class ChunkMapGenerator {
         document.getElementById('totalChunks').textContent = totalChunks;
         document.getElementById('totalTiles').textContent = totalTiles;
         document.getElementById('islandPercentage').textContent = `${islandPercentage}%`;
+        document.getElementById('totalTransitionPoints').textContent = this.transitionPoints.length;
     }
     
     resetSettings() {
@@ -742,6 +1008,11 @@ class ChunkMapGenerator {
             neighborThreshold: 4,
             archipelagoMode: true,
             islandSize: 'medium'
+        };
+        
+        this.pathfindingSettings = {
+            maxTransitionPoints: 3,
+            showTransitionPoints: true
         };
         
         // Update original sliders
@@ -769,6 +1040,13 @@ class ChunkMapGenerator {
         document.getElementById('iterationsValue').textContent = '4';
         document.getElementById('neighborThresholdValue').textContent = '4';
         document.getElementById('islandSizeValue').textContent = 'Medium';
+        
+        // Update pathfinding controls
+        document.getElementById('maxTransitionPoints').value = 3;
+        document.getElementById('showTransitionPoints').checked = true;
+        
+        // Update pathfinding labels
+        document.getElementById('maxTransitionPointsValue').textContent = '3';
         
         // Reset requires full regeneration since settings changed
         this.generateMap();

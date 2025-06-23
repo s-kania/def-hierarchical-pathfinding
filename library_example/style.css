@@ -859,6 +859,11 @@ input[type="range"]::-moz-range-thumb:hover {
   background-color: #228b22;
 }
 
+.legend-color.transition-point {
+  background-color: #ff6b6b;
+  border-radius: 50%;
+}
+
 /* Preset info styling */
 .preset-info {
   background: var(--color-secondary);
@@ -908,6 +913,17 @@ input[type="range"]::-moz-range-thumb:hover {
 .island-config-panel.card {
   box-shadow: var(--shadow-md);
   border: 2px solid var(--color-primary-alpha);
+}
+
+.pathfinding-config-panel.card {
+  box-shadow: var(--shadow-md);
+  border: 2px solid #ff6b6b33;
+}
+
+.pathfinding-config-panel .card__header h2 {
+  color: #ff6b6b;
+  font-size: var(--font-size-xl);
+  margin: 0;
 }
 
 .legend.card {

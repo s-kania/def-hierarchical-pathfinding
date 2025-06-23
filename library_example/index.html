@@ -123,6 +123,29 @@
             </div>
         </div>
 
+        <div class="pathfinding-config-panel card">
+            <div class="card__header">
+                <h2>🧭 Pathfinding Settings</h2>
+            </div>
+            <div class="card__body">
+                <div class="config-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="maxTransitionPoints">
+                            Max transition points per border: <span id="maxTransitionPointsValue">3</span>
+                        </label>
+                        <input type="range" id="maxTransitionPoints" class="form-control" min="1" max="8" value="3">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="showTransitionPoints">
+                            <span>Show transition points</span>
+                        </label>
+                        <input type="checkbox" id="showTransitionPoints" class="form-control" checked>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="map-container">
             <div class="map-info">
                 <div class="map-stats">
@@ -137,6 +160,10 @@
                     <div class="stat">
                         <span class="stat-label">Islands:</span>
                         <span id="islandPercentage">0%</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Transition points:</span>
+                        <span id="totalTransitionPoints">0</span>
                     </div>
                 </div>
             </div>
@@ -156,6 +183,10 @@
                     <div class="legend-item">
                         <div class="legend-color island"></div>
                         <span>Island (1)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color transition-point"></div>
+                        <span>Transition Point</span>
                     </div>
                 </div>
                 <div class="preset-info">
