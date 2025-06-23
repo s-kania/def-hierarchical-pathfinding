@@ -7,6 +7,16 @@ class ChunkMapGenerator {
             tileSize: 16
         };
         
+        // New island generation settings
+        this.islandSettings = {
+            preset: 'archipelago',
+            landDensity: 35,
+            iterations: 4,
+            neighborThreshold: 4,
+            archipelagoMode: true,
+            islandSize: 'medium'
+        };
+        
         this.colors = {
             ocean: '#0066cc',
             island: '#228b22',
@@ -33,7 +43,7 @@ class ChunkMapGenerator {
     }
     
     setupEventListeners() {
-        // Sliders
+        // Original sliders
         const chunkSizeSlider = document.getElementById('chunkSize');
         const chunkColsSlider = document.getElementById('chunkCols');
         const chunkRowsSlider = document.getElementById('chunkRows');
@@ -69,7 +79,72 @@ class ChunkMapGenerator {
             this.renderMap();
         });
         
-        // Buttons
+        // New island generation controls
+        const islandPresetSelect = document.getElementById('islandPreset');
+        const landDensitySlider = document.getElementById('landDensity');
+        const iterationsSlider = document.getElementById('iterations');
+        const neighborThresholdSlider = document.getElementById('neighborThreshold');
+        const archipelagoModeCheckbox = document.getElementById('archipelagoMode');
+        const islandSizeSelect = document.getElementById('islandSize');
+        
+        islandPresetSelect.addEventListener('change', (e) => {
+            this.islandSettings.preset = e.target.value;
+            this.updatePresetValues();
+            this.generateMap();
+            this.renderMap();
+            this.updateStats();
+        });
+        
+        landDensitySlider.addEventListener('input', (e) => {
+            this.islandSettings.landDensity = parseInt(e.target.value);
+            this.islandSettings.preset = 'custom';
+            document.getElementById('landDensityValue').textContent = `${e.target.value}%`;
+            document.getElementById('islandPreset').value = 'custom';
+            this.generateMap();
+            this.renderMap();
+            this.updateStats();
+        });
+        
+        iterationsSlider.addEventListener('input', (e) => {
+            this.islandSettings.iterations = parseInt(e.target.value);
+            this.islandSettings.preset = 'custom';
+            document.getElementById('iterationsValue').textContent = e.target.value;
+            document.getElementById('islandPreset').value = 'custom';
+            this.generateMap();
+            this.renderMap();
+            this.updateStats();
+        });
+        
+        neighborThresholdSlider.addEventListener('input', (e) => {
+            this.islandSettings.neighborThreshold = parseInt(e.target.value);
+            this.islandSettings.preset = 'custom';
+            document.getElementById('neighborThresholdValue').textContent = e.target.value;
+            document.getElementById('islandPreset').value = 'custom';
+            this.generateMap();
+            this.renderMap();
+            this.updateStats();
+        });
+        
+        archipelagoModeCheckbox.addEventListener('change', (e) => {
+            this.islandSettings.archipelagoMode = e.target.checked;
+            this.islandSettings.preset = 'custom';
+            document.getElementById('islandPreset').value = 'custom';
+            this.generateMap();
+            this.renderMap();
+            this.updateStats();
+        });
+        
+        islandSizeSelect.addEventListener('change', (e) => {
+            this.islandSettings.islandSize = e.target.value;
+            this.islandSettings.preset = 'custom';
+            document.getElementById('islandSizeValue').textContent = this.capitalizeFirst(e.target.value);
+            document.getElementById('islandPreset').value = 'custom';
+            this.generateMap();
+            this.renderMap();
+            this.updateStats();
+        });
+        
+        // Original buttons
         document.getElementById('regenerateBtn').addEventListener('click', () => {
             this.generateMap();
             this.renderMap();
@@ -83,6 +158,37 @@ class ChunkMapGenerator {
         document.getElementById('exportBtn').addEventListener('click', () => {
             this.exportToPNG();
         });
+    }
+    
+    updatePresetValues() {
+        if (this.islandSettings.preset === 'custom') return;
+        
+        // Get preset values from Lua if available
+        if (window.LuaIslandGenerator && window.LuaIslandGenerator.presets) {
+            const preset = window.LuaIslandGenerator.presets[this.islandSettings.preset];
+            if (preset) {
+                this.islandSettings.landDensity = Math.round(preset.landDensity * 100);
+                this.islandSettings.iterations = preset.iterations;
+                this.islandSettings.neighborThreshold = preset.neighborThreshold;
+                this.islandSettings.archipelagoMode = preset.archipelagoMode;
+                this.islandSettings.islandSize = preset.islandSize;
+                
+                // Update UI
+                document.getElementById('landDensity').value = this.islandSettings.landDensity;
+                document.getElementById('landDensityValue').textContent = `${this.islandSettings.landDensity}%`;
+                document.getElementById('iterations').value = this.islandSettings.iterations;
+                document.getElementById('iterationsValue').textContent = this.islandSettings.iterations;
+                document.getElementById('neighborThreshold').value = this.islandSettings.neighborThreshold;
+                document.getElementById('neighborThresholdValue').textContent = this.islandSettings.neighborThreshold;
+                document.getElementById('archipelagoMode').checked = this.islandSettings.archipelagoMode;
+                document.getElementById('islandSize').value = this.islandSettings.islandSize;
+                document.getElementById('islandSizeValue').textContent = this.capitalizeFirst(this.islandSettings.islandSize);
+            }
+        }
+    }
+    
+    capitalizeFirst(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
     }
     
     generateMap() {
@@ -108,12 +214,27 @@ class ChunkMapGenerator {
         if (window.LuaIslandGenerator && window.LuaIslandGenerator.ready) {
             // Log success message only once
             if (!this.luaModuleLogged) {
-                console.log('✓ Lua Island Generator ready and active');
+                console.log('✓ Lua Island Generator ready and active with advanced parameters');
                 this.luaModuleLogged = true;
             }
             
             try {
-                const result = window.LuaIslandGenerator.generateChunkTilesForJS(size);
+                let result;
+                
+                if (this.islandSettings.preset !== 'custom') {
+                    // Use preset
+                    result = window.LuaIslandGenerator.generateChunkTilesWithPreset(size, this.islandSettings.preset);
+                } else {
+                    // Use custom parameters
+                    result = window.LuaIslandGenerator.generateChunkTilesAdvanced(
+                        size,
+                        this.islandSettings.landDensity / 100, // Convert percentage to decimal
+                        this.islandSettings.iterations,
+                        this.islandSettings.neighborThreshold,
+                        this.islandSettings.archipelagoMode,
+                        this.islandSettings.islandSize
+                    );
+                }
                 
                 // Check if result is valid
                 if (result && Array.isArray(result) && result.length === size * size) {
@@ -123,40 +244,47 @@ class ChunkMapGenerator {
                     return Array.from(result);
                 }
             } catch (error) {
-                console.warn('Lua generator failed, using JavaScript fallback');
+                console.warn('Lua generator failed, using JavaScript fallback:', error);
             }
         }
         
-        // Fallback to JavaScript implementation
+        // Fallback to JavaScript implementation with new parameters
+        return this.generateChunkTilesJS();
+    }
+    
+    generateChunkTilesJS() {
+        const size = this.settings.chunkSize;
         let tiles = [];
         
-        // Initial random generation - 45% chance for island
+        // Initial random generation based on land density
+        const landDensity = this.islandSettings.landDensity / 100;
         for (let i = 0; i < size * size; i++) {
-            tiles[i] = Math.random() < 0.45 ? 1 : 0;
+            tiles[i] = Math.random() < landDensity ? 1 : 0;
         }
         
-        // Apply cellular automata for 4 iterations
-        for (let iteration = 0; iteration < 4; iteration++) {
-            tiles = this.applyCellularAutomata(tiles, size);
+        // Apply cellular automata for specified iterations
+        for (let iteration = 0; iteration < this.islandSettings.iterations; iteration++) {
+            tiles = this.applyCellularAutomataJS(tiles, size);
         }
         
         return tiles;
     }
     
-    applyCellularAutomata(tiles, size) {
+    applyCellularAutomataJS(tiles, size) {
         const newTiles = [...tiles];
+        const threshold = this.islandSettings.neighborThreshold;
         
         for (let y = 0; y < size; y++) {
             for (let x = 0; x < size; x++) {
                 const index = y * size + x;
                 const neighbors = this.countNeighbors(tiles, x, y, size);
                 
-                if (neighbors >= 4) {
+                if (neighbors >= threshold) {
                     newTiles[index] = 1; // Island
-                } else if (neighbors <= 3) {
+                } else if (neighbors <= (threshold - 2)) {
                     newTiles[index] = 0; // Ocean
                 }
-                // If neighbors == 3, keep current state
+                // If neighbors == threshold-1, keep current state
             }
         }
         
@@ -272,17 +400,40 @@ class ChunkMapGenerator {
             tileSize: 16
         };
         
-        // Update sliders
+        this.islandSettings = {
+            preset: 'archipelago',
+            landDensity: 35,
+            iterations: 4,
+            neighborThreshold: 4,
+            archipelagoMode: true,
+            islandSize: 'medium'
+        };
+        
+        // Update original sliders
         document.getElementById('chunkSize').value = 6;
         document.getElementById('chunkCols').value = 5;
         document.getElementById('chunkRows').value = 3;
         document.getElementById('tileSize').value = 16;
         
-        // Update labels
+        // Update original labels
         document.getElementById('chunkSizeValue').textContent = '6x6';
         document.getElementById('chunkColsValue').textContent = '5';
         document.getElementById('chunkRowsValue').textContent = '3';
         document.getElementById('tileSizeValue').textContent = '16px';
+        
+        // Update new island controls
+        document.getElementById('islandPreset').value = 'archipelago';
+        document.getElementById('landDensity').value = 35;
+        document.getElementById('iterations').value = 4;
+        document.getElementById('neighborThreshold').value = 4;
+        document.getElementById('archipelagoMode').checked = true;
+        document.getElementById('islandSize').value = 'medium';
+        
+        // Update new labels
+        document.getElementById('landDensityValue').textContent = '35%';
+        document.getElementById('iterationsValue').textContent = '4';
+        document.getElementById('neighborThresholdValue').textContent = '4';
+        document.getElementById('islandSizeValue').textContent = 'Medium';
         
         this.generateMap();
         this.renderMap();
@@ -291,7 +442,8 @@ class ChunkMapGenerator {
     
     exportToPNG() {
         const link = document.createElement('a');
-        link.download = `chunk-map-${this.settings.chunkCols}x${this.settings.chunkRows}-${Date.now()}.png`;
+        const presetName = this.islandSettings.preset;
+        link.download = `island-map-${presetName}-${this.settings.chunkCols}x${this.settings.chunkRows}-${Date.now()}.png`;
         link.href = this.canvas.toDataURL();
         link.click();
     }

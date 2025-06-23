@@ -62,6 +62,67 @@
             </div>
         </div>
 
+        <div class="island-config-panel card">
+            <div class="card__header">
+                <h2>🏝️ Island Generation Settings</h2>
+            </div>
+            <div class="card__body">
+                <div class="config-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="islandPreset">
+                            Preset: <span id="islandPresetValue">Archipelago</span>
+                        </label>
+                        <select id="islandPreset" class="form-control">
+                            <option value="oceanic">🌊 Oceanic (few small islands)</option>
+                            <option value="archipelago" selected>🏝️ Archipelago (island chains)</option>
+                            <option value="continental">🏔️ Continental (large landmasses)</option>
+                            <option value="scattered">⚡ Scattered (sparse islands)</option>
+                            <option value="custom">⚙️ Custom Settings</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="landDensity">
+                            Land density: <span id="landDensityValue">35%</span>
+                        </label>
+                        <input type="range" id="landDensity" class="form-control" min="10" max="70" value="35">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="iterations">
+                            Smoothing iterations: <span id="iterationsValue">4</span>
+                        </label>
+                        <input type="range" id="iterations" class="form-control" min="1" max="8" value="4">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="neighborThreshold">
+                            Neighbor threshold: <span id="neighborThresholdValue">4</span>
+                        </label>
+                        <input type="range" id="neighborThreshold" class="form-control" min="2" max="6" value="4">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="archipelagoMode">
+                            <span>Archipelago clustering</span>
+                        </label>
+                        <input type="checkbox" id="archipelagoMode" class="form-control" checked>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="islandSize">
+                            Island size: <span id="islandSizeValue">Medium</span>
+                        </label>
+                        <select id="islandSize" class="form-control">
+                            <option value="small">Small Islands</option>
+                            <option value="medium" selected>Medium Islands</option>
+                            <option value="large">Large Islands</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="map-container">
             <div class="map-info">
                 <div class="map-stats">
@@ -84,7 +145,7 @@
 
         <div class="legend card">
             <div class="card__header">
-                <h3>Legend</h3>
+                <h3>Legend & Presets Info</h3>
             </div>
             <div class="card__body">
                 <div class="legend-items">
@@ -96,6 +157,12 @@
                         <div class="legend-color island"></div>
                         <span>Island (1)</span>
                     </div>
+                </div>
+                <div class="preset-info">
+                    <p><strong>🌊 Oceanic:</strong> Vast oceans with small scattered islands, like Pacific atolls</p>
+                    <p><strong>🏝️ Archipelago:</strong> Island chains and clusters, like Caribbean or Greek islands</p>
+                    <p><strong>🏔️ Continental:</strong> Large landmasses with fewer water gaps, like Mediterranean</p>
+                    <p><strong>⚡ Scattered:</strong> Sparse, isolated islands in open ocean</p>
                 </div>
             </div>
         </div>
@@ -129,7 +196,7 @@
     </script>
     
     <!-- Load Island Generator Lua file -->
-    <script src="island_generator.lua?v=3" type="application/lua"></script>
+    <script src="island_generator.lua?v=4" type="application/lua"></script>
     
     <script src="app.js"></script>
 </body>

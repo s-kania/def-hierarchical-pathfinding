@@ -1,4 +1,3 @@
-
 :root {
   /* Colors */
   --color-background: rgba(252, 252, 249, 1);
@@ -670,7 +669,18 @@ select.form-control {
 }
 
 .config-panel {
+  margin-bottom: var(--space-24);
+}
+
+/* New island config panel */
+.island-config-panel {
   margin-bottom: var(--space-32);
+}
+
+.island-config-panel .card__header h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
 }
 
 .config-grid {
@@ -689,6 +699,42 @@ select.form-control {
 
 .config-buttons .btn {
   min-width: 140px;
+}
+
+/* Enhanced form controls */
+.form-control {
+  width: 100%;
+  padding: var(--space-8);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-alpha);
+}
+
+/* Select styling */
+select.form-control {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 8px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 32px;
+}
+
+/* Checkbox styling */
+input[type="checkbox"].form-control {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
 }
 
 /* Range input styling */
@@ -780,7 +826,7 @@ input[type="range"]::-moz-range-thumb:hover {
 }
 
 .legend {
-  max-width: 400px;
+  max-width: 600px;
   margin: 0 auto;
 }
 
@@ -789,6 +835,7 @@ input[type="range"]::-moz-range-thumb:hover {
   justify-content: center;
   gap: var(--space-24);
   flex-wrap: wrap;
+  margin-bottom: var(--space-16);
 }
 
 .legend-item {
@@ -812,16 +859,59 @@ input[type="range"]::-moz-range-thumb:hover {
   background-color: #228b22;
 }
 
+/* Preset info styling */
+.preset-info {
+  background: var(--color-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-16);
+  margin-top: var(--space-16);
+}
+
+.preset-info p {
+  margin: var(--space-8) 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+}
+
+.preset-info p:first-child {
+  margin-top: 0;
+}
+
+.preset-info p:last-child {
+  margin-bottom: 0;
+}
+
+.preset-info strong {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
 /* Form label enhancement */
 .form-label {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: var(--space-8);
+  font-weight: var(--font-weight-medium);
 }
 
 .form-label span {
   font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
+}
+
+/* Enhanced card styling */
+.config-panel.card {
+  box-shadow: var(--shadow-md);
+}
+
+.island-config-panel.card {
+  box-shadow: var(--shadow-md);
+  border: 2px solid var(--color-primary-alpha);
+}
+
+.legend.card {
+  box-shadow: var(--shadow-sm);
 }
 
 /* Responsive adjustments */
@@ -847,6 +937,10 @@ input[type="range"]::-moz-range-thumb:hover {
   .legend-items {
     gap: var(--space-16);
   }
+  
+  .preset-info {
+    padding: var(--space-12);
+  }
 }
 
 @media (max-width: 480px) {
@@ -861,6 +955,10 @@ input[type="range"]::-moz-range-thumb:hover {
   
   .map-stats {
     flex-direction: column;
+    gap: var(--space-12);
+  }
+  
+  .config-grid {
     gap: var(--space-12);
   }
 }
@@ -907,13 +1005,4 @@ input[type="range"]::-moz-range-thumb:hover {
 
 .btn--primary:hover {
   box-shadow: var(--shadow-md);
-}
-
-/* Enhanced card styling */
-.config-panel.card {
-  box-shadow: var(--shadow-md);
-}
-
-.legend.card {
-  box-shadow: var(--shadow-sm);
 }
