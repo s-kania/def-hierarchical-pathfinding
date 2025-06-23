@@ -102,7 +102,15 @@
     </div>
 
     <!-- Fengari Lua in Browser -->
-    <script src="https://cdn.jsdelivr.net/npm/fengari-web@0.1.4/dist/fengari-web.js"></script>
+    <script src="fengari-web.js"></script>
+    
+    <!-- Test if Fengari loaded -->
+    <script>
+        console.log('Fengari available:', typeof fengari !== 'undefined');
+        if (typeof fengari !== 'undefined') {
+            console.log('Fengari version:', fengari);
+        }
+    </script>
     
     <!-- Lua Script Example -->
     <script type="application/lua">
@@ -121,7 +129,7 @@
     </script>
     
     <!-- Load Island Generator Lua file -->
-    <script src="island_generator.lua" type="application/lua" async></script>
+    <script src="island_generator.lua?v=3" type="application/lua"></script>
     
     <script src="app.js"></script>
 </body>

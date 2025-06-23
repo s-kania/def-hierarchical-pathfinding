@@ -104,13 +104,50 @@ class ChunkMapGenerator {
         const size = this.settings.chunkSize;
         
         // Use Lua island generator if available
-        if (window.LuaIslandGenerator) {
-            console.log('Using Lua island generator');
-            return window.LuaIslandGenerator.generateChunkTilesForJS(size);
+        if (window.LuaIslandGenerator && window.LuaIslandGenerator.ready) {
+            console.log('🔍 Testing Lua functions...');
+            
+            try {
+                // First test simple function
+                if (window.LuaIslandGenerator.testFunction) {
+                    console.log('Calling testFunction with size:', 3);
+                    const testResult = window.LuaIslandGenerator.testFunction(3);
+                    console.log('Lua test function result:', testResult);
+                    console.log('Test result type:', typeof testResult);
+                    console.log('Test result length:', testResult?.length);
+                    console.log('Test result constructor:', testResult?.constructor?.name);
+                } else {
+                    console.log('❌ testFunction not available');
+                }
+                
+                console.log('Calling generateChunkTilesForJS with size:', size);
+                const result = window.LuaIslandGenerator.generateChunkTilesForJS(size);
+                console.log('Lua generator raw result:', result, 'type:', typeof result, 'length:', result?.length);
+                
+                // Check if result is valid
+                if (result && Array.isArray(result) && result.length === size * size) {
+                    console.log('✓ Using Lua generator successfully');
+                    return result;
+                } else if (result && result.length === size * size) {
+                    // Convert to proper array if it's array-like
+                    console.log('✓ Converting Lua result to JS array');
+                    return Array.from(result);
+                } else {
+                    console.warn('Lua generator returned invalid result:', result, 'Expected length:', size * size);
+                }
+            } catch (error) {
+                console.error('Lua generator failed with error:', error);
+                console.error('Error stack:', error.stack);
+            }
+        } else {
+            console.log('❌ LuaIslandGenerator not ready:', {
+                exists: !!window.LuaIslandGenerator,
+                ready: window.LuaIslandGenerator?.ready
+            });
         }
         
         // Fallback to JavaScript implementation
-        console.log('Using JavaScript fallback for island generation');
+        console.log('⚠️ Using JavaScript fallback for island generation');
         let tiles = [];
         
         // Initial random generation - 45% chance for island
@@ -282,5 +319,8 @@ class ChunkMapGenerator {
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new ChunkMapGenerator();
+    // Wait a bit for Lua to load, then initialize
+    setTimeout(() => {
+        new ChunkMapGenerator();
+    }, 100);
 });
