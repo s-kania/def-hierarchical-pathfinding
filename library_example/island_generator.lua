@@ -10,7 +10,6 @@ local IslandGenerator = {}
 function IslandGenerator.testFunction(size)
     -- Convert JS argument to Lua number
     local luaSize = tonumber(size) or 3
-    print("testFunction called with size:", size, "converted to:", luaSize)
     
     -- Create proper JavaScript Array
     local jsArray = js.new(js.global.Array)
@@ -19,18 +18,16 @@ function IslandGenerator.testFunction(size)
         jsArray:push(value)
     end
     
-    print("testFunction returning array with length:", jsArray.length)
     return jsArray
 end
 
 -- Generate tiles for a single chunk using cellular automata
 function IslandGenerator.generateChunkTiles(chunkSize)
-    local size = chunkSize or 6
+    local size = tonumber(chunkSize) or 6
     local tiles = {}
     
     -- Debug: ensure we have a valid size
     if size <= 0 or size > 20 then
-        print("Invalid chunk size:", size)
         return nil
     end
     
@@ -42,7 +39,6 @@ function IslandGenerator.generateChunkTiles(chunkSize)
     
     -- Debug: check if tiles were created
     if #tiles == 0 then
-        print("No tiles generated!")
         return nil
     end
     
@@ -50,7 +46,6 @@ function IslandGenerator.generateChunkTiles(chunkSize)
     for iteration = 1, 4 do
         tiles = IslandGenerator.applyCellularAutomata(tiles, size)
         if not tiles then
-            print("applyCellularAutomata returned nil at iteration", iteration)
             return nil
         end
     end
@@ -61,7 +56,6 @@ end
 -- Apply cellular automata rules
 function IslandGenerator.applyCellularAutomata(tiles, size)
     if not tiles or size <= 0 then
-        print("Invalid parameters for applyCellularAutomata")
         return nil
     end
     
@@ -113,7 +107,6 @@ end
 function IslandGenerator.generateChunkTilesSimple(chunkSize)
     -- Convert JS argument to Lua number
     local size = tonumber(chunkSize) or 6
-    print("generateChunkTilesSimple called with chunkSize:", chunkSize, "converted to:", size)
     
     -- Create proper JavaScript Array
     local jsArray = js.new(js.global.Array)
@@ -127,7 +120,6 @@ function IslandGenerator.generateChunkTilesSimple(chunkSize)
         jsArray:push(value)
     end
     
-    print("generateChunkTilesSimple returning array with length:", jsArray.length)
     return jsArray
 end
 
@@ -135,12 +127,10 @@ end
 function IslandGenerator.generateChunkTilesForJS(chunkSize)
     -- Convert JS argument to Lua number
     local size = tonumber(chunkSize) or 6
-    print("generateChunkTilesForJS called with chunkSize:", chunkSize, "converted to:", size)
     
     -- Use simple version that creates proper JS array
     local result = IslandGenerator.generateChunkTilesSimple(size)
     
-    print("generateChunkTilesForJS returning:", result)
     return result
 end
 
@@ -158,5 +148,4 @@ js.global.LuaIslandGenerator.applyCellularAutomata = IslandGenerator.applyCellul
 js.global.LuaIslandGenerator.countNeighbors = IslandGenerator.countNeighbors
 js.global.LuaIslandGenerator.ready = true
 
-print("Island Generator Lua module loaded!")
-print("Island Generator functions exported to JavaScript as 'LuaIslandGenerator'") 
+print("✓ Lua Island Generator module loaded successfully") 
