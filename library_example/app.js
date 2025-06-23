@@ -787,5 +787,14 @@ class ChunkMapGenerator {
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new ChunkMapGenerator();
+    // Utwórz instancję i udostępnij globalnie dla konsoli deweloperskiej
+    window.mapGenerator = new ChunkMapGenerator();
+    
+    // DOSTĘP Z KONSOLI:
+    // window.mapGenerator.chunks - array chunków
+    // window.mapGenerator.baseMap - bazowa mapa  
+    // window.mapGenerator.settings - ustawienia
+    // window.mapGenerator.islandSettings - parametry wysp
+    console.log('🎮 MapGenerator dostępny jako window.mapGenerator');
+    console.log('📖 Spróbuj: window.mapGenerator.chunks');
 });
