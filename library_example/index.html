@@ -1,48 +1,48 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa Chunków - Generator Wysp</title>
+    <title>Chunk Map - Island Generator</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
-            <h1>Mapa Chunków - Generator Wysp</h1>
-            <p>Skonfiguruj i wygeneruj mapę chunków z wyspami dla swojej gry</p>
+            <h1>Chunk Map - Island Generator</h1>
+            <p>Configure and generate a chunk map with islands for your game</p>
         </header>
 
         <div class="config-panel card">
             <div class="card__header">
-                <h2>Konfiguracja Mapy</h2>
+                <h2>Map Configuration</h2>
             </div>
             <div class="card__body">
                 <div class="config-grid">
                     <div class="form-group">
                         <label class="form-label" for="chunkSize">
-                            Rozmiar chunka: <span id="chunkSizeValue">6x6</span>
+                            Chunk size: <span id="chunkSizeValue">6x6</span>
                         </label>
                         <input type="range" id="chunkSize" class="form-control" min="4" max="16" value="6">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="chunkCols">
-                            Kolumny chunków: <span id="chunkColsValue">5</span>
+                            Chunk columns: <span id="chunkColsValue">5</span>
                         </label>
                         <input type="range" id="chunkCols" class="form-control" min="3" max="8" value="5">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="chunkRows">
-                            Wiersze chunków: <span id="chunkRowsValue">3</span>
+                            Chunk rows: <span id="chunkRowsValue">3</span>
                         </label>
                         <input type="range" id="chunkRows" class="form-control" min="2" max="5" value="3">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="tileSize">
-                            Rozmiar kafelka: <span id="tileSizeValue">16px</span>
+                            Tile size: <span id="tileSizeValue">16px</span>
                         </label>
                         <input type="range" id="tileSize" class="form-control" min="8" max="32" value="16">
                     </div>
@@ -50,13 +50,13 @@
 
                 <div class="config-buttons">
                     <button class="btn btn--primary" id="regenerateBtn">
-                        🔄 Regeneruj Mapę
+                        🔄 Regenerate Map
                     </button>
                     <button class="btn btn--secondary" id="resetBtn">
-                        ↺ Resetuj Ustawienia
+                        ↺ Reset Settings
                     </button>
                     <button class="btn btn--outline" id="exportBtn">
-                        📥 Eksportuj PNG
+                        📥 Export PNG
                     </button>
                 </div>
             </div>
@@ -66,15 +66,15 @@
             <div class="map-info">
                 <div class="map-stats">
                     <div class="stat">
-                        <span class="stat-label">Chunków:</span>
+                        <span class="stat-label">Chunks:</span>
                         <span id="totalChunks">15</span>
                     </div>
                     <div class="stat">
-                        <span class="stat-label">Całkowite kafelki:</span>
+                        <span class="stat-label">Total tiles:</span>
                         <span id="totalTiles">540</span>
                     </div>
                     <div class="stat">
-                        <span class="stat-label">Wyspy:</span>
+                        <span class="stat-label">Islands:</span>
                         <span id="islandPercentage">0%</span>
                     </div>
                 </div>
@@ -84,7 +84,7 @@
 
         <div class="legend card">
             <div class="card__header">
-                <h3>Legenda</h3>
+                <h3>Legend</h3>
             </div>
             <div class="card__body">
                 <div class="legend-items">
@@ -94,7 +94,7 @@
                     </div>
                     <div class="legend-item">
                         <div class="legend-color island"></div>
-                        <span>Wyspa (1)</span>
+                        <span>Island (1)</span>
                     </div>
                 </div>
             </div>
