@@ -864,7 +864,12 @@ input[type="range"]::-moz-range-thumb:hover {
   border-radius: 50%;
 }
 
-
+.legend-color.transition-point.active {
+  background-color: #ff6b6b;
+  border: 2px solid #00ff00;
+  border-radius: 50%;
+  transform: scale(1.2);
+}
 
 #mapCanvas {
   cursor: default;
@@ -946,6 +951,11 @@ input[type="range"]::-moz-range-thumb:hover {
   color: #ff6b6b;
   font-size: var(--font-size-lg);
   margin: 0;
+  transition: color 0.3s ease;
+}
+
+.transition-point-inspector.has-selection .card__header h3 {
+  color: #00aa00;
 }
 
 .transition-details {
@@ -986,6 +996,13 @@ input[type="range"]::-moz-range-thumb:hover {
   background: var(--color-secondary);
   border-radius: var(--radius-sm);
   border-left: 3px solid #ff6b6b;
+  transition: border-left-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Style dla aktywnego punktu przejścia */
+#selectedPointInfo.has-selection .info-item {
+  border-left-color: #00ff00;
+  box-shadow: 0 0 0 1px #00ff0033;
 }
 
 .info-label {

@@ -87,6 +87,7 @@ class ChunkMapGenerator {
         this.ctx = null;                           // Canvas context 2D
         this.inspectorPanel = null;                 // Inspector punktów przejścia
         this.hoveredPoint = null;                   // Aktualnie najechany punkt przejścia
+        this.selectedPoint = null;                  // Ostatnio kliknięty punkt przejścia (aktywny)
         
         // DANE MAPY:
         this.baseMap = null;                       // Array: bazowa mapa przed smoothing [0,1,0,1...]
@@ -266,6 +267,9 @@ class ChunkMapGenerator {
             if (!e.target.checked) {
                 this.hideInspector(); // Ukryj inspector gdy punkty są ukryte
                 this.canvas.classList.remove('pointer-cursor');
+                // Reset zaznaczenia gdy punkty są ukryte
+                this.selectedPoint = null;
+                this.hoveredPoint = null;
             }
             this.renderMap(); // Tylko re-render
         });
@@ -298,7 +302,13 @@ class ChunkMapGenerator {
                 // Mysz nie nad punktem
                 this.hoveredPoint = null;
                 this.canvas.classList.remove('pointer-cursor');
-                this.hideInspector();
+                
+                // Jeśli jest aktywny punkt, pokaż go, w przeciwnym razie ukryj inspektor
+                if (this.selectedPoint) {
+                    this.showInspector(this.selectedPoint);
+                } else {
+                    this.hideInspector();
+                }
             }
         });
         
@@ -306,14 +316,37 @@ class ChunkMapGenerator {
         this.canvas.addEventListener('mouseleave', () => {
             this.hoveredPoint = null;
             this.canvas.classList.remove('pointer-cursor');
-            this.hideInspector();
+            // Nie ukrywaj inspektora jeśli jest zaznaczony punkt
+            if (!this.selectedPoint) {
+                this.hideInspector();
+            }
         });
         
-        // Opcjonalnie: obsługa kliknięcia (np. do kopiowania danych do konsoli)
+        // Obsługa kliknięcia na punkt przejścia
         this.canvas.addEventListener('click', (e) => {
-            if (this.hoveredPoint) {
-                console.log('🧭 Kliknięto punkt przejścia:', this.hoveredPoint);
-                // Można dodać inne akcje, np. kopiowanie do schowka
+            if (!this.pathfindingSettings.showTransitionPoints) return;
+            
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const clickedPoint = this.getTransitionPointAt(mouseX, mouseY);
+            
+            if (clickedPoint) {
+                // Ustaw kliknięty punkt jako aktywny
+                this.selectedPoint = clickedPoint;
+                console.log('🧭 Kliknięto punkt przejścia:', clickedPoint);
+                
+                // Pokaż inspektor z danymi aktywnego punktu
+                this.showInspector(clickedPoint);
+                
+                // Odśwież render aby pokazać aktywny punkt
+                this.renderMap();
+            } else {
+                // Kliknięto poza punktem - usuń zaznaczenie
+                this.selectedPoint = null;
+                this.hideInspector();
+                this.renderMap();
             }
         });
     }
@@ -369,6 +402,32 @@ class ChunkMapGenerator {
         
         if (noSelection) noSelection.style.display = 'none';
         if (pointInfo) pointInfo.classList.remove('hidden');
+        
+        // Aktualizuj style gdy pokazujemy aktywny punkt
+        const isShowingSelectedPoint = this.selectedPoint && 
+            this.selectedPoint.chunkA === point.chunkA && 
+            this.selectedPoint.chunkB === point.chunkB && 
+            this.selectedPoint.x === point.x && 
+            this.selectedPoint.y === point.y;
+        
+        // Style dla elementów danych punktu
+        if (pointInfo) {
+            if (isShowingSelectedPoint) {
+                pointInfo.classList.add('has-selection');
+            } else {
+                pointInfo.classList.remove('has-selection');
+            }
+        }
+        
+        // Style dla nagłówka inspektora (tylko napis)
+        const inspectorCard = this.inspectorPanel.closest('.transition-point-inspector');
+        if (inspectorCard) {
+            if (isShowingSelectedPoint) {
+                inspectorCard.classList.add('has-selection');
+            } else {
+                inspectorCard.classList.remove('has-selection');
+            }
+        }
     }
     
     /**
@@ -377,12 +436,28 @@ class ChunkMapGenerator {
     hideInspector() {
         if (!this.inspectorPanel) return;
         
+        // Jeśli jest zaznaczony punkt, pokaż jego dane zamiast ukrywać inspektor
+        if (this.selectedPoint) {
+            this.showInspector(this.selectedPoint);
+            return;
+        }
+        
         // Ukryj info punktu, pokaż placeholder
         const noSelection = this.inspectorPanel.querySelector('.no-selection');
         const pointInfo = document.getElementById('selectedPointInfo');
         
         if (noSelection) noSelection.style.display = 'flex';
-        if (pointInfo) pointInfo.classList.add('hidden');
+        if (pointInfo) {
+            pointInfo.classList.add('hidden');
+            // Usuń styl zaznaczenia z elementu danych punktu
+            pointInfo.classList.remove('has-selection');
+        }
+        
+        // Usuń styl zaznaczenia z całej karty
+        const inspectorCard = this.inspectorPanel.closest('.transition-point-inspector');
+        if (inspectorCard) {
+            inspectorCard.classList.remove('has-selection');
+        }
     }
     
     updatePresetValues() {
@@ -480,7 +555,7 @@ class ChunkMapGenerator {
             return;
         }
         
-        console.log('�� Applying smoothing to existing map...');
+        console.log('Applying smoothing to existing map...');
         
         // KROK 1: Aplikuj smoothing do istniejącej this.baseMap
         // INPUT: this.baseMap (niezmieniona), OUTPUT: finalMap
@@ -1070,31 +1145,41 @@ class ChunkMapGenerator {
 
             const pixelX = point.pixelX;
             const pixelY = point.pixelY;
+            
+            // Sprawdź czy punkt jest aktywny (zaznaczony)
+            const isActive = this.selectedPoint && 
+                           this.selectedPoint.chunkA === point.chunkA && 
+                           this.selectedPoint.chunkB === point.chunkB && 
+                           this.selectedPoint.x === point.x && 
+                           this.selectedPoint.y === point.y;
+            
+            // Dostosuj rozmiar dla aktywnego punktu
+            const currentRadius = isActive ? pointRadius * 1.5 : pointRadius;
 
             // Narysuj punkt przejścia jako koło z lepszą widocznością
             
             // Zewnętrzne obramowanie (cień)
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             this.ctx.beginPath();
-            this.ctx.arc(pixelX + 1, pixelY + 1, pointRadius + 1, 0, 2 * Math.PI);
+            this.ctx.arc(pixelX + 1, pixelY + 1, currentRadius + 1, 0, 2 * Math.PI);
             this.ctx.fill();
             
             // Główny punkt przejścia
             this.ctx.fillStyle = this.colors.transitionPoint;
             this.ctx.beginPath();
-            this.ctx.arc(pixelX, pixelY, pointRadius, 0, 2 * Math.PI);
+            this.ctx.arc(pixelX, pixelY, currentRadius, 0, 2 * Math.PI);
             this.ctx.fill();
             
-            // Białe obramowanie
-            this.ctx.strokeStyle = '#ffffff';
-            this.ctx.lineWidth = Math.max(2, pointRadius / 3);
+            // Obramowanie - zielone dla aktywnego punktu, białe dla zwykłego
+            this.ctx.strokeStyle = isActive ? '#00ff00' : '#ffffff';
+            this.ctx.lineWidth = Math.max(2, currentRadius / 3);
             this.ctx.stroke();
             
             // Wewnętrzny punkt dla lepszej widoczności
-            if (pointRadius >= 8) {
+            if (currentRadius >= 8) {
                 this.ctx.fillStyle = '#ffffff';
                 this.ctx.beginPath();
-                this.ctx.arc(pixelX, pixelY, Math.max(2, pointRadius / 4), 0, 2 * Math.PI);
+                this.ctx.arc(pixelX, pixelY, Math.max(2, currentRadius / 4), 0, 2 * Math.PI);
                 this.ctx.fill();
             }
         });
@@ -1191,6 +1276,10 @@ class ChunkMapGenerator {
             showTransitionPoints: true,
             transitionPointScale: 1.0
         };
+        
+        // Reset selected and hovered points
+        this.selectedPoint = null;
+        this.hoveredPoint = null;
         
         // Update original sliders
         document.getElementById('chunkSize').value = 6;
