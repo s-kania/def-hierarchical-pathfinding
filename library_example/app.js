@@ -279,6 +279,18 @@ class ChunkMapGenerator {
      * KONFIGURUJE INTERAKTYWNOŚĆ CANVAS (tooltip i cursor)
      */
     setupCanvasInteractivity() {
+        // Funkcja pomocnicza do konwersji współrzędnych myszy na rzeczywiste współrzędne canvas
+        const getCanvasCoordinates = (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const scaleX = this.canvas.width / rect.width;
+            const scaleY = this.canvas.height / rect.height;
+            
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
+            
+            return { mouseX, mouseY, rect, scaleX, scaleY };
+        };
+        
         // Obsługa ruchu myszy nad canvas
         this.canvas.addEventListener('mousemove', (e) => {
             if (!this.pathfindingSettings.showTransitionPoints) {
@@ -286,11 +298,14 @@ class ChunkMapGenerator {
                 return;
             }
             
-            const rect = this.canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
+            const { mouseX, mouseY, rect, scaleX, scaleY } = getCanvasCoordinates(e);
             
-            // Znajdź punkt przejścia pod kursorem
+            // Debug log dla dużych map
+            if (this.settings.chunkSize > 8 && Math.random() < 0.005) { // Log tylko 0.5% eventów mousemove
+                console.log(`🐭 Mouse SCALED: (${mouseX.toFixed(1)}, ${mouseY.toFixed(1)}), canvas: ${this.canvas.width}x${this.canvas.height}, display: ${rect.width.toFixed(1)}x${rect.height.toFixed(1)}, scale: ${scaleX.toFixed(2)}x${scaleY.toFixed(2)}`);
+            }
+            
+            // Znajdź punkt przejścia pod kursorem (używając przeskalowanych współrzędnych)
             const hoveredPoint = this.getTransitionPointAt(mouseX, mouseY);
             
             if (hoveredPoint) {
@@ -326,9 +341,12 @@ class ChunkMapGenerator {
         this.canvas.addEventListener('click', (e) => {
             if (!this.pathfindingSettings.showTransitionPoints) return;
             
-            const rect = this.canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
+            const { mouseX, mouseY } = getCanvasCoordinates(e);
+            
+            // Debug log dla kliknięć
+            if (this.settings.chunkSize > 8) {
+                console.log(`🖱️ Click SCALED: (${mouseX.toFixed(1)}, ${mouseY.toFixed(1)})`);
+            }
             
             const clickedPoint = this.getTransitionPointAt(mouseX, mouseY);
             
@@ -336,6 +354,7 @@ class ChunkMapGenerator {
                 // Ustaw kliknięty punkt jako aktywny
                 this.selectedPoint = clickedPoint;
                 console.log('🧭 Kliknięto punkt przejścia:', clickedPoint);
+                console.log(`   Pixel position: (${clickedPoint.pixelX}, ${clickedPoint.pixelY})`);
                 
                 // Pokaż inspektor z danymi aktywnego punktu
                 this.showInspector(clickedPoint);
@@ -354,28 +373,48 @@ class ChunkMapGenerator {
     /**
      * ZNAJDUJE PUNKT PRZEJŚCIA POD WSPÓŁRZĘDNYMI MYSZY
      * 
-     * @param {number} mouseX - Pozycja X myszy względem canvas
-     * @param {number} mouseY - Pozycja Y myszy względem canvas
+     * @param {number} mouseX - Pozycja X myszy względem canvas (już przeskalowana)
+     * @param {number} mouseY - Pozycja Y myszy względem canvas (już przeskalowana)
      * @returns {Object|null} Punkt przejścia lub null
      */
     getTransitionPointAt(mouseX, mouseY) {
-        const baseRadius = Math.max(6, this.settings.tileSize / 3);
+        const baseRadius = Math.max(8, this.settings.tileSize / 2);
         const pointRadius = baseRadius * this.pathfindingSettings.transitionPointScale;
+        
+        // Stała tolerancja - prostsza i bardziej przewidywalna
+        const tolerance = Math.max(20, pointRadius * 1.5);
+        
+        // Znajdź najbliższy punkt przejścia
+        let closestPoint = null;
+        let closestDistance = Infinity;
         
         for (const point of this.transitionPoints) {
             // Użyj pre-obliczonych współrzędnych pikseli
-            if (!point.pixelX || !point.pixelY) continue;
+            if (typeof point.pixelX !== 'number' || typeof point.pixelY !== 'number') {
+                console.warn(`⚠️ Point missing pixel coordinates:`, point);
+                continue;
+            }
 
-            // Zwiększona tolerancja wykrywania - skaluje się z rozmiarem mapy i tile
-            const hitboxRadius = Math.max(12, pointRadius + this.settings.tileSize / 2);
+            // Oblicz odległość od myszy do punktu
             const distance = Math.sqrt((mouseX - point.pixelX) ** 2 + (mouseY - point.pixelY) ** 2);
             
-            if (distance <= hitboxRadius) {
-                return point;
+            // Debug log dla wszystkich punktów w tolerancji
+            if (distance <= tolerance) {
+                console.log(`🎯 Point in range: distance=${distance.toFixed(1)}, tolerance=${tolerance.toFixed(1)}, point=(${point.pixelX.toFixed(1)}, ${point.pixelY.toFixed(1)}), mouse=(${mouseX.toFixed(1)}, ${mouseY.toFixed(1)})`);
+            }
+            
+            // Sprawdź czy punkt jest w tolerancji i czy jest bliższy od poprzedniego
+            if (distance <= tolerance && distance < closestDistance) {
+                closestPoint = point;
+                closestDistance = distance;
             }
         }
         
-        return null;
+        if (closestPoint) {
+            console.log(`✅ Found closest point at distance ${closestDistance.toFixed(1)}: (${closestPoint.pixelX}, ${closestPoint.pixelY})`);
+        }
+        
+        return closestPoint;
     }
     
     /**
@@ -913,6 +952,9 @@ class ChunkMapGenerator {
         }
         
         console.log(`✓ Generated ${this.transitionPoints.length} transition points`);
+        
+        // WAŻNE: Oblicz współrzędne pikseli natychmiast po generowaniu punktów
+        this.calculateTransitionPointPixels();
     }
     
     /**
@@ -1074,6 +1116,11 @@ class ChunkMapGenerator {
         this.canvas.width = totalWidth + 40; // Extra padding
         this.canvas.height = totalHeight + 40;
         
+        // Debug log dla dużych map
+        if (this.settings.chunkSize > 8) {
+            console.log(`🖼️ Rendering map: ${this.settings.chunkCols}x${this.settings.chunkRows} chunks, ${this.settings.chunkSize}x${this.settings.chunkSize} tiles, canvas: ${this.canvas.width}x${this.canvas.height}`);
+        }
+        
         // Wyczyść canvas (tło)
         this.ctx.fillStyle = this.colors.chunkBackground;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -1083,11 +1130,16 @@ class ChunkMapGenerator {
             this.renderChunk(chunk, gapSize);
         });
         
-        // Oblicz pozycje pikseli punktów przejścia przed renderowaniem
+        // WAŻNE: Zawsze oblicz pozycje pikseli punktów przejścia przed renderowaniem
         this.calculateTransitionPointPixels();
 
         // Renderuj punkty przejścia jeśli włączone
         if (this.pathfindingSettings.showTransitionPoints) {
+            // Pojedynczy log dla większych map
+            if (this.settings.chunkSize > 8) {
+                console.log(`🔴 Rendering ${this.transitionPoints.length} transition points`);
+            }
+            
             this.renderTransitionPoints(gapSize);
         }
     }
@@ -1198,21 +1250,34 @@ class ChunkMapGenerator {
 
         this.transitionPoints.forEach(point => {
             const chunkAData = this.chunks.find(c => c.id === point.chunkA);
-            if (!chunkAData) return;
+            const chunkBData = this.chunks.find(c => c.id === point.chunkB);
+            
+            if (!chunkAData || !chunkBData) return;
 
             let pixelX, pixelY;
 
             if (point.direction === 'horizontal') {
+                // Dla punktów poziomych - pozycja na prawej granicy chunk A
                 const chunkStartX = 20 + chunkAData.x * (chunkPixelSize + gapSize);
                 const chunkStartY = 20 + chunkAData.y * (chunkPixelSize + gapSize);
                 
+                // Pozycja X - na granicy między chunkami (na końcu chunk A)
                 pixelX = chunkStartX + chunkPixelSize;
-                pixelY = chunkStartY + (point.y - chunkAData.y * this.settings.chunkSize) * this.settings.tileSize + this.settings.tileSize / 2;
+                
+                // Pozycja Y - relatywna do chunk A, konwertowana na pozycję lokalną w chunku
+                const localYInChunk = point.y % this.settings.chunkSize;
+                pixelY = chunkStartY + localYInChunk * this.settings.tileSize + this.settings.tileSize / 2;
+                
             } else if (point.direction === 'vertical') {
+                // Dla punktów pionowych - pozycja na dolnej granicy chunk A
                 const chunkStartX = 20 + chunkAData.x * (chunkPixelSize + gapSize);
                 const chunkStartY = 20 + chunkAData.y * (chunkPixelSize + gapSize);
                 
-                pixelX = chunkStartX + (point.x - chunkAData.x * this.settings.chunkSize) * this.settings.tileSize + this.settings.tileSize / 2;
+                // Pozycja X - relatywna do chunk A, konwertowana na pozycję lokalną w chunku
+                const localXInChunk = point.x % this.settings.chunkSize;
+                pixelX = chunkStartX + localXInChunk * this.settings.tileSize + this.settings.tileSize / 2;
+                
+                // Pozycja Y - na granicy między chunkami (na końcu chunk A)
                 pixelY = chunkStartY + chunkPixelSize;
             }
 
@@ -1220,6 +1285,11 @@ class ChunkMapGenerator {
             point.pixelX = pixelX;
             point.pixelY = pixelY;
         });
+        
+        // Pojedynczy log podsumowujący dla większych map
+        if (this.settings.chunkSize > 8) {
+            console.log(`📍 Calculated pixel positions for ${this.transitionPoints.length} transition points`);
+        }
     }
     
     /**
