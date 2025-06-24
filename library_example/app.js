@@ -326,34 +326,16 @@ class ChunkMapGenerator {
      * @returns {Object|null} Punkt przejścia lub null
      */
     getTransitionPointAt(mouseX, mouseY) {
-        const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
-        const gapSize = 4;
         const baseRadius = Math.max(6, this.settings.tileSize / 3);
         const pointRadius = baseRadius * this.pathfindingSettings.transitionPointScale;
         
         for (const point of this.transitionPoints) {
-            const chunkAData = this.chunks.find(c => c.id === point.chunkA);
-            if (!chunkAData) continue;
-            
-            let pixelX, pixelY;
-            
-            if (point.direction === 'horizontal') {
-                const chunkStartX = 20 + chunkAData.x * (chunkPixelSize + gapSize);
-                const chunkStartY = 20 + chunkAData.y * (chunkPixelSize + gapSize);
-                
-                pixelX = chunkStartX + chunkPixelSize;
-                pixelY = chunkStartY + (point.y - chunkAData.y * this.settings.chunkSize) * this.settings.tileSize + this.settings.tileSize / 2;
-            } else if (point.direction === 'vertical') {
-                const chunkStartX = 20 + chunkAData.x * (chunkPixelSize + gapSize);
-                const chunkStartY = 20 + chunkAData.y * (chunkPixelSize + gapSize);
-                
-                pixelX = chunkStartX + (point.x - chunkAData.x * this.settings.chunkSize) * this.settings.tileSize + this.settings.tileSize / 2;
-                pixelY = chunkStartY + chunkPixelSize;
-            }
-            
+            // Użyj pre-obliczonych współrzędnych pikseli
+            if (!point.pixelX || !point.pixelY) continue;
+
             // Zwiększona tolerancja wykrywania - skaluje się z rozmiarem mapy i tile
             const hitboxRadius = Math.max(12, pointRadius + this.settings.tileSize / 2);
-            const distance = Math.sqrt((mouseX - pixelX) ** 2 + (mouseY - pixelY) ** 2);
+            const distance = Math.sqrt((mouseX - point.pixelX) ** 2 + (mouseY - point.pixelY) ** 2);
             
             if (distance <= hitboxRadius) {
                 return point;
@@ -439,6 +421,8 @@ class ChunkMapGenerator {
      * 2. Generuje bazową mapę -> this.baseMap (Array[width*height])
      * 3. Aplikuje smoothing -> finalMap
      * 4. Dzieli na chunki -> this.chunks (Array[{id, x, y, tiles}])
+     * 5. Generuj punkty przejścia między chunkami
+     * 6. Oblicz pozycje pikseli dla punktów przejścia
      * 
      * WYNIK: this.baseMap, this.chunks, this.mapDimensions są zaktualizowane
      */
@@ -468,6 +452,9 @@ class ChunkMapGenerator {
         // OUTPUT: this.transitionPoints = [{chunkA, chunkB, x, y, direction}, ...]
         this.generateTransitionPoints();
         
+        // KROK 5: Oblicz pozycje pikseli dla punktów przejścia
+        this.calculateTransitionPointPixels();
+        
         console.log(`✓ Generated ${this.chunks.length} chunks from unified map`);
     }
     
@@ -481,6 +468,8 @@ class ChunkMapGenerator {
      * 1. Sprawdza czy this.baseMap istnieje
      * 2. Aplikuje smoothing do this.baseMap -> finalMap  
      * 3. Dzieli finalMap na chunki -> aktualizuje this.chunks
+     * 4. Generuj punkty przejścia między chunkami
+     * 5. Oblicz pozycje pikseli dla punktów przejścia
      * 
      * SZYBKIE: nie regeneruje this.baseMap, tylko przetwarza istniejące dane
      */
@@ -491,7 +480,7 @@ class ChunkMapGenerator {
             return;
         }
         
-        console.log('🎨 Applying smoothing to existing map...');
+        console.log('�� Applying smoothing to existing map...');
         
         // KROK 1: Aplikuj smoothing do istniejącej this.baseMap
         // INPUT: this.baseMap (niezmieniona), OUTPUT: finalMap
@@ -501,6 +490,10 @@ class ChunkMapGenerator {
         // INPUT: finalMap, OUTPUT: this.chunks (nowe chunki)
         this.chunks = this.splitMapIntoChunks(finalMap, this.mapDimensions.width, this.mapDimensions.height);
         
+        // ZAKTUALIZUJ PUNKTY PRZEJŚCIA I ICH POZYCJE
+        this.generateTransitionPoints();
+        this.calculateTransitionPointPixels();
+
         console.log(`✓ Applied smoothing to existing ${this.mapDimensions.width}x${this.mapDimensions.height} map`);
     }
     
@@ -989,6 +982,8 @@ class ChunkMapGenerator {
      * 1. Oblicza rozmiar canvas na podstawie chunków i settings  
      * 2. Czyści canvas
      * 3. Renderuje każdy chunk z this.chunks[] za pomocą renderChunk()
+     * 4. Oblicz pozycje pikseli punktów przejścia przed renderowaniem
+     * 5. Renderuj punkty przejścia jeśli włączone
      * 
      * KOLORY: ocean (0) = niebieski, wyspa (1) = zielony
      */
@@ -1013,6 +1008,9 @@ class ChunkMapGenerator {
             this.renderChunk(chunk, gapSize);
         });
         
+        // Oblicz pozycje pikseli punktów przejścia przed renderowaniem
+        this.calculateTransitionPointPixels();
+
         // Renderuj punkty przejścia jeśli włączone
         if (this.pathfindingSettings.showTransitionPoints) {
             this.renderTransitionPoints(gapSize);
@@ -1067,28 +1065,12 @@ class ChunkMapGenerator {
         const pointRadius = baseRadius * this.pathfindingSettings.transitionPointScale;
         
         this.transitionPoints.forEach(point => {
-            // Konwertuj współrzędne globalne (w tiles) na piksele na canvas
-            const chunkAData = this.chunks.find(c => c.id === point.chunkA);
-            if (!chunkAData) return;
-            
-            let pixelX, pixelY;
-            
-            if (point.direction === 'horizontal') {
-                // Granica pionowa między chunkami
-                const chunkStartX = 20 + chunkAData.x * (chunkPixelSize + gapSize);
-                const chunkStartY = 20 + chunkAData.y * (chunkPixelSize + gapSize);
-                
-                pixelX = chunkStartX + chunkPixelSize; // Prawy brzeg chunkA
-                pixelY = chunkStartY + (point.y - chunkAData.y * this.settings.chunkSize) * this.settings.tileSize + this.settings.tileSize / 2;
-            } else if (point.direction === 'vertical') {
-                // Granica pozioma między chunkami
-                const chunkStartX = 20 + chunkAData.x * (chunkPixelSize + gapSize);
-                const chunkStartY = 20 + chunkAData.y * (chunkPixelSize + gapSize);
-                
-                pixelX = chunkStartX + (point.x - chunkAData.x * this.settings.chunkSize) * this.settings.tileSize + this.settings.tileSize / 2;
-                pixelY = chunkStartY + chunkPixelSize; // Dolny brzeg chunkA
-            }
-            
+            // Użyj pre-obliczonych współrzędnych, jeśli istnieją
+            if (!point.pixelX || !point.pixelY) return;
+
+            const pixelX = point.pixelX;
+            const pixelY = point.pixelY;
+
             // Narysuj punkt przejścia jako koło z lepszą widocznością
             
             // Zewnętrzne obramowanie (cień)
@@ -1115,6 +1097,43 @@ class ChunkMapGenerator {
                 this.ctx.arc(pixelX, pixelY, Math.max(2, pointRadius / 4), 0, 2 * Math.PI);
                 this.ctx.fill();
             }
+        });
+    }
+    
+    /**
+     * OBLICZA I ZAPISUJE WSPÓŁRZĘDNE PIKSELI DLA PUNKTÓW PRZEJŚCIA
+     * 
+     * Ta metoda jest wywoływana po każdej zmianie, która może wpłynąć
+     * na pozycję punktów (zmiana geometrii siatki, rozmiaru kafelków).
+     * Zapisuje `pixelX` i `pixelY` w każdym obiekcie punktu przejścia.
+     */
+    calculateTransitionPointPixels() {
+        const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
+        const gapSize = 4;
+
+        this.transitionPoints.forEach(point => {
+            const chunkAData = this.chunks.find(c => c.id === point.chunkA);
+            if (!chunkAData) return;
+
+            let pixelX, pixelY;
+
+            if (point.direction === 'horizontal') {
+                const chunkStartX = 20 + chunkAData.x * (chunkPixelSize + gapSize);
+                const chunkStartY = 20 + chunkAData.y * (chunkPixelSize + gapSize);
+                
+                pixelX = chunkStartX + chunkPixelSize;
+                pixelY = chunkStartY + (point.y - chunkAData.y * this.settings.chunkSize) * this.settings.tileSize + this.settings.tileSize / 2;
+            } else if (point.direction === 'vertical') {
+                const chunkStartX = 20 + chunkAData.x * (chunkPixelSize + gapSize);
+                const chunkStartY = 20 + chunkAData.y * (chunkPixelSize + gapSize);
+                
+                pixelX = chunkStartX + (point.x - chunkAData.x * this.settings.chunkSize) * this.settings.tileSize + this.settings.tileSize / 2;
+                pixelY = chunkStartY + chunkPixelSize;
+            }
+
+            // Zapisz obliczone współrzędne w obiekcie punktu
+            point.pixelX = pixelX;
+            point.pixelY = pixelY;
         });
     }
     
