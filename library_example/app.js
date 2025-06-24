@@ -918,6 +918,11 @@ class ChunkMapGenerator {
         console.log('🧭 Generating transition points between chunks...');
         this.transitionPoints = [];
         
+        // Reset aktywnych punktów przejścia po regeneracji
+        this.selectedPoint = null;
+        this.hoveredPoint = null;
+        this.hideInspector();
+        
         const chunkSize = this.settings.chunkSize;
         const maxPoints = this.pathfindingSettings.maxTransitionPoints;
         
