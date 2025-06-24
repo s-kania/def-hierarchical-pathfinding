@@ -76,7 +76,8 @@ class ChunkMapGenerator {
         // Ustawienia pathfinding
         this.pathfindingSettings = {
             maxTransitionPoints: 3,     // Maksymalna liczba punktów przejścia per granica
-            showTransitionPoints: true  // Pokazuj punkty przejścia na mapie
+            showTransitionPoints: true, // Pokazuj punkty przejścia na mapie
+            transitionPointScale: 1.0   // Skala rozmiaru punktów przejścia
         };
         
         // GŁÓWNE DANE APLIKACJI:
@@ -84,6 +85,8 @@ class ChunkMapGenerator {
         this.transitionPoints = [];                 // Array punktów przejścia: [{chunkA, chunkB, x, y, direction}]
         this.canvas = null;                         // Canvas element
         this.ctx = null;                           // Canvas context 2D
+        this.inspectorPanel = null;                 // Inspector punktów przejścia
+        this.hoveredPoint = null;                   // Aktualnie najechany punkt przejścia
         
         // DANE MAPY:
         this.baseMap = null;                       // Array: bazowa mapa przed smoothing [0,1,0,1...]
@@ -95,8 +98,10 @@ class ChunkMapGenerator {
     init() {
         this.canvas = document.getElementById('mapCanvas');
         this.ctx = this.canvas.getContext('2d');
+        this.inspectorPanel = document.getElementById('transitionPointDetails');
         
         this.setupEventListeners();
+        this.setupCanvasInteractivity(); // Dodaj interaktywność canvas
         this.generateMap();  // Generuje this.baseMap i this.chunks
         this.renderMap();    // Renderuje this.chunks na canvas
         this.updateStats();
@@ -236,6 +241,7 @@ class ChunkMapGenerator {
         
         // === PARAMETRY PATHFINDING ===
         const maxTransitionPointsSlider = document.getElementById('maxTransitionPoints');
+        const transitionPointScaleSlider = document.getElementById('transitionPointScale');
         const showTransitionPointsCheckbox = document.getElementById('showTransitionPoints');
         
         // Maksymalna liczba punktów przejścia
@@ -247,11 +253,154 @@ class ChunkMapGenerator {
             this.updateStats();
         });
         
+        // Skala punktów przejścia
+        transitionPointScaleSlider.addEventListener('input', (e) => {
+            this.pathfindingSettings.transitionPointScale = parseFloat(e.target.value);
+            document.getElementById('transitionPointScaleValue').textContent = e.target.value + 'x';
+            this.renderMap(); // Tylko re-render
+        });
+        
         // Pokazuj/ukryj punkty przejścia
         showTransitionPointsCheckbox.addEventListener('change', (e) => {
             this.pathfindingSettings.showTransitionPoints = e.target.checked;
+            if (!e.target.checked) {
+                this.hideInspector(); // Ukryj inspector gdy punkty są ukryte
+                this.canvas.classList.remove('pointer-cursor');
+            }
             this.renderMap(); // Tylko re-render
         });
+    }
+    
+    /**
+     * KONFIGURUJE INTERAKTYWNOŚĆ CANVAS (tooltip i cursor)
+     */
+    setupCanvasInteractivity() {
+        // Obsługa ruchu myszy nad canvas
+        this.canvas.addEventListener('mousemove', (e) => {
+            if (!this.pathfindingSettings.showTransitionPoints) {
+                this.hideInspector();
+                return;
+            }
+            
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            // Znajdź punkt przejścia pod kursorem
+            const hoveredPoint = this.getTransitionPointAt(mouseX, mouseY);
+            
+            if (hoveredPoint) {
+                // Mysz nad punktem przejścia
+                this.hoveredPoint = hoveredPoint;
+                this.canvas.classList.add('pointer-cursor');
+                this.showInspector(hoveredPoint);
+            } else {
+                // Mysz nie nad punktem
+                this.hoveredPoint = null;
+                this.canvas.classList.remove('pointer-cursor');
+                this.hideInspector();
+            }
+        });
+        
+        // Ukryj inspector gdy mysz opuści canvas
+        this.canvas.addEventListener('mouseleave', () => {
+            this.hoveredPoint = null;
+            this.canvas.classList.remove('pointer-cursor');
+            this.hideInspector();
+        });
+        
+        // Opcjonalnie: obsługa kliknięcia (np. do kopiowania danych do konsoli)
+        this.canvas.addEventListener('click', (e) => {
+            if (this.hoveredPoint) {
+                console.log('🧭 Kliknięto punkt przejścia:', this.hoveredPoint);
+                // Można dodać inne akcje, np. kopiowanie do schowka
+            }
+        });
+    }
+    
+    /**
+     * ZNAJDUJE PUNKT PRZEJŚCIA POD WSPÓŁRZĘDNYMI MYSZY
+     * 
+     * @param {number} mouseX - Pozycja X myszy względem canvas
+     * @param {number} mouseY - Pozycja Y myszy względem canvas
+     * @returns {Object|null} Punkt przejścia lub null
+     */
+    getTransitionPointAt(mouseX, mouseY) {
+        const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
+        const gapSize = 4;
+        const baseRadius = Math.max(6, this.settings.tileSize / 3);
+        const pointRadius = baseRadius * this.pathfindingSettings.transitionPointScale;
+        
+        for (const point of this.transitionPoints) {
+            const chunkAData = this.chunks.find(c => c.id === point.chunkA);
+            if (!chunkAData) continue;
+            
+            let pixelX, pixelY;
+            
+            if (point.direction === 'horizontal') {
+                const chunkStartX = 20 + chunkAData.x * (chunkPixelSize + gapSize);
+                const chunkStartY = 20 + chunkAData.y * (chunkPixelSize + gapSize);
+                
+                pixelX = chunkStartX + chunkPixelSize;
+                pixelY = chunkStartY + (point.y - chunkAData.y * this.settings.chunkSize) * this.settings.tileSize + this.settings.tileSize / 2;
+            } else if (point.direction === 'vertical') {
+                const chunkStartX = 20 + chunkAData.x * (chunkPixelSize + gapSize);
+                const chunkStartY = 20 + chunkAData.y * (chunkPixelSize + gapSize);
+                
+                pixelX = chunkStartX + (point.x - chunkAData.x * this.settings.chunkSize) * this.settings.tileSize + this.settings.tileSize / 2;
+                pixelY = chunkStartY + chunkPixelSize;
+            }
+            
+            // Zwiększona tolerancja wykrywania - skaluje się z rozmiarem mapy i tile
+            const hitboxRadius = Math.max(12, pointRadius + this.settings.tileSize / 2);
+            const distance = Math.sqrt((mouseX - pixelX) ** 2 + (mouseY - pixelY) ** 2);
+            
+            if (distance <= hitboxRadius) {
+                return point;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * POKAZUJE INSPECTOR Z DANYMI PUNKTU PRZEJŚCIA
+     * 
+     * @param {Object} point - Dane punktu przejścia
+     */
+    showInspector(point) {
+        if (!this.inspectorPanel) return;
+        
+        // Wygeneruj unikalne ID dla punktu
+        const pointId = `${point.chunkA}-${point.chunkB}-${point.direction}`;
+        
+        // Zaktualizuj zawartość inspectora
+        document.getElementById('detailId').textContent = pointId;
+        document.getElementById('detailChunks').textContent = `${point.chunkA} ↔ ${point.chunkB}`;
+        document.getElementById('detailPosition').textContent = `(${point.x}, ${point.y})`;
+        document.getElementById('detailDirection').textContent = point.direction === 'horizontal' ? 'Poziomo' : 'Pionowo';
+        document.getElementById('detailSegmentLength').textContent = `${point.segmentLength} kafelków`;
+        
+        // Pokaż info punktu, ukryj placeholder
+        const noSelection = this.inspectorPanel.querySelector('.no-selection');
+        const pointInfo = document.getElementById('selectedPointInfo');
+        
+        if (noSelection) noSelection.style.display = 'none';
+        if (pointInfo) pointInfo.classList.remove('hidden');
+    }
+    
+    /**
+     * UKRYWA INSPECTOR (POKAZUJE PLACEHOLDER)
+     */
+    hideInspector() {
+        if (!this.inspectorPanel) return;
+        
+        // Ukryj info punktu, pokaż placeholder
+        const noSelection = this.inspectorPanel.querySelector('.no-selection');
+        const pointInfo = document.getElementById('selectedPointInfo');
+        
+        if (noSelection) noSelection.style.display = 'flex';
+        if (pointInfo) pointInfo.classList.add('hidden');
     }
     
     updatePresetValues() {
@@ -914,7 +1063,8 @@ class ChunkMapGenerator {
      */
     renderTransitionPoints(gapSize) {
         const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
-        const pointRadius = Math.max(4, this.settings.tileSize / 4);
+        const baseRadius = Math.max(6, this.settings.tileSize / 3);
+        const pointRadius = baseRadius * this.pathfindingSettings.transitionPointScale;
         
         this.transitionPoints.forEach(point => {
             // Konwertuj współrzędne globalne (w tiles) na piksele na canvas
@@ -939,24 +1089,31 @@ class ChunkMapGenerator {
                 pixelY = chunkStartY + chunkPixelSize; // Dolny brzeg chunkA
             }
             
-            // Narysuj punkt przejścia jako koło
+            // Narysuj punkt przejścia jako koło z lepszą widocznością
+            
+            // Zewnętrzne obramowanie (cień)
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            this.ctx.beginPath();
+            this.ctx.arc(pixelX + 1, pixelY + 1, pointRadius + 1, 0, 2 * Math.PI);
+            this.ctx.fill();
+            
+            // Główny punkt przejścia
             this.ctx.fillStyle = this.colors.transitionPoint;
             this.ctx.beginPath();
             this.ctx.arc(pixelX, pixelY, pointRadius, 0, 2 * Math.PI);
             this.ctx.fill();
             
-            // Dodaj obramowanie
+            // Białe obramowanie
             this.ctx.strokeStyle = '#ffffff';
-            this.ctx.lineWidth = 2;
+            this.ctx.lineWidth = Math.max(2, pointRadius / 3);
             this.ctx.stroke();
             
-            // Opcjonalnie: dodaj numerek punktu (dla debugging)
-            if (this.settings.tileSize >= 16) {
+            // Wewnętrzny punkt dla lepszej widoczności
+            if (pointRadius >= 8) {
                 this.ctx.fillStyle = '#ffffff';
-                this.ctx.font = 'bold 10px var(--font-family-base)';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillText('●', pixelX, pixelY + 3);
-                this.ctx.textAlign = 'left'; // Reset
+                this.ctx.beginPath();
+                this.ctx.arc(pixelX, pixelY, Math.max(2, pointRadius / 4), 0, 2 * Math.PI);
+                this.ctx.fill();
             }
         });
     }
@@ -1012,7 +1169,8 @@ class ChunkMapGenerator {
         
         this.pathfindingSettings = {
             maxTransitionPoints: 3,
-            showTransitionPoints: true
+            showTransitionPoints: true,
+            transitionPointScale: 1.0
         };
         
         // Update original sliders
@@ -1043,10 +1201,12 @@ class ChunkMapGenerator {
         
         // Update pathfinding controls
         document.getElementById('maxTransitionPoints').value = 3;
+        document.getElementById('transitionPointScale').value = 1.0;
         document.getElementById('showTransitionPoints').checked = true;
         
         // Update pathfinding labels
         document.getElementById('maxTransitionPointsValue').textContent = '3';
+        document.getElementById('transitionPointScaleValue').textContent = '1.0x';
         
         // Reset requires full regeneration since settings changed
         this.generateMap();

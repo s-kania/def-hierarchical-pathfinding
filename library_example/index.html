@@ -137,10 +137,54 @@
                     </div>
 
                     <div class="form-group">
+                        <label class="form-label" for="transitionPointScale">
+                            Transition point scale: <span id="transitionPointScaleValue">1.0x</span>
+                        </label>
+                        <input type="range" id="transitionPointScale" class="form-control" min="0.5" max="3.0" step="0.1" value="1.0">
+                    </div>
+
+                    <div class="form-group">
                         <label class="form-label" for="showTransitionPoints">
                             <span>Show transition points</span>
                         </label>
                         <input type="checkbox" id="showTransitionPoints" class="form-control" checked>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="transition-point-inspector card">
+            <div class="card__header">
+                <h3>🔍 Transition Point Inspector</h3>
+            </div>
+            <div class="card__body">
+                <div id="transitionPointDetails" class="transition-details">
+                    <div class="no-selection">
+                        <span class="placeholder-text">Najedź myszą na punkt przejścia aby zobaczyć szczegóły</span>
+                    </div>
+                    <div id="selectedPointInfo" class="point-info hidden">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">ID:</span>
+                                <span id="detailId" class="info-value">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Chunki:</span>
+                                <span id="detailChunks" class="info-value">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Pozycja:</span>
+                                <span id="detailPosition" class="info-value">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Kierunek:</span>
+                                <span id="detailDirection" class="info-value">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Długość segmentu:</span>
+                                <span id="detailSegmentLength" class="info-value">-</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -167,6 +211,9 @@
                     </div>
                 </div>
             </div>
+
+
+
             <canvas id="mapCanvas" width="800" height="600"></canvas>
         </div>
 

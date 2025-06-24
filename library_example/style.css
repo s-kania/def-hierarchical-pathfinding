@@ -864,6 +864,16 @@ input[type="range"]::-moz-range-thumb:hover {
   border-radius: 50%;
 }
 
+
+
+#mapCanvas {
+  cursor: default;
+}
+
+#mapCanvas.pointer-cursor {
+  cursor: pointer;
+}
+
 /* Preset info styling */
 .preset-info {
   background: var(--color-secondary);
@@ -924,6 +934,70 @@ input[type="range"]::-moz-range-thumb:hover {
   color: #ff6b6b;
   font-size: var(--font-size-xl);
   margin: 0;
+}
+
+.transition-point-inspector.card {
+  box-shadow: var(--shadow-md);
+  border: 2px solid #ff6b6b33;
+  margin-top: var(--space-16);
+}
+
+.transition-point-inspector .card__header h3 {
+  color: #ff6b6b;
+  font-size: var(--font-size-lg);
+  margin: 0;
+}
+
+.transition-details {
+  min-height: 120px;
+  padding: var(--space-8);
+}
+
+.no-selection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  text-align: center;
+}
+
+.placeholder-text {
+  color: var(--color-text-secondary);
+  font-style: italic;
+  font-size: var(--font-size-sm);
+}
+
+.point-info.hidden {
+  display: none;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-12);
+  padding: var(--space-8);
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-8);
+  background: var(--color-secondary);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid #ff6b6b;
+}
+
+.info-label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.info-value {
+  color: #ff6b6b;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
 }
 
 .legend.card {
