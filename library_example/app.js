@@ -1406,6 +1406,422 @@ class ChunkMapGenerator {
     }
 }
 
+/**
+ * MENEDŻER PUNKTÓW PRZEJŚCIA - MINIMALISTYCZNY FORMAT
+ * 
+ * Przechowuje punkty przejścia w formacie:
+ * {
+ *   chunks: ['8_1', '8_2'],  // para ID chunków
+ *   position: 16             // pozycja wzdłuż krawędzi (0 do chunkSize-1)
+ * }
+ * 
+ * FUNKCJONALNOŚCI:
+ * - Konwersja z/do starego formatu
+ * - Obliczanie współrzędnych globalnych i pikselowych
+ * - Dedukowanie kierunku połączenia
+ * - Walidacja połączeń między chunkami
+ */
+class TransitionPointManager {
+    constructor(chunkSize) {
+        this.chunkSize = chunkSize;
+        this.points = [];  // Array punktów w nowym formacie
+    }
+    
+    /**
+     * DODAJE PUNKT PRZEJŚCIA W NOWYM FORMACIE
+     * 
+     * @param {string} chunkA - ID pierwszego chunka (np. '2_1')
+     * @param {string} chunkB - ID drugiego chunka (np. '3_1') 
+     * @param {number} position - pozycja wzdłuż krawędzi (0 do chunkSize-1)
+     * @returns {Object} Dodany punkt przejścia
+     */
+    addPoint(chunkA, chunkB, position) {
+        // Walidacja
+        if (!this.areChunksAdjacent(chunkA, chunkB)) {
+            console.warn(`⚠️ Chunks ${chunkA} and ${chunkB} are not adjacent`);
+            return null;
+        }
+        
+        if (position < 0 || position >= this.chunkSize) {
+            console.warn(`⚠️ Position ${position} out of range (0-${this.chunkSize-1})`);
+            return null;
+        }
+        
+        // Normalizuj kolejność chunków (zawsze mniejszy pierwszy)
+        const [sortedA, sortedB] = this.sortChunks(chunkA, chunkB);
+        
+        const point = {
+            chunks: [sortedA, sortedB],
+            position: position
+        };
+        
+        this.points.push(point);
+        console.log(`✓ Added transition point: ${sortedA} ↔ ${sortedB} at position ${position}`);
+        
+        return point;
+    }
+    
+    /**
+     * KONWERTUJE ZE STAREGO FORMATU DO NOWEGO
+     * 
+     * @param {Array} oldFormatPoints - Punkty w starym formacie
+     * @returns {Array} Punkty w nowym formacie
+     */
+    convertFromOldFormat(oldFormatPoints) {
+        this.points = [];
+        
+        oldFormatPoints.forEach(oldPoint => {
+            // Wyciągnij chunk coordinates z globalnych
+            const chunkA = this.globalToChunkId(oldPoint.x, oldPoint.y, oldPoint.direction);
+            const chunkB = this.getAdjacentChunkId(chunkA, oldPoint.direction);
+            
+            // Oblicz pozycję lokalną wzdłuż krawędzi
+            const position = this.calculateLocalPosition(oldPoint.x, oldPoint.y, oldPoint.direction);
+            
+            this.addPoint(chunkA, chunkB, position);
+        });
+        
+        console.log(`🔄 Converted ${oldFormatPoints.length} points from old format`);
+        return this.points;
+    }
+    
+    /**
+     * KONWERTUJE DO STAREGO FORMATU (DLA KOMPATYBILNOŚCI)
+     * 
+     * @returns {Array} Punkty w starym formacie
+     */
+    convertToOldFormat() {
+        return this.points.map(point => {
+            const globalCoords = this.getGlobalCoords(point);
+            const direction = this.getDirection(point);
+            
+            return {
+                chunkA: point.chunks[0],
+                chunkB: point.chunks[1],
+                x: globalCoords.x,
+                y: globalCoords.y,
+                direction: direction,
+                segmentLength: 1, // Domyślnie pojedynczy punkt
+                pixelX: 0, // Będzie obliczone przez renderer
+                pixelY: 0
+            };
+        });
+    }
+    
+    /**
+     * OBLICZA GLOBALNE WSPÓŁRZĘDNE PUNKTU
+     * 
+     * @param {Object} point - Punkt w nowym formacie
+     * @returns {Object} {x, y} w globalnych współrzędnych mapy
+     */
+    getGlobalCoords(point) {
+        const [a, b] = point.chunks.map(id => this.parseChunkId(id));
+        
+        if (a.x === b.x) {
+            // Vertical connection (X nie zmienia się)
+            return {
+                x: a.x * this.chunkSize + point.position,
+                y: a.y * this.chunkSize + this.chunkSize  // na granicy
+            };
+        } else {
+            // Horizontal connection (Y nie zmienia się)  
+            return {
+                x: a.x * this.chunkSize + this.chunkSize,  // na granicy
+                y: a.y * this.chunkSize + point.position
+            };
+        }
+    }
+    
+    /**
+     * OBLICZA WSPÓŁRZĘDNE PIKSELI DLA RENDEROWANIA
+     * 
+     * @param {Object} point - Punkt w nowym formacie
+     * @param {number} tileSize - Rozmiar kafelka w pikselach
+     * @param {number} gapSize - Przerwa między chunkami
+     * @param {number} padding - Padding canvas
+     * @returns {Object} {x, y} w pikselach
+     */
+    getPixelCoords(point, tileSize, gapSize = 4, padding = 20) {
+        const globalCoords = this.getGlobalCoords(point);
+        const [a] = point.chunks.map(id => this.parseChunkId(id));
+        
+        const chunkPixelSize = this.chunkSize * tileSize;
+        const direction = this.getDirection(point);
+        
+        if (direction === 'horizontal') {
+            // Punkt na prawej granicy chunk A
+            const chunkStartX = padding + a.x * (chunkPixelSize + gapSize);
+            const chunkStartY = padding + a.y * (chunkPixelSize + gapSize);
+            
+            return {
+                x: chunkStartX + chunkPixelSize,
+                y: chunkStartY + point.position * tileSize + tileSize / 2
+            };
+        } else {
+            // Punkt na dolnej granicy chunk A
+            const chunkStartX = padding + a.x * (chunkPixelSize + gapSize);
+            const chunkStartY = padding + a.y * (chunkPixelSize + gapSize);
+            
+            return {
+                x: chunkStartX + point.position * tileSize + tileSize / 2,
+                y: chunkStartY + chunkPixelSize
+            };
+        }
+    }
+    
+    /**
+     * DEDUKUJE KIERUNEK POŁĄCZENIA Z CHUNK IDs
+     * 
+     * @param {Object} point - Punkt w nowym formacie
+     * @returns {string} 'horizontal' lub 'vertical'
+     */
+    getDirection(point) {
+        const [a, b] = point.chunks.map(id => this.parseChunkId(id));
+        
+        if (a.x === b.x) {
+            return 'vertical';   // X nie zmienia się
+        } else {
+            return 'horizontal'; // Y nie zmienia się
+        }
+    }
+    
+    /**
+     * SPRAWDZA CZY CHUNKI SĄ SĄSIADUJĄCE
+     * 
+     * @param {string} chunkA - ID pierwszego chunka
+     * @param {string} chunkB - ID drugiego chunka  
+     * @returns {boolean} True jeśli chunki sąsiadują
+     */
+    areChunksAdjacent(chunkA, chunkB) {
+        const a = this.parseChunkId(chunkA);
+        const b = this.parseChunkId(chunkB);
+        
+        const dx = Math.abs(a.x - b.x);
+        const dy = Math.abs(a.y - b.y);
+        
+        // Sąsiadujące: dokładnie jeden z dx,dy = 1, drugi = 0
+        return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+    }
+    
+    /**
+     * SORTUJE CHUNK IDs (MNIEJSZY PIERWSZY)
+     * 
+     * @param {string} chunkA - ID pierwszego chunka
+     * @param {string} chunkB - ID drugiego chunka
+     * @returns {Array} [sortedA, sortedB]
+     */
+    sortChunks(chunkA, chunkB) {
+        const a = this.parseChunkId(chunkA);
+        const b = this.parseChunkId(chunkB);
+        
+        // Sortuj według Y, potem X
+        if (a.y < b.y || (a.y === b.y && a.x < b.x)) {
+            return [chunkA, chunkB];
+        } else {
+            return [chunkB, chunkA];
+        }
+    }
+    
+    /**
+     * PARSUJE CHUNK ID DO OBIEKTÓW WSPÓŁRZĘDNYCH
+     * 
+     * @param {string} chunkId - ID chunka (np. '2_1')
+     * @returns {Object} {x, y}
+     */
+    parseChunkId(chunkId) {
+        const [x, y] = chunkId.split('_').map(Number);
+        return { x, y };
+    }
+    
+    /**
+     * KONWERTUJE WSPÓŁRZĘDNE GLOBALNE DO CHUNK ID
+     * 
+     * @param {number} globalX - Globalna współrzędna X
+     * @param {number} globalY - Globalna współrzędna Y  
+     * @param {string} direction - Kierunek dla określenia chunka
+     * @returns {string} ID chunka
+     */
+    globalToChunkId(globalX, globalY, direction) {
+        if (direction === 'horizontal') {
+            // Punkt na prawej granicy chunka - znajdź chunk po lewej
+            const chunkX = Math.floor((globalX - 1) / this.chunkSize);
+            const chunkY = Math.floor(globalY / this.chunkSize);
+            return `${chunkX}_${chunkY}`;
+        } else {
+            // Punkt na dolnej granicy chunka - znajdź chunk powyżej
+            const chunkX = Math.floor(globalX / this.chunkSize);
+            const chunkY = Math.floor((globalY - 1) / this.chunkSize);
+            return `${chunkX}_${chunkY}`;
+        }
+    }
+    
+    /**
+     * ZNAJDUJE ID SĄSIADUJĄCEGO CHUNKA
+     * 
+     * @param {string} chunkId - ID bazowego chunka
+     * @param {string} direction - Kierunek połączenia
+     * @returns {string} ID sąsiadującego chunka
+     */
+    getAdjacentChunkId(chunkId, direction) {
+        const chunk = this.parseChunkId(chunkId);
+        
+        if (direction === 'horizontal') {
+            return `${chunk.x + 1}_${chunk.y}`;  // Chunk po prawej
+        } else {
+            return `${chunk.x}_${chunk.y + 1}`;  // Chunk poniżej
+        }
+    }
+    
+    /**
+     * OBLICZA LOKALNĄ POZYCJĘ WZDŁUŻ KRAWĘDZI
+     * 
+     * @param {number} globalX - Globalna współrzędna X
+     * @param {number} globalY - Globalna współrzędna Y
+     * @param {string} direction - Kierunek połączenia
+     * @returns {number} Pozycja lokalna (0 do chunkSize-1)
+     */
+    calculateLocalPosition(globalX, globalY, direction) {
+        if (direction === 'horizontal') {
+            return globalY % this.chunkSize;
+        } else {
+            return globalX % this.chunkSize;
+        }
+    }
+    
+    /**
+     * ZNAJDUJE PUNKTY PRZEJŚCIA MIĘDZY KONKRETNYMI CHUNKAMI
+     * 
+     * @param {string} chunkA - ID pierwszego chunka
+     * @param {string} chunkB - ID drugiego chunka
+     * @returns {Array} Punkty przejścia między chunkami
+     */
+    getPointsBetween(chunkA, chunkB) {
+        const [sortedA, sortedB] = this.sortChunks(chunkA, chunkB);
+        
+        return this.points.filter(point => 
+            point.chunks[0] === sortedA && point.chunks[1] === sortedB
+        );
+    }
+    
+    /**
+     * STATYSTYKI PUNKTÓW PRZEJŚCIA
+     * 
+     * @returns {Object} Statystyki
+     */
+    getStats() {
+        const horizontal = this.points.filter(p => this.getDirection(p) === 'horizontal').length;
+        const vertical = this.points.filter(p => this.getDirection(p) === 'vertical').length;
+        
+        return {
+            total: this.points.length,
+            horizontal: horizontal,
+            vertical: vertical,
+            chunkSize: this.chunkSize
+        };
+    }
+    
+    /**
+     * WYCZYŚĆ WSZYSTKIE PUNKTY
+     */
+    clear() {
+        this.points = [];
+        console.log('🗑️ Cleared all transition points');
+    }
+    
+    /**
+     * EKSPORT DO JSON
+     * 
+     * @returns {string} JSON reprezentacja punktów
+     */
+    exportToJSON() {
+        return JSON.stringify({
+            chunkSize: this.chunkSize,
+            points: this.points
+        }, null, 2);
+    }
+    
+    /**
+     * IMPORT Z JSON
+     * 
+     * @param {string} jsonString - JSON z punktami
+     */
+    importFromJSON(jsonString) {
+        try {
+            const data = JSON.parse(jsonString);
+            this.chunkSize = data.chunkSize;
+            this.points = data.points || [];
+            console.log(`📥 Imported ${this.points.length} transition points`);
+        } catch (error) {
+            console.error('❌ Failed to import transition points:', error);
+        }
+    }
+}
+
+/**
+ * MENEDŻER DANYCH GIER - PROSTY FORMAT
+ * 
+ * Przechowuje punkty przejścia w minimalistycznym formacie:
+ * {
+ *   chunks: ['8_1', '8_2'],  // para ID chunków  
+ *   position: 16             // pozycja wzdłuż krawędzi (0 do chunkSize-1)
+ * }
+ */
+class GameDataManager {
+    constructor(chunkSize) {
+        this.chunkSize = chunkSize;
+        this.transitionPoints = [];  // Array punktów w nowym formacie
+        this.chunks = [];            // Array chunków (w przyszłości)
+    }
+    
+    /**
+     * KONWERTUJE PUNKTY PRZEJŚCIA NA DOMYŚLNY FORMAT (DLA KOMPATYBILNOŚCI)
+     * 
+     * @returns {Array} Punkty w starym formacie z pikselami do renderowania
+     */
+    convertTransitionPointsToDefault() {
+        return this.transitionPoints.map(point => {
+            const [a, b] = point.chunks.map(id => this.parseChunkId(id));
+            
+            // Dedukuj kierunek z pozycji chunków
+            const direction = a.x === b.x ? 'vertical' : 'horizontal';
+            
+            // Oblicz globalne współrzędne
+            let globalX, globalY;
+            if (direction === 'vertical') {
+                // Vertical connection - X nie zmienia się
+                globalX = a.x * this.chunkSize + point.position;
+                globalY = a.y * this.chunkSize + this.chunkSize;
+            } else {
+                // Horizontal connection - Y nie zmienia się  
+                globalX = a.x * this.chunkSize + this.chunkSize;
+                globalY = a.y * this.chunkSize + point.position;
+            }
+            
+            return {
+                chunkA: point.chunks[0],
+                chunkB: point.chunks[1],
+                x: globalX,
+                y: globalY,
+                direction: direction,
+                segmentLength: 1,
+                pixelX: 0,  // Będzie obliczone przez renderer
+                pixelY: 0
+            };
+        });
+    }
+    
+    /**
+     * PARSUJE CHUNK ID DO WSPÓŁRZĘDNYCH
+     * 
+     * @param {string} chunkId - ID chunka (np. '2_1')
+     * @returns {Object} {x, y}
+     */
+    parseChunkId(chunkId) {
+        const [x, y] = chunkId.split('_').map(Number);
+        return { x, y };
+    }
+}
+
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Utwórz instancję i udostępnij globalnie dla konsoli deweloperskiej
