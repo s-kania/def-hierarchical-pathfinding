@@ -940,17 +940,6 @@ input[type="range"]::-moz-range-thumb:hover {
   border: 2px solid var(--color-primary-alpha);
 }
 
-.pathfinding-config-panel.card {
-  box-shadow: var(--shadow-md);
-  border: 2px solid #ff6b6b33;
-}
-
-.pathfinding-config-panel .card__header h2 {
-  color: #ff6b6b;
-  font-size: var(--font-size-xl);
-  margin: 0;
-}
-
 .transition-point-inspector.card {
   box-shadow: var(--shadow-md);
   border: 2px solid #ff6b6b33;
@@ -1154,6 +1143,26 @@ input[type="range"]::-moz-range-thumb:hover {
   color: var(--color-text);
   margin: 0;
   font-size: var(--font-size-xl);
+}
+
+.pathfinding-settings {
+  margin-bottom: var(--space-24);
+  padding-bottom: var(--space-16);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pathfinding-settings h3 {
+  margin-bottom: var(--space-16);
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+.pathfinding-info h3 {
+  margin-bottom: var(--space-16);
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
 }
 
 .pathfinding-grid {
