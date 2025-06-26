@@ -132,6 +132,10 @@ class ChunkMapGenerator {
         // Aktualizuj ustawienia w komponentach
         this.updateComponentSettings();
         
+        // Wyczyść punkty pathfinding gdy generujemy nową mapę
+        this.pathfindingPointManager.clearPoints();
+        this.pathfindingUIController.updateAll(this.pathfindingPointManager);
+        
         // Generuj mapę
         const finalMap = this.mapGenerator.generateMap();
         
@@ -172,11 +176,50 @@ class ChunkMapGenerator {
             this.mapGenerator.getMapDimensions().height
         );
         
+        // Sprawdź czy istniejące punkty pathfinding są nadal na oceanie
+        this.validatePathfindingPoints();
+        
         // Regeneruj punkty przejścia
         this.transitionPointManager.generateTransitionPoints(this.chunks);
         this.transitionPointManager.calculateTransitionPointPixels(this.chunks);
         
         console.log(`✓ Applied smoothing to existing map`);
+    }
+    
+    /**
+     * WALIDUJE PUNKTY PATHFINDING I USUWA NIEWAŻNE
+     */
+    validatePathfindingPoints() {
+        let pointsRemoved = false;
+        
+        // Sprawdź punkt startowy
+        if (this.pathfindingPointManager.getStartPoint()) {
+            const startPoint = this.pathfindingPointManager.getStartPoint();
+            const tilePos = this.pathfindingPointManager.pixelToTilePosition(startPoint.pixelX, startPoint.pixelY);
+            
+            if (!tilePos || !this.pathfindingPointManager.isTileOcean(tilePos)) {
+                console.log('⚠️ Punkt startowy nie jest już na oceanie - usuwam');
+                this.pathfindingPointManager.startPoint = null;
+                pointsRemoved = true;
+            }
+        }
+        
+        // Sprawdź punkt końcowy
+        if (this.pathfindingPointManager.getEndPoint()) {
+            const endPoint = this.pathfindingPointManager.getEndPoint();
+            const tilePos = this.pathfindingPointManager.pixelToTilePosition(endPoint.pixelX, endPoint.pixelY);
+            
+            if (!tilePos || !this.pathfindingPointManager.isTileOcean(tilePos)) {
+                console.log('⚠️ Punkt końcowy nie jest już na oceanie - usuwam');
+                this.pathfindingPointManager.endPoint = null;
+                pointsRemoved = true;
+            }
+        }
+        
+        // Zaktualizuj UI jeśli jakieś punkty zostały usunięte
+        if (pointsRemoved) {
+            this.pathfindingUIController.updateAll(this.pathfindingPointManager);
+        }
     }
     
     /**
@@ -255,10 +298,20 @@ class ChunkMapGenerator {
      */
     onReset() {
         console.log('🔄 Resetting to defaults...');
+        
+        // Reset punktów pathfinding
+        this.pathfindingPointManager.clearPoints();
+        
+        // Reset ustawień UI
         this.uiController.resetToDefaults();
+        
+        // Regeneruj mapę
         this.generateMap();
         this.renderMap();
         this.updateStats();
+        
+        // Aktualizuj UI pathfinding po resecie
+        this.pathfindingUIController.updateAll(this.pathfindingPointManager);
     }
 
     /**
