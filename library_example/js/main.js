@@ -16,6 +16,7 @@ import { CanvasRenderer } from './rendering/CanvasRenderer.js';
 import { UIController } from './ui/UIController.js';
 import { PathfindingUIController } from './ui/PathfindingUIController.js';
 import { Inspector } from './ui/Inspector.js';
+import { GameDataManager } from './data/GameDataManager.js';
 import { getCanvasCoordinates } from './utils/MathUtils.js';
 
 /**
@@ -42,6 +43,7 @@ class ChunkMapGenerator {
         this.uiController = null;
         this.pathfindingUIController = null;
         this.inspector = null;
+        this.gameDataManager = null;
         
         // Elementy DOM
         this.canvas = null;
@@ -92,6 +94,7 @@ class ChunkMapGenerator {
         this.uiController = new UIController(this.settings, this.islandSettings, this.pathfindingSettings);
         this.pathfindingUIController = new PathfindingUIController();
         this.inspector = new Inspector(this.inspectorPanel);
+        this.gameDataManager = new GameDataManager(this.settings.chunkSize);
     }
     
     /**
@@ -112,7 +115,8 @@ class ChunkMapGenerator {
         this.pathfindingUIController.setCallbacks({
             onGenerateRandomPoints: () => this.onGenerateRandomPathfindingPoints(),
             onClearPoints: () => this.onClearPathfindingPoints(),
-            onCalculatePath: () => this.onCalculatePathfindingPath()
+            onCalculatePath: () => this.onCalculatePathfindingPath(),
+            onPrintData: () => this.onPrintGameData()
         });
         
         // Skonfiguruj event listeners
@@ -150,6 +154,9 @@ class ChunkMapGenerator {
         this.transitionPointManager.generateTransitionPoints(this.chunks);
         this.transitionPointManager.calculateTransitionPointPixels(this.chunks);
         
+        // Aktualizuj GameDataManager z punktami przejścia
+        this.updateGameDataManager();
+        
         // Zapisz referencje dla kompatybilności
         this.baseMap = this.mapGenerator.getBaseMap();
         this.mapDimensions = this.mapGenerator.getMapDimensions();
@@ -182,6 +189,9 @@ class ChunkMapGenerator {
         // Regeneruj punkty przejścia
         this.transitionPointManager.generateTransitionPoints(this.chunks);
         this.transitionPointManager.calculateTransitionPointPixels(this.chunks);
+        
+        // Aktualizuj GameDataManager z punktami przejścia
+        this.updateGameDataManager();
         
         console.log(`✓ Applied smoothing to existing map`);
     }
@@ -454,6 +464,72 @@ class ChunkMapGenerator {
             this.canvas.classList.remove('pointer-cursor');
             this.canvas.style.cursor = 'default';
         });
+    }
+    
+    /**
+     * AKTUALIZUJE GAMEDATA MANAGER Z PUNKTAMI PRZEJŚCIA
+     */
+    updateGameDataManager() {
+        if (!this.gameDataManager || !this.transitionPointManager) {
+            return;
+        }
+        
+        // Wyczyść poprzednie punkty przejścia
+        this.gameDataManager.transitionPoints = [];
+        
+        // Pobierz punkty przejścia z TransitionPointManager
+        const transitionPoints = this.transitionPointManager.getTransitionPoints();
+        
+        // Konwertuj do nowego formatu i dodaj do GameDataManager
+        transitionPoints.forEach(point => {
+            // Sprawdź czy punkt ma wymagane właściwości
+            if (point.chunkA && point.chunkB && point.x !== undefined && point.y !== undefined) {
+                // Oblicz pozycję lokalną na podstawie kierunku
+                let position;
+                if (point.direction === 'vertical') {
+                    position = point.x % this.settings.chunkSize;
+                } else {
+                    position = point.y % this.settings.chunkSize;
+                }
+                
+                // Dodaj punkt w nowym formacie
+                const newFormatPoint = {
+                    chunks: [point.chunkA, point.chunkB],
+                    position: position
+                };
+                
+                this.gameDataManager.transitionPoints.push(newFormatPoint);
+            }
+        });
+        
+        console.log(`✓ GameDataManager updated with ${this.gameDataManager.transitionPoints.length} transition points`);
+    }
+    
+    /**
+     * DRUKUJE DANE GAME DATA MANAGER W KONSOLI
+     */
+    onPrintGameData() {
+        console.log('=== GAMEDATA MANAGER PRINT ===');
+        console.log('📊 GameDataManager Object:', this.gameDataManager);
+        
+        console.log('\n🔗 Transition Points (New Format):');
+        console.table(this.gameDataManager.transitionPoints);
+        
+        console.log('\n🔄 Converted to Default Format:');
+        const defaultFormat = this.gameDataManager.convertTransitionPointsToDefault();
+        console.table(defaultFormat);
+        
+        console.log('\n📐 Settings:');
+        console.log('- Chunk Size:', this.gameDataManager.chunkSize);
+        console.log('- Total Transition Points:', this.gameDataManager.transitionPoints.length);
+        
+        console.log('\n📋 JSON Export (New Format):');
+        console.log(JSON.stringify(this.gameDataManager.transitionPoints, null, 2));
+        
+        console.log('==============================');
+        
+        // Pokazuje też sukces w UI
+        this.pathfindingUIController.showSuccess('Dane wydrukowane w konsoli');
     }
 }
 

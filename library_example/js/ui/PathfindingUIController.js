@@ -20,11 +20,13 @@ export class PathfindingUIController {
         this.generateRandomPointsBtn = document.getElementById('generateRandomPoints');
         this.clearPathfindingPointsBtn = document.getElementById('clearPathfindingPoints');
         this.calculatePathBtn = document.getElementById('calculatePath');
+        this.printDataBtn = document.getElementById('printData');
         
         // Callbacki
         this.onGenerateRandomPoints = null;
         this.onClearPoints = null;
         this.onCalculatePath = null;
+        this.onPrintData = null;
     }
 
     /**
@@ -46,6 +48,12 @@ export class PathfindingUIController {
         this.calculatePathBtn?.addEventListener('click', () => {
             if (this.onCalculatePath) {
                 this.onCalculatePath();
+            }
+        });
+
+        this.printDataBtn?.addEventListener('click', () => {
+            if (this.onPrintData) {
+                this.onPrintData();
             }
         });
     }
@@ -150,10 +158,11 @@ export class PathfindingUIController {
     /**
      * USTAWIA CALLBACKI
      */
-    setCallbacks({ onGenerateRandomPoints, onClearPoints, onCalculatePath }) {
+    setCallbacks({ onGenerateRandomPoints, onClearPoints, onCalculatePath, onPrintData }) {
         this.onGenerateRandomPoints = onGenerateRandomPoints;
         this.onClearPoints = onClearPoints;
         this.onCalculatePath = onCalculatePath;
+        this.onPrintData = onPrintData;
     }
 
     /**

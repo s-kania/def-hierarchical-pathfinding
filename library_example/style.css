@@ -364,6 +364,16 @@ pre code {
   background: var(--color-secondary);
 }
 
+.btn--info {
+  background-color: rgba(var(--color-info-rgb), 0.1);
+  color: var(--color-info);
+  border: 1px solid rgba(var(--color-info-rgb), 0.3);
+}
+
+.btn--info:hover {
+  background-color: rgba(var(--color-info-rgb), 0.15);
+}
+
 .btn--sm {
   padding: var(--space-4) var(--space-12);
   font-size: var(--font-size-sm);
