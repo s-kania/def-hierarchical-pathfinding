@@ -1,0 +1,23 @@
+# Cursor Rules for def-hierarchical-pathfinding
+
+## Server Rules
+- NEVER start a Python server for HTML files
+- For HTML files, use static file serving or simple file:// protocol
+- Do not suggest or run `python -m http.server` or similar Python server commands for HTML content
+- Use alternative approaches like Live Server extension or direct file opening
+
+## Git Commit Rules
+- ALL commit messages must be written in English
+- Use conventional commit format: type(scope): description
+- Examples:
+  - feat: add new pathfinding algorithm
+  - fix: resolve transition point calculation bug
+  - docs: update README with installation instructions
+  - refactor: improve chunk manager performance
+- Never use Polish or other languages in commit messages
+
+## Development Guidelines
+- Prefer modern JavaScript ES6+ syntax
+- Use descriptive variable and function names
+- Comment complex algorithms in English
+- Follow existing code structure and patterns in the project 
