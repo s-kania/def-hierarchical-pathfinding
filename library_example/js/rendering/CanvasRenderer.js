@@ -22,10 +22,7 @@ export class CanvasRenderer {
         this.canvas.width = canvasSize.width;
         this.canvas.height = canvasSize.height;
         
-        // Debug log dla dużych map
-        if (this.settings.chunkSize > 8) {
-            console.log(`🖼️ Rendering map: ${this.settings.chunkCols}x${this.settings.chunkRows} chunks, ${this.settings.chunkSize}x${this.settings.chunkSize} tiles, canvas: ${this.canvas.width}x${this.canvas.height}`);
-        }
+
         
         // Wyczyść canvas (tło)
         this.ctx.fillStyle = COLORS.chunkBackground;
@@ -43,10 +40,6 @@ export class CanvasRenderer {
 
         // Renderuj punkty przejścia jeśli włączone
         if (this.pathfindingSettings.showTransitionPoints && transitionPoints.length > 0) {
-            if (this.settings.chunkSize > 8) {
-                console.log(`🔴 Rendering ${transitionPoints.length} transition points`);
-            }
-            
             this.renderTransitionPoints(transitionPoints, activePoint);
         }
         
@@ -216,18 +209,14 @@ export class CanvasRenderer {
      * RENDERUJE WSZYSTKIE AKTYWNE LINIE POŁĄCZEŃ (SELECTED + HOVER)
      */
     renderAllConnectionLines(allTransitionPoints, gameDataManager) {
-        let renderedLines = 0;
-        
         // Renderuj połączenia dla zaznaczonego punktu (zielone linie)
         if (this.selectedPoint) {
-            console.log('🎯 Renderowanie linii dla selected point:', `${this.selectedPoint.chunkA}-${this.selectedPoint.chunkB}`);
             this.renderConnectionLines(this.selectedPoint, allTransitionPoints, gameDataManager, {
                 color: '#00ff00',  // Zielony dla selected
                 lineWidth: 3,
                 dashPattern: [10, 5],
                 showArrows: true
             });
-            renderedLines++;
         }
         
         // Renderuj połączenia dla hovered punktu (pomarańczowe linie)
@@ -236,19 +225,13 @@ export class CanvasRenderer {
             const selectedId = this.selectedPoint ? `${this.selectedPoint.chunkA}-${this.selectedPoint.chunkB}` : null;
             
             if (hoveredId !== selectedId) {
-                console.log('🟠 Renderowanie linii dla hovered point:', hoveredId);
                 this.renderConnectionLines(this.hoveredPoint, allTransitionPoints, gameDataManager, {
                     color: '#ff8800',  // Pomarańczowy dla hover
                     lineWidth: 2,
                     dashPattern: [8, 4],
                     showArrows: false
                 });
-                renderedLines++;
             }
-        }
-        
-        if (renderedLines === 0) {
-            console.log('📭 Brak aktywnych punktów - nie renderuję linii połączeń');
         }
     }
 
@@ -268,18 +251,14 @@ export class CanvasRenderer {
         // Znajdź ID wybranego punktu w formacie GameDataManager
         const selectedPointId = this.findPointIdInGameData(selectedPoint, gameDataManager);
         if (!selectedPointId) {
-            console.log('⚠️ Nie znaleziono ID punktu w GameDataManager');
             return;
         }
 
         // Pobierz połączenia dla wybranego punktu
         const connections = gameDataManager.getConnections(selectedPointId);
         if (!connections || connections.length === 0) {
-            console.log('⚠️ Brak połączeń dla punktu:', selectedPointId);
             return;
         }
-
-        console.log(`🔗 Renderowanie ${connections.length} połączeń dla punktu ${selectedPointId} (${currentStyle.color})`);
 
         // Ustaw style dla linii
         this.ctx.strokeStyle = currentStyle.color;
@@ -302,8 +281,6 @@ export class CanvasRenderer {
                     this.drawArrowHead(selectedPoint.pixelX, selectedPoint.pixelY, 
                                      connectedPoint.pixelX, connectedPoint.pixelY);
                 }
-            } else {
-                console.log('⚠️ Nie znaleziono connected point dla ID:', connectedPointId);
             }
         });
 
