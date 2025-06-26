@@ -1,173 +1,515 @@
-# Fengari Lua-JavaScript Integration Guide
+# Island Map Generator - Modułowa Aplikacja JavaScript
 
-A comprehensive guide for integrating Lua functions with JavaScript using the Fengari library.
+Generator map wysp z podziałem na chunki oraz systemu hierarchicznego pathfinding. Aplikacja została zrefaktorowana z jednego monolitycznego pliku na modułową architekturę.
 
-## 🔧 Requirements
+## 🏗️ Architektura Modułowa
 
-- **Fengari Web** - Library for running Lua in the browser
-- **HTTP Server** - Files must be served via HTTP server (not file://)
+Aplikacja została podzielona na następujące moduły:
 
-## 🚀 Complete Integration Steps
+### 📁 Struktura Katalogów
 
-### 1. **HTML Setup**
-
-```html
-<!-- Load Fengari library -->
-<script src="fengari-web.js"></script>
-
-<!-- Load Lua script with correct type -->
-<script src="your-module.lua" type="application/lua"></script>
-
-<!-- Load your JavaScript -->
-<script src="your-app.js"></script>
+```
+library_example/
+├── js/
+│   ├── config/
+│   │   └── Settings.js           # Konfiguracja i presety
+│   ├── core/
+│   │   ├── MapGenerator.js       # Główny generator map
+│   │   └── ChunkManager.js       # Zarządzanie chunkami
+│   ├── algorithms/
+│   │   └── CellularAutomata.js   # Algorytmy generowania
+│   ├── pathfinding/
+│   │   └── TransitionPointManager.js  # Punkty przejścia
+│   ├── rendering/
+│   │   └── CanvasRenderer.js     # Renderowanie na canvas
+│   ├── ui/
+│   │   ├── UIController.js       # Kontrola interfejsu
+│   │   └── Inspector.js          # Panel inspektora
+│   ├── utils/
+│   │   └── MathUtils.js          # Funkcje pomocnicze
+│   ├── data/
+│   │   └── GameDataManager.js    # Zarządzanie danymi
+│   └── main.js                   # Główna aplikacja
+├── index.html
+├── style.css
+└── README.md
 ```
 
-⚠️ **Important:** Lua scripts must have `type="application/lua"`
+## 🚀 Uruchomienie
 
-### 2. **Lua Module Structure**
+### Wymagania
 
-```lua
--- your-module.lua
+- **HTTP Server** - Pliki muszą być serwowane przez serwer HTTP (nie file://)
+- **Nowoczesna przeglądarka** z obsługą ES6 modules
 
--- 1. Import js library
-local js = require "js"
+### Setup
 
--- 2. Create module table
-local MyModule = {}
+```bash
+# Uruchom serwer HTTP w katalogu projektu
+cd library_example && python3 -m http.server 8000
 
--- 3. Module functions with proper argument conversion
-function MyModule.processData(jsArgument)
-    -- ALWAYS convert JS arguments to Lua types
-    local luaValue = tonumber(jsArgument) or 0
-    
-    -- Create real JavaScript arrays
-    local jsArray = js.new(js.global.Array)
-    
-    for i = 0, luaValue - 1 do
-        jsArray:push(i * 2)  -- Use push() method
-    end
-    
-    return jsArray  -- Return real JS array
-end
-
-function MyModule.processString(jsString)
-    local luaString = tostring(jsString) or ""
-    return "Processed: " .. luaString
-end
-
--- 4. Export to JavaScript global scope
-js.global.MyModule = js.new(js.global.Object)
-js.global.MyModule.processData = MyModule.processData
-js.global.MyModule.processString = MyModule.processString
-js.global.MyModule.ready = true  -- Ready flag
-
-print("MyModule loaded and exported to JavaScript!")
+# Otwórz w przeglądarce
+# http://localhost:8000
 ```
 
-### 3. **JavaScript Integration**
+## 🎮 Funkcjonalności
+
+### 🗺️ Generowanie Map Wysp
+- **Presety wysp**: Archipelago, Continent, Scattered, Dense
+- **Cellular Automata**: Algorytmy smoothing z różnymi parametrami
+- **Chunki**: Podział mapy na manageable fragmenty
+- **Real-time preview**: Natychmiastowa aktualizacja po zmianie ustawień
+
+### 🧭 System Pathfinding
+- **Punkty przejścia**: Automatyczne wykrywanie przejść między chunkami
+- **Interaktywny inspector**: Kliknij punkt przejścia aby zobaczyć szczegóły
+- **Konfigurowalność**: Liczba i rozmiar punktów przejścia
+
+### 🎨 Renderowanie
+- **Canvas rendering**: Wydajne renderowanie na HTML5 Canvas
+- **Responsywny design**: Skalowanie do różnych rozmiarów ekranu
+- **Export PNG**: Zapisz wygenerowaną mapę jako obraz
+
+## 🔧 Główne Komponenty
+
+### **MapGenerator** (`js/core/MapGenerator.js`)
+Główny silnik generowania map:
+```javascript
+// Generuje nową mapę
+const finalMap = mapGenerator.generateMap();
+
+// Aplikuje tylko smoothing (optymalizacja)
+const smoothedMap = mapGenerator.applySmoothingToExistingMap();
+```
+
+### **ChunkManager** (`js/core/ChunkManager.js`)
+Zarządzanie chunkami:
+```javascript
+// Dzieli mapę na chunki
+const chunks = chunkManager.splitMapIntoChunks(unifiedMap, width, height);
+
+// Renderuje pojedynczy chunk
+chunkManager.renderChunk(ctx, chunk);
+```
+
+### **TransitionPointManager** (`js/pathfinding/TransitionPointManager.js`)
+System punktów przejścia:
+```javascript
+// Generuje punkty przejścia
+const points = transitionManager.generateTransitionPoints(chunks);
+
+// Znajduje punkt pod kursorem myszy
+const point = transitionManager.getTransitionPointAt(mouseX, mouseY);
+```
+
+## ⚙️ Konfiguracja i Ustawienia
+
+### **Settings** (`js/config/Settings.js`)
+Centralne miejsce konfiguracji:
+```javascript
+// Domyślne ustawienia chunków
+export const DEFAULT_SETTINGS = {
+    chunkCols: 5,        // Liczba chunków w poziomie
+    chunkRows: 3,        // Liczba chunków w pionie  
+    chunkSize: 6,        // Rozmiar chunka (6x6 tiles)
+    tileSize: 16         // Rozmiar tile w pikselach
+};
+
+// Presety wysp
+export const ISLAND_PRESETS = {
+    archipelago: { landDensity: 0.35, iterations: 4, /* ... */ },
+    continent: { landDensity: 0.55, iterations: 3, /* ... */ },
+    // ...
+};
+```
+
+### **Optymalizacje Wydajności**
+
+#### **Rozróżnienie typów zmian**
+Aplikacja optymalizuje regenerację na podstawie typu zmiany:
+
+1. **Pełna regeneracja** (parametry geometryczne):
+   - `chunkSize`, `chunkCols`, `chunkRows` 
+   - `landDensity`, `islandSize`
+
+2. **Tylko smoothing** (parametry CA):
+   - `iterations`, `neighborThreshold`, `archipelagoMode`
+
+3. **Tylko render** (parametry wizualne):
+   - `tileSize`, `transitionPointScale`, `showTransitionPoints`
 
 ```javascript
-// your-app.js
-
-function useMyModule() {
-    // Check if Lua module is ready
-    if (window.MyModule && window.MyModule.ready) {
-        try {
-            const numericResult = window.MyModule.processData(5);
-            const stringResult = window.MyModule.processString("Hello");
-            
-            // Validate results
-            if (numericResult && Array.isArray(numericResult)) {
-                console.log('✓ Lua function success:', numericResult);
-                return numericResult;
-            } else if (numericResult && numericResult.length) {
-                // Convert array-like objects
-                return Array.from(numericResult);
-            }
-        } catch (error) {
-            console.error('Lua function failed:', error);
-        }
-    }
-    
-    // JavaScript fallback
-    console.log('⚠️ Using JavaScript fallback');
-    return [0, 2, 4, 6, 8];  // Example fallback
-}
-
-// Wait for loading before use
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        useMyModule();
-    }, 100);  // Give Lua time to load
+// Przykład użycia
+uiController.setCallbacks({
+    onFullRegenerationNeeded: () => app.generateMap(),
+    onSmoothingOnlyNeeded: () => app.applySmoothingToExistingMap(),
+    onRenderOnlyNeeded: () => app.renderMap()
 });
 ```
 
-## ⚠️ Common Pitfalls and Solutions
+## 🔧 Rozwój i Rozszerzenia
 
-### **Problem 1: JavaScript arguments are not Lua numbers**
+### **Dodawanie Nowych Modułów**
+
+1. **Utwórz nowy plik modułu**:
+```javascript
+// js/algorithms/NoiseGenerator.js
+export class NoiseGenerator {
+    static generatePerlinNoise(width, height, scale) {
+        // implementacja
+    }
+}
+```
+
+2. **Zaimportuj w głównej aplikacji**:
+```javascript
+// js/main.js
+import { NoiseGenerator } from './algorithms/NoiseGenerator.js';
+```
+
+3. **Podłącz do istniejącego flow**:
+```javascript
+// W MapGenerator.js
+import { NoiseGenerator } from '../algorithms/NoiseGenerator.js';
+
+generateBaseMap(width, height) {
+    return NoiseGenerator.generatePerlinNoise(width, height, 0.1);
+}
+```
+
+### **Debugowanie**
+
+#### **Console dostępu do instancji**
+```javascript
+// W konsoli przeglądarki
+window.mapGenerator.chunks           // Aktualne chunki
+window.mapGenerator.settings         // Ustawienia
+window.mapGenerator.generateMap()    // Regeneruj mapę
+```
+
+#### **Logi wydajności**
+```javascript
+// MapGenerator automatycznie loguje:
+console.log(`🗺️ Generated unified map: ${width}x${height}`);
+console.log(`✓ Generated ${chunks.length} chunks from unified map`);
+```
+
+## 🚀 Deployment
+
+### **Optymalizacja Produkcyjna**
+
+1. **Minifikacja modułów**:
+```bash
+# Użyj narzędzi jak Rollup lub Webpack
+npm install rollup @rollup/plugin-terser
+```
+
+2. **Bundle ES modules**:
+```javascript
+// rollup.config.js
+export default {
+  input: 'js/main.js',
+  output: {
+    file: 'dist/bundle.js',
+    format: 'iife'
+  }
+};
+```
+
+3. **Serwowanie statyczne**:
+```bash
+# Nginx config
+location /island-generator/ {
+    root /var/www/;
+    try_files $uri $uri/ /index.html;
+}
+```
+
+## 🔬 Testy i Walidacja
+
+### **Testowanie Modułów**
+
+```javascript
+// Przykład testu algorytmu Cellular Automata
+import { applyCellularAutomataUnified } from './js/algorithms/CellularAutomata.js';
+
+// Test case: 3x3 mapa z pojedynczym kafelkiem lądu
+const testMap = [0, 0, 0, 0, 1, 0, 0, 0, 0];
+const result = applyCellularAutomataUnified(testMap, 3, 3, 4, false);
+
+console.assert(result[4] === 0, 'Pojedynczy kafelek powinien zostać erodowany');
+```
+
+### **Walidacja Danych**
+
+```javascript
+// ChunkManager zawiera walidację
+const isValid = chunkManager.validateChunk(chunk);
+if (!isValid) {
+    console.error('❌ Invalid chunk detected:', chunk);
+}
+```
+
+## 📊 Metryki i Analityka
+
+### **Monitoring Wydajności**
+```javascript
+// Pomiar czasu generowania map
+console.time('Map Generation');
+mapGenerator.generateMap();
+console.timeEnd('Map Generation');
+
+// Śledzenie użycia pamięci
+console.log(`Memory usage: ${performance.memory?.usedJSHeapSize / 1024 / 1024} MB`);
+```
+
+### **Statystyki Generacji**
+```javascript
+// Dostępne z UI
+const stats = {
+    totalChunks: settings.chunkCols * settings.chunkRows,
+    totalTiles: totalChunks * settings.chunkSize ** 2,
+    islandPercentage: Math.round((islandTiles / totalTiles) * 100),
+    transitionPoints: transitionPoints.length
+};
+```
+
+## 🛠️ Techniczne Szczegóły
+
+### **ES6 Modules**
+- **Import/Export syntax**: Wszystkie moduły używają standardowej składni ES6
+- **Tree-shaking**: Możliwość optymalizacji bundlerów
+- **Static analysis**: Lepsze wsparcie IDE i narzędzi
+
+### **Separation of Concerns**
+- **Config**: Wszystkie stałe w `Settings.js`
+- **Algorithms**: Logika biznesowa oddzielona od UI
+- **Rendering**: Canvas operations w dedykowanym module
+- **UI**: Event handling i DOM manipulation
+
+### **Performance Optimizations**
+- **Differential updates**: Różne typy regeneracji
+- **Canvas optimizations**: Minimalizacja redraw operations
+- **Memory management**: Proper cleanup i garbage collection
+
+## 📈 Przyszłe Rozszerzenia
+
+### **Planowane Funkcjonalności**
+- **Save/Load maps**: Serialize/deserialize stanu aplikacji
+- **Custom brushes**: Edycja ręczna map
+- **Multi-layer rendering**: Różne rodzaje terrain
+- **Advanced pathfinding**: A* i hierarchiczne pathfinding
+- **WebWorkers**: Background processing dla dużych map
+
+### **Potencjalne Integracje**
+- **Three.js**: 3D rendering map
+- **WebGL**: Hardware-accelerated rendering
+- **Service Workers**: Offline functionality
+- **IndexedDB**: Persystencja danych lokalnie
+
+---
+
+## 🔧 Integracja z Lua (Fengari)
+
+Projekt zawiera również wsparcie dla integracji z Lua używając biblioteki Fengari, pozwalając na uruchamianie algorytmów Lua w przeglądarce.
+
+### **Setup Lua Integration**
+
+```html
+<!-- Dodaj Fengari do HTML -->
+<script src="fengari-web.js"></script>
+
+<!-- Załaduj skrypt Lua -->
+<script src="island_generator.lua" type="application/lua"></script>
+```
+
+### **Przykład Modułu Lua**
+
 ```lua
--- ❌ ERROR: size is a JavaScript object
+-- island_generator.lua
+local js = require "js"
+
+local IslandGenerator = {}
+
+function IslandGenerator.generateIslandMap(width, height, density)
+    -- Konwertuj argumenty JavaScript na typy Lua
+    local luaWidth = tonumber(width) or 30
+    local luaHeight = tonumber(height) or 18
+    local luaDensity = tonumber(density) or 0.35
+    
+    -- Stwórz prawdziwą tablicę JavaScript
+    local jsArray = js.new(js.global.Array)
+    
+    for i = 0, luaWidth * luaHeight - 1 do
+        local tile = math.random() < luaDensity and 1 or 0
+        jsArray:push(tile)
+    end
+    
+    return jsArray
+end
+
+function IslandGenerator.applyCellularAutomata(mapData, width, height, iterations)
+    local luaWidth = tonumber(width) or 30
+    local luaHeight = tonumber(height) or 18
+    local luaIterations = tonumber(iterations) or 3
+    
+    -- Konwertuj JavaScript array na Lua table
+    local luaMap = {}
+    for i = 0, mapData.length - 1 do
+        luaMap[i + 1] = mapData[i]
+    end
+    
+    -- Aplikuj cellular automata
+    for iter = 1, luaIterations do
+        local newMap = {}
+        for i = 1, #luaMap do
+            local neighbors = countNeighbors(luaMap, i, luaWidth, luaHeight)
+            newMap[i] = neighbors >= 4 and 1 or 0
+        end
+        luaMap = newMap
+    end
+    
+    -- Konwertuj z powrotem na JavaScript array
+    local result = js.new(js.global.Array)
+    for i = 1, #luaMap do
+        result:push(luaMap[i])
+    end
+    
+    return result
+end
+
+function countNeighbors(map, index, width, height)
+    -- Implementacja liczenia sąsiadów
+    local count = 0
+    local x = ((index - 1) % width)
+    local y = math.floor((index - 1) / width)
+    
+    for dy = -1, 1 do
+        for dx = -1, 1 do
+            if dx ~= 0 or dy ~= 0 then
+                local nx, ny = x + dx, y + dy
+                if nx >= 0 and nx < width and ny >= 0 and ny < height then
+                    local neighborIndex = ny * width + nx + 1
+                    if map[neighborIndex] == 1 then
+                        count = count + 1
+                    end
+                end
+            end
+        end
+    end
+    
+    return count
+end
+
+-- Eksportuj do JavaScript
+js.global.LuaIslandGenerator = js.new(js.global.Object)
+js.global.LuaIslandGenerator.generateIslandMap = IslandGenerator.generateIslandMap
+js.global.LuaIslandGenerator.applyCellularAutomata = IslandGenerator.applyCellularAutomata
+js.global.LuaIslandGenerator.ready = true
+
+print("Lua Island Generator loaded successfully!")
+```
+
+### **Integracja JavaScript-Lua**
+
+```javascript
+// Użycie generatora Lua jako alternatywy
+function generateMapWithLua(width, height, density) {
+    if (window.LuaIslandGenerator && window.LuaIslandGenerator.ready) {
+        try {
+            console.log('🔧 Using Lua island generator...');
+            const luaResult = window.LuaIslandGenerator.generateIslandMap(width, height, density);
+            
+            if (luaResult && luaResult.length) {
+                return Array.from(luaResult);
+            }
+        } catch (error) {
+            console.error('❌ Lua generation failed:', error);
+        }
+    }
+    
+    // Fallback do JavaScript implementation
+    console.log('⚙️ Using JavaScript fallback...');
+    return mapGenerator.generateBaseMap(width, height);
+}
+
+// Rozszerzenie MapGenerator o obsługę Lua
+class HybridMapGenerator extends MapGenerator {
+    generateBaseMap(width, height) {
+        // Spróbuj użyć Lua jeśli dostępne
+        const luaResult = generateMapWithLua(width, height, this.islandSettings.landDensity / 100);
+        
+        if (luaResult) {
+            console.log('✓ Generated base map using Lua');
+            return luaResult;
+        }
+        
+        // Fallback do standardowej implementacji
+        return super.generateBaseMap(width, height);
+    }
+}
+```
+
+### **Najlepsze Praktyki Lua-JavaScript**
+
+#### **Konwersja Typów**
+```lua
+-- ❌ BŁĄD: JavaScript argumenty nie są liczbami Lua
 function badFunction(size)
     for i = 0, size - 1 do  -- ERROR!
+    end
+end
 
--- ✅ CORRECT: Convert arguments
+-- ✅ POPRAWNIE: Zawsze konwertuj argumenty
 function goodFunction(size)
     local luaSize = tonumber(size) or 0
     for i = 0, luaSize - 1 do  -- OK!
+    end
+end
 ```
 
-### **Problem 2: Lua tables are not JavaScript arrays**
+#### **Tworzenie JavaScript Arrays**
 ```lua
--- ❌ ERROR: Returns wrapped Lua object
+-- ❌ BŁĄD: Lua table nie jest JavaScript array
 function badFunction()
     local result = {}
     result[0] = 1
-    return result  -- JavaScript gets wrapped object
+    return result  -- JavaScript dostaje wrapped object
+end
 
--- ✅ CORRECT: Create real JS array
+-- ✅ POPRAWNIE: Utwórz prawdziwą JavaScript array
 function goodFunction()
     local jsArray = js.new(js.global.Array)
     jsArray:push(1)
-    return jsArray  -- JavaScript gets real array
+    return jsArray  -- JavaScript dostaje prawdziwą array
+end
 ```
 
-### **Problem 3: Incorrect function export**
+#### **Eksport Funkcji**
 ```lua
--- ❌ ERROR: Exporting entire table may not work
+-- ❌ BŁĄD: Eksport całej tabeli może nie działać
 js.global.MyModule = MyModule
 
--- ✅ CORRECT: Export functions individually
+-- ✅ POPRAWNIE: Eksportuj funkcje indywidualnie
 js.global.MyModule = js.new(js.global.Object)
 js.global.MyModule.myFunction = MyModule.myFunction
 js.global.MyModule.ready = true
 ```
 
-### **Problem 4: Type conversion issues**
-```lua
--- Handle different JS types in Lua
-function MyModule.flexibleFunction(jsValue)
-    local numValue = tonumber(jsValue)
-    local strValue = tostring(jsValue)
-    local boolValue = jsValue and true or false
-    
-    -- Use appropriate type based on your needs
-end
-```
+### **Debugowanie Lua-JavaScript**
 
-## 🔍 Debugging Techniques
-
-### Lua Side (use `print()`)
+#### **Strona Lua (użyj `print()`)**
 ```lua
 function MyModule.debugFunction(arg)
     print("Function called with:", arg)
     print("Argument type:", type(arg))
     local converted = tonumber(arg)
     print("Converted to number:", converted)
-    -- ... rest of function
+    -- ... reszta funkcji
 end
 ```
 
-### JavaScript Side (use `console.log()`)
+#### **Strona JavaScript (użyj `console.log()`)**
 ```javascript
 try {
     console.log('Calling Lua function with:', inputValue);
@@ -177,89 +519,37 @@ try {
     
     console.log('Result type:', typeof result);
     console.log('Result length:', result?.length);
-    console.log('Result content:', result);
     console.log('Is array:', Array.isArray(result));
 } catch (error) {
     console.error('Lua error:', error.message);
-    console.error('Error stack:', error.stack);
 }
 ```
 
-## 🚦 Development Setup
+### **Tabela Konwersji Typów**
 
-```bash
-# Start HTTP server in your project directory
-cd library_example && python3 -m http.server 8000
-
-# Open in browser
-# http://localhost:8000
-```
-
-## 📋 Data Type Conversion Reference
-
-| JavaScript → Lua | Lua Function | Example |
-|------------------|--------------|---------|
+| JavaScript → Lua | Funkcja Lua | Przykład |
+|------------------|-------------|----------|
 | Number | `tonumber(jsValue)` | `tonumber(5) → 5` |
 | String | `tostring(jsValue)` | `tostring("hello") → "hello"` |
 | Boolean | `jsValue and true or false` | `true and true or false → true` |
-| Array | Manual iteration | See array examples below |
 
-| Lua → JavaScript | Lua Code | Result |
-|------------------|----------|--------|
-| Array | `js.new(js.global.Array)` + `push()` | Real JS Array |
-| Object | `js.new(js.global.Object)` + properties | Real JS Object |
+| Lua → JavaScript | Kod Lua | Rezultat |
+|------------------|---------|----------|
+| Array | `js.new(js.global.Array)` + `push()` | Prawdziwa JS Array |
+| Object | `js.new(js.global.Object)` + properties | Prawdziwy JS Object |
 | String | Direct return | JS String |
 | Number | Direct return | JS Number |
 
-## 🎯 Best Practices
+---
 
-1. **Always convert** JS arguments to Lua types: `tonumber()`, `tostring()`
-2. **Use `js.new(js.global.Array)`** for creating JavaScript arrays
-3. **Export functions individually** to JavaScript objects
-4. **Add `ready` flag** so JavaScript can check if Lua is loaded
-5. **Use `type="application/lua"`** in HTML script tags
-6. **Implement fallbacks** in JavaScript for when Lua fails
-7. **Serve via HTTP**, never use `file://` protocol
-8. **Handle errors gracefully** with try-catch blocks
-9. **Debug incrementally** with print/console.log statements
-10. **Test type conversions** thoroughly
+## 📄 Licencja
 
-## 📝 Template Files
+Ten projekt jest dostępny na licencji MIT. Zobacz plik LICENSE.md dla szczegółów.
 
-### Minimal Lua Module Template
-```lua
-local js = require "js"
-local MyModule = {}
+## 🤝 Wkład w Projekt
 
-function MyModule.exampleFunction(jsArg)
-    local luaArg = tonumber(jsArg) or 0
-    local result = js.new(js.global.Array)
-    result:push(luaArg * 2)
-    return result
-end
-
-js.global.MyModule = js.new(js.global.Object)
-js.global.MyModule.exampleFunction = MyModule.exampleFunction
-js.global.MyModule.ready = true
-```
-
-### Minimal JavaScript Integration Template
-```javascript
-function useLuaModule(input) {
-    if (window.MyModule && window.MyModule.ready) {
-        try {
-            const result = window.MyModule.exampleFunction(input);
-            if (result && result.length) {
-                return Array.from(result);
-            }
-        } catch (error) {
-            console.error('Lua error:', error);
-        }
-    }
-    
-    // Fallback implementation
-    return [input * 2];
-}
-```
-
-Following these patterns will ensure reliable Lua-JavaScript integration with Fengari! 🎉 
+1. Fork the project
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request 
