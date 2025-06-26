@@ -112,65 +112,98 @@ export class CanvasRenderer {
         const endPoint = pathfindingPointManager.getEndPoint();
         const draggedPoint = pathfindingPointManager.getDraggedPoint();
         
-        // Renderuj punkt startowy
+        // Renderuj punkt startowy (zielony krzyżyk)
         if (startPoint) {
-            this.renderSinglePathfindingPoint(startPoint, '#00ff00', '📍', startPoint === draggedPoint);
+            this.renderSinglePathfindingPoint(startPoint, '#00ff00', '', startPoint === draggedPoint);
         }
         
-        // Renderuj punkt końcowy
+        // Renderuj punkt końcowy (czerwony krzyżyk)
         if (endPoint) {
-            this.renderSinglePathfindingPoint(endPoint, '#ff4444', '🎯', endPoint === draggedPoint);
+            this.renderSinglePathfindingPoint(endPoint, '#ff4444', '', endPoint === draggedPoint);
         }
     }
 
     /**
-     * RENDERUJE POJEDYNCZY PUNKT PATHFINDING
+     * RENDERUJE POJEDYNCZY PUNKT PATHFINDING JAKO KRZYŻYK PIRACKI OBRÓCONY O 45°
      */
     renderSinglePathfindingPoint(point, color, emoji, isDragged = false) {
-        const radius = Math.max(10, this.settings.tileSize / 2);
-        const currentRadius = isDragged ? radius * 1.3 : radius;
+        const baseSize = Math.max(12, this.settings.tileSize / 1.5);
+        const scaledSize = baseSize * this.pathfindingSettings.pathfindingPointScale;
+        const currentSize = isDragged ? scaledSize * 1.3 : scaledSize;
+        const halfSize = currentSize / 2;
         
-        // Cień
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        const x = point.pixelX;
+        const y = point.pixelY;
+        
+        // Zapisz stan kontekstu i obróć o 45 stopni
+        this.ctx.save();
+        this.ctx.translate(x, y);
+        this.ctx.rotate(Math.PI / 4); // 45 stopni w radianach
+        
+        // Cień krzyżyka (przesunięty o offset cienia po rotacji)
+        this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+        this.ctx.lineWidth = Math.max(4, currentSize / 4) + 2;
+        this.ctx.lineCap = 'round';
+        
         this.ctx.beginPath();
-        this.ctx.arc(point.pixelX + 2, point.pixelY + 2, currentRadius + 2, 0, 2 * Math.PI);
-        this.ctx.fill();
-        
-        // Główne koło
-        this.ctx.fillStyle = color;
-        this.ctx.beginPath();
-        this.ctx.arc(point.pixelX, point.pixelY, currentRadius, 0, 2 * Math.PI);
-        this.ctx.fill();
-        
-        // Białe obramowanie
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 3;
+        // Pozioma linia cienia (przesunięta o cień w lokalnych współrzędnych)
+        this.ctx.moveTo(-halfSize + 1.5, 1.5);
+        this.ctx.lineTo(halfSize + 1.5, 1.5);
+        // Pionowa linia cienia  
+        this.ctx.moveTo(1.5, -halfSize + 1.5);
+        this.ctx.lineTo(1.5, halfSize + 1.5);
         this.ctx.stroke();
         
-        // Wewnętrzne koło
-        this.ctx.fillStyle = '#ffffff';
+        // Główny krzyżyk
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = Math.max(4, currentSize / 4);
+        this.ctx.lineCap = 'round';
+        
         this.ctx.beginPath();
-        this.ctx.arc(point.pixelX, point.pixelY, currentRadius * 0.4, 0, 2 * Math.PI);
+        // Pozioma linia
+        this.ctx.moveTo(-halfSize, 0);
+        this.ctx.lineTo(halfSize, 0);
+        // Pionowa linia
+        this.ctx.moveTo(0, -halfSize);
+        this.ctx.lineTo(0, halfSize);
+        this.ctx.stroke();
+        
+        // Białe obramowanie krzyżyka
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = Math.max(2, currentSize / 6);
+        this.ctx.lineCap = 'round';
+        
+        this.ctx.beginPath();
+        // Pozioma linia
+        this.ctx.moveTo(-halfSize, 0);
+        this.ctx.lineTo(halfSize, 0);
+        // Pionowa linia
+        this.ctx.moveTo(0, -halfSize);
+        this.ctx.lineTo(0, halfSize);
+        this.ctx.stroke();
+        
+        // Środkowe kółko dla lepszej widoczności
+        this.ctx.fillStyle = color;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, Math.max(3, currentSize / 8), 0, 2 * Math.PI);
         this.ctx.fill();
         
-        // Pulsujące obramowanie jeśli przeciągany
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1;
+        this.ctx.stroke();
+        
+        // Przywróć stan kontekstu
+        this.ctx.restore();
+        
+        // Pulsujące obramowanie jeśli przeciągany (bez rotacji)
         if (isDragged) {
             this.ctx.strokeStyle = color;
             this.ctx.lineWidth = 2;
             this.ctx.setLineDash([5, 5]);
             this.ctx.beginPath();
-            this.ctx.arc(point.pixelX, point.pixelY, currentRadius + 8, 0, 2 * Math.PI);
+            this.ctx.arc(x, y, currentSize + 8, 0, 2 * Math.PI);
             this.ctx.stroke();
             this.ctx.setLineDash([]);
-        }
-        
-        // Tekst emoji (jeśli punkt jest wystarczająco duży)
-        if (currentRadius >= 12) {
-            this.ctx.font = `${Math.max(12, currentRadius)}px Arial`;
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.fillStyle = '#000000';
-            this.ctx.fillText(emoji, point.pixelX, point.pixelY - 1);
         }
     }
 

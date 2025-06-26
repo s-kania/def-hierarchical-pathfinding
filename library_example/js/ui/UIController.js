@@ -144,6 +144,14 @@ export class UIController {
             this.triggerRenderOnly();
         });
 
+        // Skala krzyżyków pathfinding
+        const pathfindingPointScaleSlider = document.getElementById('pathfindingPointScale');
+        pathfindingPointScaleSlider?.addEventListener('input', (e) => {
+            this.pathfindingSettings.pathfindingPointScale = parseFloat(e.target.value);
+            document.getElementById('pathfindingPointScaleValue').textContent = e.target.value + 'x';
+            this.triggerRenderOnly();
+        });
+
         // Pokazuj/ukryj punkty przejścia
         const showTransitionPointsCheckbox = document.getElementById('showTransitionPoints');
         showTransitionPointsCheckbox?.addEventListener('change', (e) => {
@@ -312,6 +320,7 @@ export class UIController {
         this.pathfindingSettings.maxTransitionPoints = 3;
         this.pathfindingSettings.showTransitionPoints = true;
         this.pathfindingSettings.transitionPointScale = 1.0;
+        this.pathfindingSettings.pathfindingPointScale = 2.0;
 
         this.resetUI();
     }
@@ -339,11 +348,13 @@ export class UIController {
         // Reset kontrolek pathfinding
         document.getElementById('maxTransitionPoints').value = 3;
         document.getElementById('transitionPointScale').value = 1.0;
+        document.getElementById('pathfindingPointScale').value = 2.0;
         document.getElementById('showTransitionPoints').checked = true;
 
         // Reset labelek pathfinding
         document.getElementById('maxTransitionPointsValue').textContent = '3';
         document.getElementById('transitionPointScaleValue').textContent = '1.0x';
+        document.getElementById('pathfindingPointScaleValue').textContent = '2.0x';
     }
 
     /**
