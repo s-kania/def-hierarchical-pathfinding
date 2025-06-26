@@ -158,6 +158,13 @@ export class UIController {
             this.pathfindingSettings.showTransitionPoints = e.target.checked;
             this.triggerRenderOnly();
         });
+
+        // Pokazuj/ukryj wagi połączeń
+        const showConnectionWeightsCheckbox = document.getElementById('showConnectionWeights');
+        showConnectionWeightsCheckbox?.addEventListener('change', (e) => {
+            this.pathfindingSettings.showConnectionWeights = e.target.checked;
+            this.triggerRenderOnly();
+        });
     }
 
     /**
@@ -319,6 +326,7 @@ export class UIController {
 
         this.pathfindingSettings.maxTransitionPoints = 3;
         this.pathfindingSettings.showTransitionPoints = true;
+        this.pathfindingSettings.showConnectionWeights = true;
         this.pathfindingSettings.transitionPointScale = 1.0;
         this.pathfindingSettings.pathfindingPointScale = 2.0;
 
@@ -350,6 +358,7 @@ export class UIController {
         document.getElementById('transitionPointScale').value = 1.0;
         document.getElementById('pathfindingPointScale').value = 2.0;
         document.getElementById('showTransitionPoints').checked = true;
+        document.getElementById('showConnectionWeights').checked = true;
 
         // Reset labelek pathfinding
         document.getElementById('maxTransitionPointsValue').textContent = '3';

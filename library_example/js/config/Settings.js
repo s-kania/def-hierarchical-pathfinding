@@ -21,6 +21,7 @@ export const DEFAULT_ISLAND_SETTINGS = {
 export const DEFAULT_PATHFINDING_SETTINGS = {
     maxTransitionPoints: 3,     // Maksymalna liczba punktów przejścia per granica
     showTransitionPoints: true, // Pokazuj punkty przejścia na mapie
+    showConnectionWeights: true, // Pokazuj wagi połączeń na liniach
     transitionPointScale: 1.0,  // Skala rozmiaru punktów przejścia
     pathfindingPointScale: 2.0  // Skala rozmiaru krzyżyków pathfinding
 };

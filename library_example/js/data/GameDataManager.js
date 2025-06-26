@@ -91,30 +91,52 @@ export class GameDataManager {
                 const pointA = points[i];
                 const pointB = points[j];
                 
-                if (this.canConnectPoints(chunk, chunkId, pointA, pointB)) {
-                    // Dodaj dwukierunkowe połączenie
-                    pointA.connections.push(pointB.id);
-                    pointB.connections.push(pointA.id);
+                const pathData = this.canConnectPointsWithWeight(chunk, chunkId, pointA, pointB);
+                if (pathData) {
+                    // Dodaj dwukierunkowe połączenie z wagą
+                    pointA.connections.push({
+                        id: pointB.id,
+                        weight: pathData.weight
+                    });
+                    pointB.connections.push({
+                        id: pointA.id,
+                        weight: pathData.weight
+                    });
                 }
             }
         }
     }
     
     /**
-     * SPRAWDZA CZY DWA PUNKTY PRZEJŚCIA MOGĄ BYĆ POŁĄCZONE A*
+     * SPRAWDZA CZY DWA PUNKTY PRZEJŚCIA MOGĄ BYĆ POŁĄCZONE A* I ZWRACA WAGĘ
      */
-    canConnectPoints(chunk, chunkId, pointA, pointB) {
+    canConnectPointsWithWeight(chunk, chunkId, pointA, pointB) {
         // Oblicz pozycje punktów w chunka
         const posA = this.getPointPositionInChunk(chunkId, pointA);
         const posB = this.getPointPositionInChunk(chunkId, pointB);
         
         if (!posA || !posB) {
-            return false;
+            return null;
         }
         
         // Użyj A* do znalezienia ścieżki
         const path = this.findPathAStar(chunk, posA, posB);
-        return path !== null;
+        if (path) {
+            return {
+                weight: path.length - 1, // Liczba kroków (węzłów - 1)
+                path: path
+            };
+        }
+        
+        return null;
+    }
+    
+    /**
+     * SPRAWDZA CZY DWA PUNKTY PRZEJŚCIA MOGĄ BYĆ POŁĄCZONE A* (STARA METODA - KOMPATYBILNOŚĆ)
+     */
+    canConnectPoints(chunk, chunkId, pointA, pointB) {
+        const pathData = this.canConnectPointsWithWeight(chunk, chunkId, pointA, pointB);
+        return pathData !== null;
     }
     
     /**
@@ -331,6 +353,31 @@ export class GameDataManager {
     }
     
     /**
+     * POBIERA TYLKO ID POŁĄCZEŃ (BEZ WAG) - DLA KOMPATYBILNOŚCI
+     */
+    getConnectionIds(pointId) {
+        const connections = this.getConnections(pointId);
+        return connections.map(conn => typeof conn === 'string' ? conn : conn.id);
+    }
+    
+    /**
+     * POBIERA WAGĘ POŁĄCZENIA MIĘDZY DWOMA PUNKTAMI
+     */
+    getConnectionWeight(fromPointId, toPointId) {
+        const connections = this.getConnections(fromPointId);
+        const connection = connections.find(conn => 
+            (typeof conn === 'string' ? conn : conn.id) === toPointId
+        );
+        
+        if (connection && typeof connection === 'object' && connection.weight !== undefined) {
+            return connection.weight;
+        }
+        
+        // Jeśli nie ma wagi, zwróć 1 jako domyślną
+        return 1;
+    }
+    
+    /**
      * KONWERTUJE PUNKTY PRZEJŚCIA NA DOMYŚLNY FORMAT (DLA KOMPATYBILNOŚCI)
      */
     convertTransitionPointsToDefault() {
@@ -383,16 +430,29 @@ export class GameDataManager {
         console.log(`📊 Łączna liczba punktów: ${this.transitionPoints.length}`);
         
         let totalConnections = 0;
+        let totalWeight = 0;
         this.transitionPoints.forEach(point => {
             totalConnections += point.connections.length;
+            point.connections.forEach(conn => {
+                totalWeight += (typeof conn === 'object' && conn.weight) ? conn.weight : 1;
+            });
         });
         
         console.log(`🔗 Łączna liczba połączeń: ${totalConnections / 2}`); // Dziel przez 2 bo dwukierunkowe
+        console.log(`⚖️  Łączna waga połączeń: ${totalWeight / 2}`); // Dziel przez 2 bo dwukierunkowe
         console.log(`📈 Średnia połączeń na punkt: ${(totalConnections / this.transitionPoints.length).toFixed(2)}`);
+        console.log(`📏 Średnia waga połączenia: ${((totalWeight / 2) / (totalConnections / 2)).toFixed(2)}`);
         
-        console.log('\n🔍 Punkty i ich połączenia:');
+        console.log('\n🔍 Punkty i ich połączenia (ID:waga):');
         this.transitionPoints.forEach(point => {
-            console.log(`${point.id}: [${point.connections.join(', ')}]`);
+            const connectionsStr = point.connections.map(conn => {
+                if (typeof conn === 'object' && conn.weight !== undefined) {
+                    return `${conn.id}:${conn.weight}`;
+                } else {
+                    return typeof conn === 'string' ? `${conn}:1` : `${conn.id}:1`;
+                }
+            }).join(', ');
+            console.log(`${point.id}: [${connectionsStr}]`);
         });
         
         console.log('===============================');

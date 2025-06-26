@@ -267,7 +267,11 @@ export class CanvasRenderer {
         this.ctx.lineCap = 'round';
 
         // Dla każdego połączenia narysuj linię
-        connections.forEach(connectedPointId => {
+        connections.forEach(connection => {
+            // Obsługa nowego formatu z wagami i starego formatu
+            const connectedPointId = typeof connection === 'string' ? connection : connection.id;
+            const weight = typeof connection === 'object' && connection.weight ? connection.weight : 1;
+            
             const connectedPoint = this.findTransitionPointById(connectedPointId, allTransitionPoints, gameDataManager);
             if (connectedPoint && connectedPoint.pixelX && connectedPoint.pixelY) {
                 // Narysuj linię od wybranego punktu do połączonego
@@ -280,6 +284,12 @@ export class CanvasRenderer {
                 if (currentStyle.showArrows) {
                     this.drawArrowHead(selectedPoint.pixelX, selectedPoint.pixelY, 
                                      connectedPoint.pixelX, connectedPoint.pixelY);
+                }
+                
+                // Narysuj wagę na środku linii
+                if (typeof connection === 'object' && connection.weight && this.pathfindingSettings.showConnectionWeights) {
+                    this.drawConnectionWeight(selectedPoint.pixelX, selectedPoint.pixelY,
+                                            connectedPoint.pixelX, connectedPoint.pixelY, weight);
                 }
             }
         });
@@ -366,6 +376,47 @@ export class CanvasRenderer {
         this.ctx.moveTo(toX, toY);
         this.ctx.lineTo(arrowX2, arrowY2);
         this.ctx.stroke();
+    }
+
+    /**
+     * RYSUJE WAGĘ POŁĄCZENIA NA ŚRODKU LINII
+     */
+    drawConnectionWeight(fromX, fromY, toX, toY, weight) {
+        // Oblicz środek linii
+        const midX = (fromX + toX) / 2;
+        const midY = (fromY + toY) / 2;
+        
+        // Zapisz obecny stan kontekstu
+        this.ctx.save();
+        
+        // Ustaw style dla tekstu
+        this.ctx.font = '12px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        
+        // Tło dla tekstu (żeby był czytelny)
+        const text = weight.toString();
+        const textMetrics = this.ctx.measureText(text);
+        const padding = 4;
+        const bgWidth = textMetrics.width + padding * 2;
+        const bgHeight = 16;
+        
+        // Narysuj tło
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        this.ctx.fillRect(midX - bgWidth/2, midY - bgHeight/2, bgWidth, bgHeight);
+        
+        // Narysuj obramowanie
+        this.ctx.strokeStyle = '#666';
+        this.ctx.lineWidth = 1;
+        this.ctx.setLineDash([]);
+        this.ctx.strokeRect(midX - bgWidth/2, midY - bgHeight/2, bgWidth, bgHeight);
+        
+        // Narysuj tekst
+        this.ctx.fillStyle = '#333';
+        this.ctx.fillText(text, midX, midY);
+        
+        // Przywróć stan kontekstu
+        this.ctx.restore();
     }
 
     /**
