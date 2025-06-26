@@ -15,7 +15,7 @@ export class CanvasRenderer {
     /**
      * RENDERUJE CAŁĄ MAPĘ
      */
-    renderMap(chunks, chunkManager, transitionPoints, selectedPoint = null, pathfindingPoints = null) {
+    renderMap(chunks, chunkManager, transitionPoints, activePoint = null, pathfindingPoints = null, gameDataManager = null) {
         const canvasSize = chunkManager.calculateCanvasSize();
         
         // Ustaw rozmiar canvas
@@ -36,13 +36,18 @@ export class CanvasRenderer {
             chunkManager.renderChunk(this.ctx, chunk);
         });
 
+        // Renderuj linie połączeń PRZED punktami przejścia (żeby były pod nimi)
+        if (this.pathfindingSettings.showTransitionPoints && activePoint && gameDataManager) {
+            this.renderConnectionLines(activePoint, transitionPoints, gameDataManager);
+        }
+
         // Renderuj punkty przejścia jeśli włączone
         if (this.pathfindingSettings.showTransitionPoints && transitionPoints.length > 0) {
             if (this.settings.chunkSize > 8) {
                 console.log(`🔴 Rendering ${transitionPoints.length} transition points`);
             }
             
-            this.renderTransitionPoints(transitionPoints, selectedPoint);
+            this.renderTransitionPoints(transitionPoints, activePoint);
         }
         
         // Renderuj punkty pathfinding jeśli istnieją
@@ -54,7 +59,7 @@ export class CanvasRenderer {
     /**
      * RENDERUJE PUNKTY PRZEJŚCIA
      */
-    renderTransitionPoints(transitionPoints, selectedPoint = null) {
+    renderTransitionPoints(transitionPoints, activePoint = null) {
         const baseRadius = Math.max(RENDER_CONSTANTS.MIN_POINT_RADIUS, this.settings.tileSize / 3);
         const pointRadius = baseRadius * this.pathfindingSettings.transitionPointScale;
         
@@ -65,12 +70,12 @@ export class CanvasRenderer {
             const pixelX = point.pixelX;
             const pixelY = point.pixelY;
             
-            // Sprawdź czy punkt jest aktywny (zaznaczony)
-            const isActive = selectedPoint && 
-                           selectedPoint.chunkA === point.chunkA && 
-                           selectedPoint.chunkB === point.chunkB && 
-                           selectedPoint.x === point.x && 
-                           selectedPoint.y === point.y;
+            // Sprawdź czy punkt jest aktywny (zaznaczony lub hover)
+            const isActive = activePoint && 
+                           activePoint.chunkA === point.chunkA && 
+                           activePoint.chunkB === point.chunkB && 
+                           activePoint.x === point.x && 
+                           activePoint.y === point.y;
             
             // Dostosuj rozmiar dla aktywnego punktu
             const currentRadius = isActive ? pointRadius * 1.5 : pointRadius;
@@ -201,10 +206,138 @@ export class CanvasRenderer {
             this.ctx.lineWidth = 2;
             this.ctx.setLineDash([5, 5]);
             this.ctx.beginPath();
-            this.ctx.arc(x, y, currentSize + 8, 0, 2 * Math.PI);
+            this.ctx.arc(x, y, currentSize + 5, 0, 2 * Math.PI);
             this.ctx.stroke();
             this.ctx.setLineDash([]);
         }
+    }
+
+    /**
+     * RENDERUJE LINIE POŁĄCZEŃ MIĘDZY PUNKTAMI PRZEJŚCIA
+     */
+    renderConnectionLines(selectedPoint, allTransitionPoints, gameDataManager) {
+        // Znajdź ID wybranego punktu w formacie GameDataManager
+        const selectedPointId = this.findPointIdInGameData(selectedPoint, gameDataManager);
+        if (!selectedPointId) {
+            console.log('⚠️ Nie znaleziono ID punktu w GameDataManager');
+            return;
+        }
+
+        // Pobierz połączenia dla wybranego punktu
+        const connections = gameDataManager.getConnections(selectedPointId);
+        if (!connections || connections.length === 0) {
+            console.log('⚠️ Brak połączeń dla punktu:', selectedPointId);
+            return;
+        }
+
+        console.log(`🔗 Renderowanie ${connections.length} połączeń dla punktu ${selectedPointId}`);
+
+        // Ustaw style dla linii
+        this.ctx.strokeStyle = '#00ff00'; // Zielony kolor
+        this.ctx.lineWidth = 3;
+        this.ctx.setLineDash([10, 5]); // Przerywane linie
+        this.ctx.lineCap = 'round';
+
+        // Dla każdego połączenia narysuj linię
+        connections.forEach(connectedPointId => {
+            const connectedPoint = this.findTransitionPointById(connectedPointId, allTransitionPoints, gameDataManager);
+            if (connectedPoint && connectedPoint.pixelX && connectedPoint.pixelY) {
+                // Narysuj linię od wybranego punktu do połączonego
+                this.ctx.beginPath();
+                this.ctx.moveTo(selectedPoint.pixelX, selectedPoint.pixelY);
+                this.ctx.lineTo(connectedPoint.pixelX, connectedPoint.pixelY);
+                this.ctx.stroke();
+
+                // Dodaj strzałkę na końcu linii (opcjonalne)
+                this.drawArrowHead(selectedPoint.pixelX, selectedPoint.pixelY, 
+                                 connectedPoint.pixelX, connectedPoint.pixelY);
+            } else {
+                console.log('⚠️ Nie znaleziono connected point dla ID:', connectedPointId);
+            }
+        });
+
+        // Przywróć domyślne style
+        this.ctx.setLineDash([]);
+    }
+
+    /**
+     * ZNAJDUJE ID PUNKTU W GAMEDATA MANAGER
+     */
+    findPointIdInGameData(point, gameDataManager) {
+        // Konwertuj punkt z TransitionPointManager na format GameDataManager
+        const chunkA = point.chunkA.replace('_', ',');
+        const chunkB = point.chunkB.replace('_', ',');
+        
+        // Określ pozycję na podstawie kierunku
+        let position;
+        if (point.direction === 'vertical') {
+            position = point.x % this.settings.chunkSize;
+        } else {
+            position = point.y % this.settings.chunkSize;
+        }
+        
+        // Znajdź punkt w GameDataManager
+        const gameDataPoint = gameDataManager.transitionPoints.find(gdPoint => {
+            const [gdChunkA, gdChunkB] = gdPoint.chunks;
+            return (gdChunkA === chunkA && gdChunkB === chunkB && gdPoint.position === position) ||
+                   (gdChunkA === chunkB && gdChunkB === chunkA && gdPoint.position === position);
+        });
+        
+        return gameDataPoint ? gameDataPoint.id : null;
+    }
+
+    /**
+     * ZNAJDUJE PUNKT PRZEJŚCIA PO ID W DANYCH RENDEROWANIA
+     */
+    findTransitionPointById(pointId, allTransitionPoints, gameDataManager) {
+        // Pobierz dane punktu z GameDataManager
+        const gameDataPoint = gameDataManager.getTransitionPointById(pointId);
+        if (!gameDataPoint) {
+            return null;
+        }
+
+        // Znajdź odpowiadający punkt w allTransitionPoints (ma pixelX/pixelY)
+        return allTransitionPoints.find(point => {
+            const chunkA = point.chunkA.replace('_', ',');
+            const chunkB = point.chunkB.replace('_', ',');
+            
+            let position;
+            if (point.direction === 'vertical') {
+                position = point.x % this.settings.chunkSize;
+            } else {
+                position = point.y % this.settings.chunkSize;
+            }
+            
+            const [gdChunkA, gdChunkB] = gameDataPoint.chunks;
+            return (gdChunkA === chunkA && gdChunkB === chunkB && gameDataPoint.position === position) ||
+                   (gdChunkA === chunkB && gdChunkB === chunkA && gameDataPoint.position === position);
+        });
+    }
+
+    /**
+     * RYSUJE STRZAŁKĘ NA KOŃCU LINII
+     */
+    drawArrowHead(fromX, fromY, toX, toY) {
+        const arrowLength = 12;
+        const arrowAngle = Math.PI / 6; // 30 stopni
+
+        // Oblicz kąt linii
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        
+        // Oblicz punkty strzałki
+        const arrowX1 = toX - arrowLength * Math.cos(angle - arrowAngle);
+        const arrowY1 = toY - arrowLength * Math.sin(angle - arrowAngle);
+        
+        const arrowX2 = toX - arrowLength * Math.cos(angle + arrowAngle);
+        const arrowY2 = toY - arrowLength * Math.sin(angle + arrowAngle);
+        
+        // Narysuj strzałkę
+        this.ctx.beginPath();
+        this.ctx.moveTo(toX, toY);
+        this.ctx.lineTo(arrowX1, arrowY1);
+        this.ctx.moveTo(toX, toY);
+        this.ctx.lineTo(arrowX2, arrowY2);
+        this.ctx.stroke();
     }
 
     /**

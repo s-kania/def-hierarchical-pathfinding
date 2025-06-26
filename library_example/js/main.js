@@ -158,6 +158,12 @@ class ChunkMapGenerator {
         // Aktualizuj GameDataManager z punktami przejścia
         this.updateGameDataManager();
         
+        // Automatycznie zbuduj graf połączeń
+        if (this.gameDataManager.transitionPoints.length > 0) {
+            this.gameDataManager.buildConnections(this.chunks);
+            console.log('✓ Automatycznie zbudowano graf połączeń');
+        }
+        
         // Zapisz referencje dla kompatybilności
         this.baseMap = this.mapGenerator.getBaseMap();
         this.mapDimensions = this.mapGenerator.getMapDimensions();
@@ -193,6 +199,12 @@ class ChunkMapGenerator {
         
         // Aktualizuj GameDataManager z punktami przejścia
         this.updateGameDataManager();
+        
+        // Automatycznie zbuduj graf połączeń
+        if (this.gameDataManager.transitionPoints.length > 0) {
+            this.gameDataManager.buildConnections(this.chunks);
+            console.log('✓ Automatycznie zbudowano graf połączeń po smoothing');
+        }
         
         console.log(`✓ Applied smoothing to existing map`);
     }
@@ -239,13 +251,18 @@ class ChunkMapGenerator {
     renderMap() {
         const transitionPoints = this.transitionPointManager.getTransitionPoints();
         const selectedPoint = this.inspector.getSelectedPoint();
+        const hoveredPoint = this.inspector.getHoveredPoint();
+        
+        // Użyj hoveredPoint jeśli nie ma selectedPoint, lub selectedPoint jeśli jest
+        const activePoint = selectedPoint || hoveredPoint;
         
         this.renderer.renderMap(
             this.chunks, 
             this.chunkManager, 
             transitionPoints, 
-            selectedPoint,
-            this.pathfindingPointManager
+            activePoint,
+            this.pathfindingPointManager,
+            this.gameDataManager
         );
     }
     
@@ -408,6 +425,8 @@ class ChunkMapGenerator {
                 this.canvas.classList.add('pointer-cursor');
                 this.inspector.showInspector(hoveredPoint);
                 this.canvas.style.cursor = 'pointer';
+                // Renderuj mapę z liniami połączeń dla hoveredPoint
+                this.renderMap();
             } else {
                 this.inspector.setHoveredPoint(null);
                 this.canvas.classList.remove('pointer-cursor');
@@ -418,6 +437,8 @@ class ChunkMapGenerator {
                 } else {
                     this.inspector.hideInspector();
                 }
+                // Renderuj mapę ponownie (może ukryć linie hover)
+                this.renderMap();
             }
         });
 
@@ -440,6 +461,7 @@ class ChunkMapGenerator {
                 if (clickedPoint) {
                     this.inspector.setSelectedPoint(clickedPoint);
                     this.inspector.showInspector(clickedPoint);
+                    // Renderuj mapę z liniami połączeń dla selectedPoint
                     this.renderMap();
                 }
             }
