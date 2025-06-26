@@ -871,6 +871,16 @@ input[type="range"]::-moz-range-thumb:hover {
   transform: scale(1.2);
 }
 
+.legend-color.pathfinding-start {
+  background: #00ff00;
+  border: 2px solid #ffffff;
+}
+
+.legend-color.pathfinding-end {
+  background: #ff4444;
+  border: 2px solid #ffffff;
+}
+
 #mapCanvas {
   cursor: default;
 }
@@ -1029,24 +1039,43 @@ input[type="range"]::-moz-range-thumb:hover {
   
   .config-buttons {
     flex-direction: column;
-    align-items: center;
   }
   
   .config-buttons .btn {
     width: 100%;
-    max-width: 280px;
   }
   
   .map-stats {
-    gap: var(--space-16);
+    flex-direction: column;
   }
   
   .legend-items {
-    gap: var(--space-16);
+    flex-direction: column;
   }
   
   .preset-info {
-    padding: var(--space-12);
+    margin-top: var(--space-12);
+  }
+  
+  /* Responsywne style dla pathfinding */
+  .pathfinding-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-16);
+  }
+  
+  .pathfinding-controls {
+    flex-direction: column;
+    gap: var(--space-8);
+  }
+  
+  .pathfinding-controls .btn {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .pathfinding-stats {
+    flex-direction: column;
+    gap: var(--space-8);
   }
 }
 
@@ -1112,4 +1141,111 @@ input[type="range"]::-moz-range-thumb:hover {
 
 .btn--primary:hover {
   box-shadow: var(--shadow-md);
+}
+
+/* Nowe style dla sekcji Pathfinding */
+.pathfinding-panel.card {
+  border: var(--color-card-border-inner) 2px solid;
+  margin-top: var(--space-16);
+  background: var(--color-surface);
+}
+
+.pathfinding-panel .card__header h2 {
+  color: var(--color-text);
+  margin: 0;
+  font-size: var(--font-size-xl);
+}
+
+.pathfinding-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-20);
+  margin-bottom: var(--space-20);
+}
+
+.pathfinding-section {
+  padding: var(--space-16);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-secondary);
+}
+
+.pathfinding-section h4 {
+  margin: 0 0 var(--space-12) 0;
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.point-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.point-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.point-label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.point-value {
+  font-family: var(--font-family-mono);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.pathfinding-controls {
+  display: flex;
+  gap: var(--space-12);
+  margin-bottom: var(--space-16);
+  flex-wrap: wrap;
+}
+
+.pathfinding-controls .btn {
+  flex: 1;
+  min-width: 140px;
+}
+
+.pathfinding-stats {
+  display: flex;
+  gap: var(--space-16);
+  padding: var(--space-12);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-secondary);
+}
+
+.pathfinding-stats .stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+}
+
+.pathfinding-stats .stat-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-4);
+}
+
+.pathfinding-stats .stat-value {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-family-mono);
+}
+
+.legend.card {
+  box-shadow: var(--shadow-sm);
 }

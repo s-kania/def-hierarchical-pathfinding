@@ -15,7 +15,7 @@ export class CanvasRenderer {
     /**
      * RENDERUJE CAŁĄ MAPĘ
      */
-    renderMap(chunks, chunkManager, transitionPoints, selectedPoint = null) {
+    renderMap(chunks, chunkManager, transitionPoints, selectedPoint = null, pathfindingPoints = null) {
         const canvasSize = chunkManager.calculateCanvasSize();
         
         // Ustaw rozmiar canvas
@@ -43,6 +43,11 @@ export class CanvasRenderer {
             }
             
             this.renderTransitionPoints(transitionPoints, selectedPoint);
+        }
+        
+        // Renderuj punkty pathfinding jeśli istnieją
+        if (pathfindingPoints) {
+            this.renderPathfindingPoints(pathfindingPoints);
         }
     }
 
@@ -97,6 +102,76 @@ export class CanvasRenderer {
                 this.ctx.fill();
             }
         });
+    }
+
+    /**
+     * RENDERUJE PUNKTY PATHFINDING (START I KONIEC)
+     */
+    renderPathfindingPoints(pathfindingPointManager) {
+        const startPoint = pathfindingPointManager.getStartPoint();
+        const endPoint = pathfindingPointManager.getEndPoint();
+        const draggedPoint = pathfindingPointManager.getDraggedPoint();
+        
+        // Renderuj punkt startowy
+        if (startPoint) {
+            this.renderSinglePathfindingPoint(startPoint, '#00ff00', '📍', startPoint === draggedPoint);
+        }
+        
+        // Renderuj punkt końcowy
+        if (endPoint) {
+            this.renderSinglePathfindingPoint(endPoint, '#ff4444', '🎯', endPoint === draggedPoint);
+        }
+    }
+
+    /**
+     * RENDERUJE POJEDYNCZY PUNKT PATHFINDING
+     */
+    renderSinglePathfindingPoint(point, color, emoji, isDragged = false) {
+        const radius = Math.max(10, this.settings.tileSize / 2);
+        const currentRadius = isDragged ? radius * 1.3 : radius;
+        
+        // Cień
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        this.ctx.beginPath();
+        this.ctx.arc(point.pixelX + 2, point.pixelY + 2, currentRadius + 2, 0, 2 * Math.PI);
+        this.ctx.fill();
+        
+        // Główne koło
+        this.ctx.fillStyle = color;
+        this.ctx.beginPath();
+        this.ctx.arc(point.pixelX, point.pixelY, currentRadius, 0, 2 * Math.PI);
+        this.ctx.fill();
+        
+        // Białe obramowanie
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 3;
+        this.ctx.stroke();
+        
+        // Wewnętrzne koło
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(point.pixelX, point.pixelY, currentRadius * 0.4, 0, 2 * Math.PI);
+        this.ctx.fill();
+        
+        // Pulsujące obramowanie jeśli przeciągany
+        if (isDragged) {
+            this.ctx.strokeStyle = color;
+            this.ctx.lineWidth = 2;
+            this.ctx.setLineDash([5, 5]);
+            this.ctx.beginPath();
+            this.ctx.arc(point.pixelX, point.pixelY, currentRadius + 8, 0, 2 * Math.PI);
+            this.ctx.stroke();
+            this.ctx.setLineDash([]);
+        }
+        
+        // Tekst emoji (jeśli punkt jest wystarczająco duży)
+        if (currentRadius >= 12) {
+            this.ctx.font = `${Math.max(12, currentRadius)}px Arial`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fillText(emoji, point.pixelX, point.pixelY - 1);
+        }
     }
 
     /**

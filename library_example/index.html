@@ -212,9 +212,78 @@
                 </div>
             </div>
 
-
-
             <canvas id="mapCanvas" width="800" height="600"></canvas>
+        </div>
+
+        <!-- Nowa sekcja Pathfinding -->
+        <div class="pathfinding-panel card">
+            <div class="card__header">
+                <h2>🚀 Pathfinding</h2>
+            </div>
+            <div class="card__body">
+                <div class="pathfinding-info">
+                    <div class="pathfinding-grid">
+                        <div class="pathfinding-section">
+                            <h4>📍 Punkt Startowy</h4>
+                            <div class="point-details">
+                                <div class="point-info-item">
+                                    <span class="point-label">Pozycja:</span>
+                                    <span id="startPointPosition" class="point-value">Nie ustawiony</span>
+                                </div>
+                                <div class="point-info-item">
+                                    <span class="point-label">Współrzędne:</span>
+                                    <span id="startPointCoords" class="point-value">-</span>
+                                </div>
+                                <div class="point-info-item">
+                                    <span class="point-label">Chunk:</span>
+                                    <span id="startPointChunk" class="point-value">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="pathfinding-section">
+                            <h4>🎯 Punkt Końcowy</h4>
+                            <div class="point-details">
+                                <div class="point-info-item">
+                                    <span class="point-label">Pozycja:</span>
+                                    <span id="endPointPosition" class="point-value">Nie ustawiony</span>
+                                </div>
+                                <div class="point-info-item">
+                                    <span class="point-label">Współrzędne:</span>
+                                    <span id="endPointCoords" class="point-value">-</span>
+                                </div>
+                                <div class="point-info-item">
+                                    <span class="point-label">Chunk:</span>
+                                    <span id="endPointChunk" class="point-value">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pathfinding-controls">
+                        <button class="btn btn--primary" id="generateRandomPoints">
+                            🎲 Wygeneruj Losowe Punkty
+                        </button>
+                        <button class="btn btn--secondary" id="clearPathfindingPoints">
+                            🗑️ Wyczyść Punkty
+                        </button>
+                        <button class="btn btn--outline" id="calculatePath">
+                            🧭 Oblicz Ścieżkę
+                        </button>
+                    </div>
+                    
+                    <div class="pathfinding-stats">
+                        <div class="stat">
+                            <span class="stat-label">Dystans liniowy:</span>
+                            <span id="linearDistance" class="stat-value">-</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Status:</span>
+                            <span id="pathfindingStatus" class="stat-value">Oczekuje punktów</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="legend card">
@@ -234,6 +303,14 @@
                     <div class="legend-item">
                         <div class="legend-color transition-point"></div>
                         <span>Transition Point</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color pathfinding-start"></div>
+                        <span>Punkt Startowy 📍</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color pathfinding-end"></div>
+                        <span>Punkt Końcowy 🎯</span>
                     </div>
                 </div>
                 <div class="preset-info">
