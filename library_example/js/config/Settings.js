@@ -3,15 +3,15 @@
  */
 
 export const DEFAULT_SETTINGS = {
-    chunkCols: 5,        // Liczba chunków w poziomie
-    chunkRows: 3,        // Liczba chunków w pionie  
-    chunkSize: 6,        // Rozmiar chunka (6x6 tiles)
+    chunkCols: 8,        // Liczba chunków w poziomie
+    chunkRows: 6,        // Liczba chunków w pionie  
+    chunkSize: 11,        // Rozmiar chunka (6x6 tiles)
     tileSize: 16         // Rozmiar tile w pikselach
 };
 
 export const DEFAULT_ISLAND_SETTINGS = {
     preset: 'archipelago',      // Preset: archipelago/continent/scattered/dense
-    landDensity: 35,            // Gęstość lądu w % (wpływa na bazową mapę)
+    landDensity: 27,            // Gęstość lądu w % (wpływa na bazową mapę)
     iterations: 4,              // Iteracje smoothing (cellular automata)
     neighborThreshold: 4,       // Próg sąsiadów dla smoothing
     archipelagoMode: true,      // Tryb archipelagu vs kontynent
@@ -26,7 +26,7 @@ export const DEFAULT_PATHFINDING_SETTINGS = {
 
 export const ISLAND_PRESETS = {
     archipelago: {
-        landDensity: 0.35,
+        landDensity: 0.27,
         iterations: 4,
         neighborThreshold: 4,
         archipelagoMode: true,

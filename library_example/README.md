@@ -48,6 +48,9 @@ library_example/
 # Uruchom serwer HTTP w katalogu projektu
 cd library_example && python3 -m http.server 8000
 
+# Jedna komenda, aby zabić wszystko na porcie 8000
+kill $(lsof -ti:8000)
+
 # Otwórz w przeglądarce
 # http://localhost:8000
 ```

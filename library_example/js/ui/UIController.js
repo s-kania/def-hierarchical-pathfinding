@@ -297,13 +297,13 @@ export class UIController {
      */
     resetToDefaults() {
         // Reset podstawowych ustawień
-        this.settings.chunkCols = 5;
-        this.settings.chunkRows = 3;
-        this.settings.chunkSize = 6;
+        this.settings.chunkCols = 8;
+        this.settings.chunkRows = 6;
+        this.settings.chunkSize = 11;
         this.settings.tileSize = 16;
 
         this.islandSettings.preset = 'archipelago';
-        this.islandSettings.landDensity = 35;
+        this.islandSettings.landDensity = 27;
         this.islandSettings.iterations = 4;
         this.islandSettings.neighborThreshold = 4;
         this.islandSettings.archipelagoMode = true;
@@ -321,15 +321,15 @@ export class UIController {
      */
     resetUI() {
         // Reset sliderów podstawowych
-        document.getElementById('chunkSize').value = 6;
-        document.getElementById('chunkCols').value = 5;
-        document.getElementById('chunkRows').value = 3;
+        document.getElementById('chunkSize').value = 11;
+        document.getElementById('chunkCols').value = 8;
+        document.getElementById('chunkRows').value = 6;
         document.getElementById('tileSize').value = 16;
 
         // Reset labelek podstawowych
-        document.getElementById('chunkSizeValue').textContent = '6x6';
-        document.getElementById('chunkColsValue').textContent = '5';
-        document.getElementById('chunkRowsValue').textContent = '3';
+        document.getElementById('chunkSizeValue').textContent = '11x11';
+        document.getElementById('chunkColsValue').textContent = '8';
+        document.getElementById('chunkRowsValue').textContent = '6';
         document.getElementById('tileSizeValue').textContent = '16px';
 
         // Reset kontrolek wysp
