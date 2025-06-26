@@ -463,7 +463,18 @@ class ChunkMapGenerator {
                     this.inspector.showInspector(clickedPoint);
                     // Renderuj mapę z liniami połączeń dla selectedPoint
                     this.renderMap();
+                } else {
+                    // Kliknięto poza punktem przejścia - resetuj zaznaczenie
+                    this.inspector.setSelectedPoint(null);
+                    this.inspector.hideInspector();
+                    // Renderuj mapę bez linii połączeń
+                    this.renderMap();
                 }
+            } else {
+                // Punkty przejścia są wyłączone - resetuj zaznaczenie
+                this.inspector.setSelectedPoint(null);
+                this.inspector.hideInspector();
+                this.renderMap();
             }
         });
 
@@ -483,9 +494,20 @@ class ChunkMapGenerator {
                 this.pathfindingUIController.updateAll(this.pathfindingPointManager);
             }
             
-            this.inspector.hideInspector();
+            // Resetuj hover (ale zachowaj selected)
+            this.inspector.setHoveredPoint(null);
             this.canvas.classList.remove('pointer-cursor');
             this.canvas.style.cursor = 'default';
+            
+            // Pokaż selectedPoint jeśli istnieje, inaczej ukryj inspector
+            if (this.inspector.getSelectedPoint()) {
+                this.inspector.showInspector(this.inspector.getSelectedPoint());
+            } else {
+                this.inspector.hideInspector();
+            }
+            
+            // Renderuj mapę (może ukryć linie hover, ale zachować linie selected)
+            this.renderMap();
         });
     }
     
