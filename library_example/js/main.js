@@ -508,8 +508,6 @@ class ChunkMapGenerator {
      * BUDUJE GRAF POŁĄCZEŃ MIĘDZY PUNKTAMI PRZEJŚCIA
      */
     onBuildTransitionGraph() {
-        console.log('🔗 Ręczne budowanie grafu połączeń...');
-        
         // Upewnij się że mamy dane w GameDataManager
         if (!this.gameDataManager || this.gameDataManager.transitionPoints.length === 0) {
             this.pathfindingUIController.showError('Brak punktów przejścia do zbudowania grafu');
@@ -518,9 +516,6 @@ class ChunkMapGenerator {
         
         // Buduj graf połączeń
         this.gameDataManager.buildConnections(this.chunks);
-        
-        // Drukuj statystyki grafu
-        this.gameDataManager.printGraphStats();
         
         // Pokaż sukces
         this.pathfindingUIController.showSuccess('Zbudowano graf połączeń');
@@ -532,22 +527,7 @@ class ChunkMapGenerator {
     onPrintGameData() {
         console.log('=== GAMEDATA MANAGER PRINT ===');
         console.log('📊 GameDataManager Object:', this.gameDataManager);
-        
-        console.log('\n🔗 Transition Points (New Format with IDs):');
-        console.table(this.gameDataManager.transitionPoints.map(point => ({
-            id: point.id,
-            chunks: point.chunks.join(' ↔ '),
-            position: point.position,
-            connections_count: point.connections.length,
-            connections: point.connections.join(', ')
-        })));
-        
-        console.log('\n🔄 Converted to Default Format:');
-        const defaultFormat = this.gameDataManager.convertTransitionPointsToDefault();
-        console.table(defaultFormat);
-        
-        // Drukuj statystyki grafu
-        this.gameDataManager.printGraphStats();
+
         
         console.log('\n📐 Settings:');
         console.log('- Chunk Size:', this.gameDataManager.chunkSize);

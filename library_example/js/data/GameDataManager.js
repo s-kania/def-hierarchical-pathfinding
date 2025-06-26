@@ -42,7 +42,6 @@ export class GameDataManager {
      */
     buildConnections(chunks) {
         this.chunks = chunks;
-        console.log('🔗 Budowanie grafu połączeń punktów przejścia...');
         
         // Wyczyść poprzednie connections
         this.transitionPoints.forEach(point => point.connections = []);
@@ -57,8 +56,6 @@ export class GameDataManager {
                 this.buildChunkConnections(chunkId, points);
             }
         });
-        
-        console.log(`✓ Zbudowano graf z ${this.transitionPoints.length} punktów przejścia`);
     }
     
     /**
@@ -85,19 +82,8 @@ export class GameDataManager {
     buildChunkConnections(chunkId, points) {
         const chunk = this.findChunk(chunkId);
         if (!chunk) {
-            console.warn(`⚠️ Chunk ${chunkId} nie znaleziony`);
             return;
         }
-        
-        // Debug: sprawdź strukturę chunka
-        console.log(`🔍 Budowanie połączeń dla chunka ${chunkId}:`, {
-            id: chunk.id,
-            x: chunk.x,
-            y: chunk.y,
-            hasTiles: !!chunk.tiles,
-            tilesLength: chunk.tiles ? chunk.tiles.length : 0,
-            pointsCount: points.length
-        });
         
         // Dla każdej pary punktów przejścia w chunka sprawdź połączenie A*
         for (let i = 0; i < points.length; i++) {
@@ -123,21 +109,8 @@ export class GameDataManager {
         const posB = this.getPointPositionInChunk(chunkId, pointB);
         
         if (!posA || !posB) {
-            console.warn(`⚠️ Nie można obliczyć pozycji punktów w chunka ${chunkId}`, {
-                pointA: pointA.id,
-                pointB: pointB.id,
-                posA,
-                posB
-            });
             return false;
         }
-        
-        // Debug pozycje
-        console.log(`🔍 Sprawdzanie połączenia ${pointA.id} ↔ ${pointB.id}:`, {
-            posA,
-            posB,
-            chunkSize: this.chunkSize
-        });
         
         // Użyj A* do znalezienia ścieżki
         const path = this.findPathAStar(chunk, posA, posB);
@@ -273,14 +246,11 @@ export class GameDataManager {
         // Chunks używają pola 'tiles', nie 'data'
         const tileIndex = y * this.chunkSize + x;
         
-        // Debug logging
         if (!chunk.tiles) {
-            console.error('❌ Chunk nie ma pola tiles!', chunk);
             return false;
         }
         
         if (tileIndex < 0 || tileIndex >= chunk.tiles.length) {
-            console.error(`❌ Tile index ${tileIndex} out of bounds! x=${x}, y=${y}, chunkSize=${this.chunkSize}`);
             return false;
         }
         
