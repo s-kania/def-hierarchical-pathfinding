@@ -256,6 +256,10 @@ class ChunkMapGenerator {
         // Użyj hoveredPoint jeśli nie ma selectedPoint, lub selectedPoint jeśli jest
         const activePoint = selectedPoint || hoveredPoint;
         
+        // Przekaż selectedPoint i hoveredPoint do renderera
+        this.renderer.selectedPoint = selectedPoint;
+        this.renderer.hoveredPoint = hoveredPoint;
+        
         this.renderer.renderMap(
             this.chunks, 
             this.chunkManager, 
@@ -420,13 +424,24 @@ class ChunkMapGenerator {
             }
 
             const hoveredPoint = this.transitionPointManager.getTransitionPointAt(mouseX, mouseY);
+            const currentHoveredPoint = this.inspector.getHoveredPoint();
+            
+            // Sprawdź czy hover się zmienił (porównaj przez ID punktów)
+            const getPointId = (point) => point ? `${point.chunkA}-${point.chunkB}-${point.x}-${point.y}` : null;
+            const hoveredId = getPointId(hoveredPoint);
+            const currentHoveredId = getPointId(currentHoveredPoint);
+            const hoverChanged = hoveredId !== currentHoveredId;
+            
             if (hoveredPoint) {
                 this.inspector.setHoveredPoint(hoveredPoint);
                 this.canvas.classList.add('pointer-cursor');
                 this.inspector.showInspector(hoveredPoint);
                 this.canvas.style.cursor = 'pointer';
-                // Renderuj mapę z liniami połączeń dla hoveredPoint
-                this.renderMap();
+                
+                // Renderuj mapę tylko jeśli hover się zmienił
+                if (hoverChanged) {
+                    this.renderMap();
+                }
             } else {
                 this.inspector.setHoveredPoint(null);
                 this.canvas.classList.remove('pointer-cursor');
@@ -437,8 +452,11 @@ class ChunkMapGenerator {
                 } else {
                     this.inspector.hideInspector();
                 }
-                // Renderuj mapę ponownie (może ukryć linie hover)
-                this.renderMap();
+                
+                // Renderuj mapę tylko jeśli hover się zmienił
+                if (hoverChanged) {
+                    this.renderMap();
+                }
             }
         });
 

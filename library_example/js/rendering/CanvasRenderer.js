@@ -37,8 +37,8 @@ export class CanvasRenderer {
         });
 
         // Renderuj linie połączeń PRZED punktami przejścia (żeby były pod nimi)
-        if (this.pathfindingSettings.showTransitionPoints && activePoint && gameDataManager) {
-            this.renderConnectionLines(activePoint, transitionPoints, gameDataManager);
+        if (this.pathfindingSettings.showTransitionPoints && gameDataManager) {
+            this.renderAllConnectionLines(transitionPoints, gameDataManager);
         }
 
         // Renderuj punkty przejścia jeśli włączone
@@ -213,9 +213,58 @@ export class CanvasRenderer {
     }
 
     /**
+     * RENDERUJE WSZYSTKIE AKTYWNE LINIE POŁĄCZEŃ (SELECTED + HOVER)
+     */
+    renderAllConnectionLines(allTransitionPoints, gameDataManager) {
+        let renderedLines = 0;
+        
+        // Renderuj połączenia dla zaznaczonego punktu (zielone linie)
+        if (this.selectedPoint) {
+            console.log('🎯 Renderowanie linii dla selected point:', `${this.selectedPoint.chunkA}-${this.selectedPoint.chunkB}`);
+            this.renderConnectionLines(this.selectedPoint, allTransitionPoints, gameDataManager, {
+                color: '#00ff00',  // Zielony dla selected
+                lineWidth: 3,
+                dashPattern: [10, 5],
+                showArrows: true
+            });
+            renderedLines++;
+        }
+        
+        // Renderuj połączenia dla hovered punktu (pomarańczowe linie)
+        if (this.hoveredPoint && (!this.selectedPoint || this.hoveredPoint !== this.selectedPoint)) {
+            const hoveredId = `${this.hoveredPoint.chunkA}-${this.hoveredPoint.chunkB}`;
+            const selectedId = this.selectedPoint ? `${this.selectedPoint.chunkA}-${this.selectedPoint.chunkB}` : null;
+            
+            if (hoveredId !== selectedId) {
+                console.log('🟠 Renderowanie linii dla hovered point:', hoveredId);
+                this.renderConnectionLines(this.hoveredPoint, allTransitionPoints, gameDataManager, {
+                    color: '#ff8800',  // Pomarańczowy dla hover
+                    lineWidth: 2,
+                    dashPattern: [8, 4],
+                    showArrows: false
+                });
+                renderedLines++;
+            }
+        }
+        
+        if (renderedLines === 0) {
+            console.log('📭 Brak aktywnych punktów - nie renderuję linii połączeń');
+        }
+    }
+
+    /**
      * RENDERUJE LINIE POŁĄCZEŃ MIĘDZY PUNKTAMI PRZEJŚCIA
      */
-    renderConnectionLines(selectedPoint, allTransitionPoints, gameDataManager) {
+    renderConnectionLines(selectedPoint, allTransitionPoints, gameDataManager, style = null) {
+        // Domyślny styl jeśli nie podano
+        const defaultStyle = {
+            color: '#00ff00',
+            lineWidth: 3,
+            dashPattern: [10, 5],
+            showArrows: true
+        };
+        const currentStyle = style || defaultStyle;
+
         // Znajdź ID wybranego punktu w formacie GameDataManager
         const selectedPointId = this.findPointIdInGameData(selectedPoint, gameDataManager);
         if (!selectedPointId) {
@@ -230,12 +279,12 @@ export class CanvasRenderer {
             return;
         }
 
-        console.log(`🔗 Renderowanie ${connections.length} połączeń dla punktu ${selectedPointId}`);
+        console.log(`🔗 Renderowanie ${connections.length} połączeń dla punktu ${selectedPointId} (${currentStyle.color})`);
 
         // Ustaw style dla linii
-        this.ctx.strokeStyle = '#00ff00'; // Zielony kolor
-        this.ctx.lineWidth = 3;
-        this.ctx.setLineDash([10, 5]); // Przerywane linie
+        this.ctx.strokeStyle = currentStyle.color;
+        this.ctx.lineWidth = currentStyle.lineWidth;
+        this.ctx.setLineDash(currentStyle.dashPattern);
         this.ctx.lineCap = 'round';
 
         // Dla każdego połączenia narysuj linię
@@ -249,8 +298,10 @@ export class CanvasRenderer {
                 this.ctx.stroke();
 
                 // Dodaj strzałkę na końcu linii (opcjonalne)
-                this.drawArrowHead(selectedPoint.pixelX, selectedPoint.pixelY, 
-                                 connectedPoint.pixelX, connectedPoint.pixelY);
+                if (currentStyle.showArrows) {
+                    this.drawArrowHead(selectedPoint.pixelX, selectedPoint.pixelY, 
+                                     connectedPoint.pixelX, connectedPoint.pixelY);
+                }
             } else {
                 console.log('⚠️ Nie znaleziono connected point dla ID:', connectedPointId);
             }
