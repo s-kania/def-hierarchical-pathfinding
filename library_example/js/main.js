@@ -116,6 +116,7 @@ class ChunkMapGenerator {
             onGenerateRandomPoints: () => this.onGenerateRandomPathfindingPoints(),
             onClearPoints: () => this.onClearPathfindingPoints(),
             onCalculatePath: () => this.onCalculatePathfindingPath(),
+            onBuildTransitionGraph: () => this.onBuildTransitionGraph(),
             onPrintData: () => this.onPrintGameData()
         });
         
@@ -467,7 +468,7 @@ class ChunkMapGenerator {
     }
     
     /**
-     * AKTUALIZUJE GAMEDATA MANAGER Z PUNKTAMI PRZEJŚCIA
+     * AKTUALIZUJE GAMEDATA MANAGER Z PUNKTAMI PRZEJŚCIA I BUDUJE GRAF
      */
     updateGameDataManager() {
         if (!this.gameDataManager || !this.transitionPointManager) {
@@ -492,19 +493,39 @@ class ChunkMapGenerator {
                     position = point.y % this.settings.chunkSize;
                 }
                 
-                // Dodaj punkt w nowym formacie
-                const newFormatPoint = {
-                    chunks: [point.chunkA, point.chunkB],
-                    position: position
-                };
-                
-                this.gameDataManager.transitionPoints.push(newFormatPoint);
+                // Dodaj punkt z ID i connections
+                this.gameDataManager.addTransitionPoint(point.chunkA, point.chunkB, position);
             }
         });
+        
+        // Graf połączeń będzie budowany na żądanie przez przycisk "Zbuduj Graf Przejść"
+        // this.gameDataManager.buildConnections(this.chunks);
         
         console.log(`✓ GameDataManager updated with ${this.gameDataManager.transitionPoints.length} transition points`);
     }
     
+    /**
+     * BUDUJE GRAF POŁĄCZEŃ MIĘDZY PUNKTAMI PRZEJŚCIA
+     */
+    onBuildTransitionGraph() {
+        console.log('🔗 Ręczne budowanie grafu połączeń...');
+        
+        // Upewnij się że mamy dane w GameDataManager
+        if (!this.gameDataManager || this.gameDataManager.transitionPoints.length === 0) {
+            this.pathfindingUIController.showError('Brak punktów przejścia do zbudowania grafu');
+            return;
+        }
+        
+        // Buduj graf połączeń
+        this.gameDataManager.buildConnections(this.chunks);
+        
+        // Drukuj statystyki grafu
+        this.gameDataManager.printGraphStats();
+        
+        // Pokaż sukces
+        this.pathfindingUIController.showSuccess('Zbudowano graf połączeń');
+    }
+
     /**
      * DRUKUJE DANE GAME DATA MANAGER W KONSOLI
      */
@@ -512,12 +533,21 @@ class ChunkMapGenerator {
         console.log('=== GAMEDATA MANAGER PRINT ===');
         console.log('📊 GameDataManager Object:', this.gameDataManager);
         
-        console.log('\n🔗 Transition Points (New Format):');
-        console.table(this.gameDataManager.transitionPoints);
+        console.log('\n🔗 Transition Points (New Format with IDs):');
+        console.table(this.gameDataManager.transitionPoints.map(point => ({
+            id: point.id,
+            chunks: point.chunks.join(' ↔ '),
+            position: point.position,
+            connections_count: point.connections.length,
+            connections: point.connections.join(', ')
+        })));
         
         console.log('\n🔄 Converted to Default Format:');
         const defaultFormat = this.gameDataManager.convertTransitionPointsToDefault();
         console.table(defaultFormat);
+        
+        // Drukuj statystyki grafu
+        this.gameDataManager.printGraphStats();
         
         console.log('\n📐 Settings:');
         console.log('- Chunk Size:', this.gameDataManager.chunkSize);
