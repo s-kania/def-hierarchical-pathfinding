@@ -1,0 +1,24 @@
+return {
+  _all = {
+    -- Katalog z testami
+    roots = {"spec"},
+    -- Wzorzec plików testowych
+    pattern = "_spec%.lua$",
+    -- Ścieżki do modułów
+    lpath = "?.lua;src/?.lua;src/utils/?.lua",
+    -- Tryb wyjścia
+    output = "utfTerminal",
+    -- Losowa kolejność testów
+    shuffle = false,
+    -- Pokaż czas wykonania
+    suppressPending = false,
+    -- Język komunikatów
+    lang = "en"
+  },
+  default = {
+    verbose = true
+  },
+  minimal = {
+    output = "plainTerminal"
+  }
+} 
