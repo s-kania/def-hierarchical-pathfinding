@@ -1,0 +1,113 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "🧪 Run Lua Tests",
+            "type": "shell",
+            "command": "./def_hierarchical_pathfinding/run_tests.sh",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "detail": "Run all Lua tests using Busted framework"
+        },
+        {
+            "label": "🔍 Run Lua Tests (Verbose)",
+            "type": "shell",
+            "command": "./def_hierarchical_pathfinding/run_tests.sh",
+            "args": ["verbose"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "detail": "Run Lua tests with detailed output"
+        },
+        {
+            "label": "📊 Run Lua Tests (Coverage)",
+            "type": "shell",
+            "command": "./def_hierarchical_pathfinding/run_tests.sh",
+            "args": ["coverage"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "detail": "Run Lua tests with code coverage analysis"
+        },
+        {
+            "label": "📺 Watch Lua Tests",
+            "type": "shell",
+            "command": "./def_hierarchical_pathfinding/run_tests.sh",
+            "args": ["watch"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "detail": "Watch mode - run tests continuously",
+            "isBackground": true,
+            "runOptions": {
+                "instanceLimit": 1
+            }
+        },
+        {
+            "label": "🐳 Build Docker Test Environment",
+            "type": "shell",
+            "command": "docker",
+            "args": ["pull", "imega/busted:latest"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "detail": "Pull latest Busted Docker image"
+        },
+        {
+            "label": "🧹 Clean Test Output",
+            "type": "shell",
+            "command": "find",
+            "args": ["def_hierarchical_pathfinding", "-name", "luacov.*", "-delete"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "detail": "Clean up test coverage files"
+        }
+    ]
+} 
