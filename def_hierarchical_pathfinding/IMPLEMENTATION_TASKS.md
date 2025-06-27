@@ -183,10 +183,47 @@ Implementacja biblioteki hierarchicznego pathfindingu dla Defold podzielona na k
 
 ### Faza 6: Testowanie
 
+#### ✅ Task 6.0: Konfiguracja Deftest
+**Priorytet**: Wysoki  
+**Czas**: 30 min
+
+- [ ] Dodać deftest jako dependency w `game.project`:
+  ```
+  https://github.com/britzl/deftest/archive/master.zip
+  ```
+- [ ] Utworzyć `tests/test_runner.script` do uruchamiania testów
+- [ ] Konfiguracja z coverage reporting (opcjonalnie)
+
 #### ✅ Task 6.1: Testy Jednostkowe
 **Plik**: `tests/test_pathfinding.lua`  
 **Priorytet**: Wysoki  
 **Czas**: 3-4h
+
+```lua
+-- Przykład struktury testów z deftest
+local deftest = require "deftest.deftest"
+
+return function()
+    describe("Coordinate Utils", function()
+        test("chunk_id_to_coords", function()
+            assert_equal(coord_utils.chunk_id_to_coords("2,3"), {x=2, y=3})
+        end)
+        
+        test("global_to_chunk_id", function()
+            local pos = vmath.vector3(48, 32, 0)
+            assert_equal(coord_utils.global_to_chunk_id(pos, 6, 16), "3,2")
+        end)
+    end)
+    
+    describe("Local Pathfinder", function() 
+        test("find_path simple", function()
+            local chunk_data = {{0,0,0}, {0,0,0}, {0,0,0}}
+            local path = local_pathfinder.find_path(chunk_data, {x=0,y=0}, {x=2,y=2})
+            assert_not_nil(path)
+        end)
+    end)
+end
+```
 
 - [ ] Testy konwersji współrzędnych
 - [ ] Testy A* (proste przypadki)
@@ -195,7 +232,7 @@ Implementacja biblioteki hierarchicznego pathfindingu dla Defold podzielona na k
 - [ ] Testy edge cases
 
 #### ✅ Task 6.2: Testy Integracyjne
-**Plik**: `tests/test_pathfinding.lua`  
+**Plik**: `tests/test_integration.lua`  
 **Priorytet**: Wysoki  
 **Czas**: 2h
 
@@ -225,6 +262,7 @@ Implementacja biblioteki hierarchicznego pathfindingu dla Defold podzielona na k
 - [ ] Przykłady użycia
 - [ ] Opis API
 - [ ] Wymagania i ograniczenia
+- [ ] Instrukcje uruchamiania testów z [deftest](https://github.com/britzl/deftest)
 
 ## 📊 Podsumowanie Czasu
 
@@ -235,7 +273,7 @@ Implementacja biblioteki hierarchicznego pathfindingu dla Defold podzielona na k
 | Faza 3: Chunk Nav | 4-5h | Krytyczny |
 | Faza 4: Segmenty | 5h | Krytyczny |
 | Faza 5: Główny | 4-5h | Krytyczny |
-| Faza 6: Testy | 5-6h | Wysoki |
+| Faza 6: Testy | 5.5-6.5h | Wysoki |
 | Faza 7: Integracja | 3h | Średni |
 | **TOTAL** | **30-35h** | - |
 
@@ -267,11 +305,12 @@ Implementacja biblioteki hierarchicznego pathfindingu dla Defold podzielona na k
 
 ## 🚀 Wskazówki Implementacyjne
 
-1. **Zacznij od testów** - napisz testy przed implementacją
+1. **Zacznij od testów** - napisz testy przed implementacją używając [deftest](https://github.com/britzl/deftest)
 2. **Małe kroki** - commituj często z jasnymi opisami
 3. **Debugowanie** - dodaj print() statements podczas rozwoju
 4. **Profiling** - mierz czas wykonania krytycznych funkcji
 5. **Code review** - sprawdzaj swój kod przed merge
+6. **CI/CD** - deftest wspiera automatyczne testy na Travis-CI i innych systemach
 
 ## 📝 Szablon Commita
 
