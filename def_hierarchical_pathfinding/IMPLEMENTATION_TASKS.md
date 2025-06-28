@@ -16,6 +16,7 @@ Implementacja biblioteki hierarchicznego pathfindingu dla Defold podzielona na k
   ```
   def_hierarchical_pathfinding/
   ├── hierarchical_pathfinding.lua
+  ├── run_tests.sh
   ├── src/
   │   ├── utils/
   │   │   ├── coord_utils.lua
@@ -24,8 +25,11 @@ Implementacja biblioteki hierarchicznego pathfindingu dla Defold podzielona na k
   │   ├── chunk_navigator.lua
   │   ├── transition_resolver.lua
   │   └── path_segment_builder.lua
-  └── tests/
-      └── test_pathfinding.lua
+  └── spec/
+      ├── README.md
+      ├── coord_utils_spec.lua
+      ├── example_spec.lua
+      └── integration_spec.lua
   ```
 - [ ] Utworzyć podstawowe pliki z nagłówkami modułów
 - [ ] Dodać komentarze dokumentujące w każdym pliku
@@ -183,46 +187,55 @@ Implementacja biblioteki hierarchicznego pathfindingu dla Defold podzielona na k
 
 ### Faza 6: Testowanie
 
-#### ✅ Task 6.0: Konfiguracja Deftest
+#### ✅ Task 6.0: Konfiguracja Busted z Docker
 **Priorytet**: Wysoki  
 **Czas**: 30 min
 
-- [ ] Dodać deftest jako dependency w `game.project`:
-  ```
-  https://github.com/britzl/deftest/archive/master.zip
-  ```
-- [ ] Utworzyć `tests/test_runner.script` do uruchamiania testów
-- [ ] Konfiguracja z coverage reporting (opcjonalnie)
+- [x] Skonfigurować Busted framework z obrazem Docker `imega/busted:latest`
+- [x] Utworzyć skrypt `run_tests.sh` z opcjami:
+  - Normalne uruchomienie: `./run_tests.sh`
+  - Tryb obserwowania: `./run_tests.sh watch`
+  - Pokrycie kodu: `./run_tests.sh coverage`
+  - Tryb szczegółowy: `./run_tests.sh verbose`
+- [x] Struktura katalogów testów w `spec/` (nie `tests/`)
 
 #### ✅ Task 6.1: Testy Jednostkowe
-**Plik**: `tests/test_pathfinding.lua`  
+**Pliki**: `spec/*_spec.lua`  
 **Priorytet**: Wysoki  
 **Czas**: 3-4h
 
 ```lua
--- Przykład struktury testów z deftest
-local deftest = require "deftest.deftest"
-
-return function()
-    describe("Coordinate Utils", function()
-        test("chunk_id_to_coords", function()
-            assert_equal(coord_utils.chunk_id_to_coords("2,3"), {x=2, y=3})
-        end)
-        
-        test("global_to_chunk_id", function()
-            local pos = vmath.vector3(48, 32, 0)
-            assert_equal(coord_utils.global_to_chunk_id(pos, 6, 16), "3,2")
+-- Przykład struktury testów z Busted
+describe("Coordinate Utils", function()
+    local coord_utils = require "src.utils.coord_utils"
+    
+    describe("chunk_id_to_coords", function()
+        it("should parse chunk ID correctly", function()
+            local result = coord_utils.chunk_id_to_coords("2,3")
+            assert.are.same({x=2, y=3}, result)
         end)
     end)
     
-    describe("Local Pathfinder", function() 
-        test("find_path simple", function()
-            local chunk_data = {{0,0,0}, {0,0,0}, {0,0,0}}
-            local path = local_pathfinder.find_path(chunk_data, {x=0,y=0}, {x=2,y=2})
-            assert_not_nil(path)
+    describe("global_to_chunk_id", function()
+        it("should convert global position to chunk ID", function()
+            local pos = {x=48, y=32, z=0}
+            local result = coord_utils.global_to_chunk_id(pos, 6, 16)
+            assert.are.equal("3,2", result)
         end)
     end)
-end
+end)
+
+describe("Local Pathfinder", function()
+    local local_pathfinder = require "src.local_pathfinder"
+    
+    describe("find_path", function()
+        it("should find simple path", function()
+            local chunk_data = {{0,0,0}, {0,0,0}, {0,0,0}}
+            local path = local_pathfinder.find_path(chunk_data, {x=0,y=0}, {x=2,y=2})
+            assert.is_not_nil(path)
+        end)
+    end)
+end)
 ```
 
 - [ ] Testy konwersji współrzędnych
@@ -231,8 +244,23 @@ end
 - [ ] Testy segmentów
 - [ ] Testy edge cases
 
+**Uruchamianie testów:**
+```bash
+# Wszystkie testy
+./run_tests.sh
+
+# Tryb obserwowania (uruchamia testy przy każdej zmianie)
+./run_tests.sh watch
+
+# Z pokryciem kodu
+./run_tests.sh coverage
+
+# Tryb szczegółowy (verbose)
+./run_tests.sh verbose
+```
+
 #### ✅ Task 6.2: Testy Integracyjne
-**Plik**: `tests/test_integration.lua`  
+**Plik**: `spec/integration_spec.lua`  
 **Priorytet**: Wysoki  
 **Czas**: 2h
 
@@ -240,6 +268,7 @@ end
 - [ ] Test braku ścieżki (nil)
 - [ ] Test pojedynczego chunka
 - [ ] Test z przykładową mapą
+- [ ] Uruchamianie przez: `./run_tests.sh` lub `busted spec/`
 
 ### Faza 7: Integracja z Defold
 
@@ -262,7 +291,10 @@ end
 - [ ] Przykłady użycia
 - [ ] Opis API
 - [ ] Wymagania i ograniczenia
-- [ ] Instrukcje uruchamiania testów z [deftest](https://github.com/britzl/deftest)
+- [ ] Instrukcje uruchamiania testów z [Busted](https://lunarmodules.github.io/busted/) przez Docker:
+  - `./def_hierarchical_pathfinding/run_tests.sh`
+  - `./def_hierarchical_pathfinding/run_tests.sh watch`
+  - `./def_hierarchical_pathfinding/run_tests.sh coverage`
 
 ## 📊 Podsumowanie Czasu
 
@@ -305,12 +337,14 @@ end
 
 ## 🚀 Wskazówki Implementacyjne
 
-1. **Zacznij od testów** - napisz testy przed implementacją używając [deftest](https://github.com/britzl/deftest)
+1. **Zacznij od testów** - napisz testy przed implementacją używając [Busted](https://lunarmodules.github.io/busted/)
 2. **Małe kroki** - commituj często z jasnymi opisami
-3. **Debugowanie** - dodaj print() statements podczas rozwoju
+3. **Debugowanie** - dodaj print() statements podczas rozwoju lub użyj `./run_tests.sh verbose`
 4. **Profiling** - mierz czas wykonania krytycznych funkcji
 5. **Code review** - sprawdzaj swój kod przed merge
-6. **CI/CD** - deftest wspiera automatyczne testy na Travis-CI i innych systemach
+6. **CI/CD** - obraz Docker `imega/busted:latest` jest idealny do pipeline'ów CI/CD
+7. **Obserwowanie zmian** - użyj `./run_tests.sh watch` podczas rozwoju
+8. **Pokrycie kodu** - sprawdzaj pokrycie testami przez `./run_tests.sh coverage`
 
 ## 📝 Szablon Commita
 

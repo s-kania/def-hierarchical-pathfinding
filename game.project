@@ -10,7 +10,7 @@ height = 640
 
 [project]
 title = def_hierarchical_pathfinding
-dependencies#0 = https://github.com/britzl/deftest/archive/refs/tags/2.8.0.zip
+dependencies = 
 
 [library]
 include_dirs = def_hierarchical_pathfinding
