@@ -69,6 +69,20 @@ M.SIMPLE_TRANSITION_POINTS = {
         chunks = {"0,0", "0,1"},
         position = 3,
         connections = {}
+    },
+    -- Połączenie między chunkami 1,0 i 1,1
+    {
+        id = "1,0-1,1-3",
+        chunks = {"1,0", "1,1"},
+        position = 3,
+        connections = {}
+    },
+    -- Połączenie między chunkami 0,1 i 1,1
+    {
+        id = "0,1-1,1-3",
+        chunks = {"0,1", "1,1"},
+        position = 3,
+        connections = {}
     }
 }
 
@@ -201,6 +215,46 @@ M.CORRIDOR_MAP = {
     height = 3
 }
 
+-- Nowa mapa testowa 3x3 z pełnymi połączeniami
+M.TEST_MAP_3X3 = {
+    chunks = {
+        ["0,0"] = M.WATER_CHUNK,
+        ["1,0"] = M.WATER_CHUNK,
+        ["2,0"] = M.WATER_CHUNK,
+        ["0,1"] = M.WATER_CHUNK,
+        ["1,1"] = M.WATER_CHUNK,
+        ["2,1"] = M.WATER_CHUNK,
+        ["0,2"] = M.WATER_CHUNK,
+        ["1,2"] = M.WATER_CHUNK,
+        ["2,2"] = M.WATER_CHUNK
+    },
+    transition_points = {
+        -- Połączenia poziome (lewo-prawo)
+        -- Rząd 0
+        {id = "0,0-1,0-3", chunks = {"0,0", "1,0"}, position = 3, connections = {}},
+        {id = "1,0-2,0-3", chunks = {"1,0", "2,0"}, position = 3, connections = {}},
+        -- Rząd 1
+        {id = "0,1-1,1-3", chunks = {"0,1", "1,1"}, position = 3, connections = {}},
+        {id = "1,1-2,1-3", chunks = {"1,1", "2,1"}, position = 3, connections = {}},
+        -- Rząd 2
+        {id = "0,2-1,2-3", chunks = {"0,2", "1,2"}, position = 3, connections = {}},
+        {id = "1,2-2,2-3", chunks = {"1,2", "2,2"}, position = 3, connections = {}},
+        
+        -- Połączenia pionowe (góra-dół)
+        -- Kolumna 0
+        {id = "0,0-0,1-3", chunks = {"0,0", "0,1"}, position = 3, connections = {}},
+        {id = "0,1-0,2-3", chunks = {"0,1", "0,2"}, position = 3, connections = {}},
+        -- Kolumna 1
+        {id = "1,0-1,1-3", chunks = {"1,0", "1,1"}, position = 3, connections = {}},
+        {id = "1,1-1,2-3", chunks = {"1,1", "1,2"}, position = 3, connections = {}},
+        -- Kolumna 2
+        {id = "2,0-2,1-3", chunks = {"2,0", "2,1"}, position = 3, connections = {}},
+                 {id = "2,1-2,2-3", chunks = {"2,1", "2,2"}, position = 3, connections = {}}
+     },
+     width = 3,
+     height = 3
+}
+
 -- Funkcja pomocnicza do tworzenia konfiguracji
 M.create_test_config = function(map, chunk_size, tile_size)
     chunk_size = chunk_size or 6
@@ -224,16 +278,28 @@ M.TEST_POSITIONS = {
     center_0_0 = {x = 48, y = 48, z = 0},  -- (3,3) w lokalnych współrzędnych
     
     -- Róg chunka 0,0
-    corner_0_0 = {x = 0, y = 0, z = 0},
+    corner_0_0 = {x = 8, y = 8, z = 0},   -- Środek pierwszego kafelka
     
     -- Granica między chunkami 0,0 i 1,0
-    edge_0_0_to_1_0 = {x = 95, y = 48, z = 0},  -- prawy brzeg chunka 0,0
+    edge_0_0_to_1_0 = {x = 88, y = 48, z = 0},  -- środek prawego brzegu chunka 0,0
     
     -- Środek chunka 1,1
     center_1_1 = {x = 144, y = 144, z = 0},
     
+    -- Środek chunka 2,2 (prawy dolny róg mapy 3x3)
+    center_2_2 = {x = 240, y = 240, z = 0},
+    
     -- Pozycja na lądzie (nieprzechodna)
-    on_land = {x = 24, y = 24, z = 0}  -- (1,1) w lokalnych - zwykle ląd w ISLAND_CHUNK
+    on_land = {x = 24, y = 24, z = 0},  -- (1,1) w lokalnych - zwykle ląd w ISLAND_CHUNK
+    
+    -- Dodatkowe pozycje dla mapy 3x3
+    top_left = {x = 8, y = 8, z = 0},      -- Chunk 0,0
+    top_right = {x = 232, y = 8, z = 0},   -- Chunk 2,0
+    bottom_left = {x = 8, y = 232, z = 0}, -- Chunk 0,2
+    bottom_right = {x = 232, y = 232, z = 0}, -- Chunk 2,2
+    
+    -- Pozycje na granicach
+    edge_center = {x = 144, y = 48, z = 0}  -- Środek górnej krawędzi chunka 1,0
 }
 
 -- Przykładowe ścieżki oczekiwane
@@ -245,14 +311,14 @@ M.EXPECTED_PATHS = {
     
     -- Ścieżka przez 2 chunki
     two_chunks = {
-        {chunk = "0,0", position = {x = 95, y = 48, z = 0}},  -- punkt przejścia
+        {chunk = "0,0", position = {x = 88, y = 56, z = 0}},   -- punkt przejścia (środek kafelka)
         {chunk = "1,0", position = {x = 128, y = 80, z = 0}}  -- cel
     },
     
     -- Ścieżka przez 3 chunki
     three_chunks = {
-        {chunk = "0,0", position = {x = 95, y = 48, z = 0}},   -- przejście do 1,0
-        {chunk = "1,0", position = {x = 144, y = 95, z = 0}},  -- przejście do 1,1
+        {chunk = "0,0", position = {x = 88, y = 56, z = 0}},   -- przejście do 1,0
+        {chunk = "1,0", position = {x = 152, y = 88, z = 0}},  -- przejście do 1,1
         {chunk = "1,1", position = {x = 160, y = 160, z = 0}}  -- cel
     }
 }

@@ -74,21 +74,17 @@ describe("Local Pathfinder", function()
             it("should find path through narrow passage", function()
                 local chunk_data = mock_data.PASSAGE_CHUNK
                 
-                local start_pos = {x = 0, y = 2}  -- Left side
-                local end_pos = {x = 5, y = 3}    -- Right side
+                local start_pos = {x = 2, y = 0}  -- Top of passage
+                local end_pos = {x = 3, y = 5}    -- Bottom of passage
                 
                 local path = local_pathfinder.find_path(chunk_data, start_pos, end_pos)
                 assert.is_not_nil(path)
                 
-                -- Should pass through center (x=2 or x=3)
-                local passed_center = false
+                -- Should stay within passage (x=2 or x=3)
                 for _, pos in ipairs(path) do
-                    if pos.x == 2 or pos.x == 3 then
-                        passed_center = true
-                        break
-                    end
+                    assert.is_true(pos.x == 2 or pos.x == 3, 
+                        "Path should stay within water passage")
                 end
-                assert.is_true(passed_center, "Path should go through center passage")
             end)
             
             it("should solve maze", function()

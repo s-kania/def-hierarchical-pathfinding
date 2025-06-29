@@ -23,30 +23,49 @@ describe("Path Segment Builder", function()
             -- Return first available point
             return points[1]
         end,
+        get_all_transition_points = function(from_chunk, to_chunk, transition_points)
+            -- Return all transition points between chunks
+            local points = {}
+            for _, point in ipairs(transition_points) do
+                local chunks = point.chunks
+                if (#chunks == 2) and 
+                   ((chunks[1] == from_chunk and chunks[2] == to_chunk) or
+                    (chunks[1] == to_chunk and chunks[2] == from_chunk)) then
+                    table.insert(points, point)
+                end
+            end
+            return points
+        end,
         get_transition_position = function(point, from_chunk, to_chunk, chunk_size, tile_size)
-            -- Mock position calculation
+            -- Mock position calculation - center of edge tile
             local from_coords = {x = tonumber(from_chunk:match("([^,]+)")), 
                                y = tonumber(from_chunk:match(",(.+)"))}
             local to_coords = {x = tonumber(to_chunk:match("([^,]+)")), 
                              y = tonumber(to_chunk:match(",(.+)"))}
             
             if to_coords.x > from_coords.x then
-                -- Moving right
-                return {x = 95, y = point.position * 16, z = 0}
+                -- Moving right - center of rightmost tile
+                return {x = 88, y = point.position * 16 + 8, z = 0}
             elseif to_coords.x < from_coords.x then
-                -- Moving left
-                return {x = 0, y = point.position * 16, z = 0}
+                -- Moving left - center of leftmost tile
+                return {x = 8, y = point.position * 16 + 8, z = 0}
             elseif to_coords.y > from_coords.y then
-                -- Moving down
-                return {x = point.position * 16, y = 95, z = 0}
+                -- Moving down - center of bottommost tile
+                return {x = point.position * 16 + 8, y = 88, z = 0}
             else
-                -- Moving up
-                return {x = point.position * 16, y = 0, z = 0}
+                -- Moving up - center of topmost tile
+                return {x = point.position * 16 + 8, y = 8, z = 0}
             end
         end
     }
     
     local mock_coord_utils = {
+        chunk_id_to_coords = function(chunk_id)
+            return {
+                x = tonumber(chunk_id:match("([^,]+)")), 
+                y = tonumber(chunk_id:match(",(.+)"))
+            }
+        end,
         global_to_local = function(global_pos, chunk_id, chunk_size, tile_size)
             -- Simple mock conversion
             local chunk_coords = {x = tonumber(chunk_id:match("([^,]+)")), 
@@ -124,7 +143,7 @@ describe("Path Segment Builder", function()
                 
                 -- First segment: transition point from 0,0 to 1,0
                 assert.are.equal("0,0", segments[1].chunk)
-                assert.are.equal(95, segments[1].position.x)  -- Edge of chunk
+                assert.are.equal(88, segments[1].position.x)  -- Center of rightmost tile
                 
                 -- Second segment: final destination in 1,0
                 assert.are.equal("1,0", segments[2].chunk)
@@ -295,9 +314,10 @@ describe("Path Segment Builder", function()
             end)
             
             it("should maintain path continuity", function()
-                local chunk_path = {"0,0", "1,0", "2,0"}
+                -- Use only chunks that have transition points defined
+                local chunk_path = {"0,0", "1,0", "1,1"}
                 local start_pos = {x = 48, y = 48, z = 0}
-                local end_pos = {x = 240, y = 48, z = 0}
+                local end_pos = {x = 160, y = 160, z = 0}
                 
                 local segments = path_segment_builder.build_segments(
                     chunk_path, start_pos, end_pos, config

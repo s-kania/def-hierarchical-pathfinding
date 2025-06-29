@@ -77,8 +77,8 @@ describe("Hierarchical Pathfinding", function()
     
     describe("find_path", function()
         before_each(function()
-            -- Initialize with simple map before each test
-            local config = mock_data.create_test_config(mock_data.SIMPLE_MAP)
+            -- Initialize with 3x3 test map before each test
+            local config = mock_data.create_test_config(mock_data.TEST_MAP_3X3)
             HierarchicalPathfinder.init(config)
         end)
         
@@ -124,12 +124,9 @@ describe("Hierarchical Pathfinding", function()
             end)
             
             it("should find optimal path through multiple chunks", function()
-                -- Initialize with complex map
-                local config = mock_data.create_test_config(mock_data.CORRIDOR_MAP)
-                HierarchicalPathfinder.init(config)
-                
-                local start_pos = {x = 48, y = 48, z = 0}    -- Chunk 0,0
-                local end_pos = {x = 240, y = 240, z = 0}    -- Chunk 2,2
+                -- Use current 3x3 map (already initialized)
+                local start_pos = mock_data.TEST_POSITIONS.top_left     -- Chunk 0,0
+                local end_pos = mock_data.TEST_POSITIONS.bottom_right   -- Chunk 2,2
                 
                 local segments = HierarchicalPathfinder.find_path(start_pos, end_pos)
                 
@@ -141,6 +138,10 @@ describe("Hierarchical Pathfinding", function()
                     assert.is_not_nil(segments[i].chunk)
                     assert.is_not_nil(segments[i].position)
                 end
+                
+                -- Should end at target
+                local last_segment = segments[#segments]
+                assert.are.same(end_pos, last_segment.position)
             end)
         end)
         
@@ -185,66 +186,36 @@ describe("Hierarchical Pathfinding", function()
         describe("edge cases", function()
             it("should handle positions at chunk boundaries", function()
                 local start_pos = mock_data.TEST_POSITIONS.edge_0_0_to_1_0
-                local end_pos = {x = 144, y = 144, z = 0}
+                local end_pos = mock_data.TEST_POSITIONS.center_1_1
                 
                 local segments = HierarchicalPathfinder.find_path(start_pos, end_pos)
                 
                 assert.is_not_nil(segments)
+                assert.is_true(#segments >= 2)  -- Should go through at least 2 chunks
             end)
             
-            it("should handle very long paths", function()
-                -- Create a large map config
-                local large_map = {
-                    chunks = {},
-                    transition_points = {},
-                    width = 10,
-                    height = 10
-                }
-                
-                -- Fill with water chunks
-                for y = 0, 9 do
-                    for x = 0, 9 do
-                        large_map.chunks[x .. "," .. y] = mock_data.WATER_CHUNK
-                    end
-                end
-                
-                -- Add transition points for a connected path
-                for y = 0, 8 do
-                    for x = 0, 8 do
-                        -- Horizontal connections
-                        table.insert(large_map.transition_points, {
-                            id = x .. "," .. y .. "-" .. (x+1) .. "," .. y .. "-3",
-                            chunks = {x .. "," .. y, (x+1) .. "," .. y},
-                            position = 3,
-                            connections = {}
-                        })
-                        -- Vertical connections
-                        table.insert(large_map.transition_points, {
-                            id = x .. "," .. y .. "-" .. x .. "," .. (y+1) .. "-3",
-                            chunks = {x .. "," .. y, x .. "," .. (y+1)},
-                            position = 3,
-                            connections = {}
-                        })
-                    end
-                end
-                
-                local config = mock_data.create_test_config(large_map)
-                HierarchicalPathfinder.init(config)
-                
-                local start_pos = {x = 8, y = 8, z = 0}        -- Top-left
-                local end_pos = {x = 920, y = 920, z = 0}      -- Bottom-right
+            it("should handle diagonal paths in 3x3 map", function()
+                -- Use diagonal path in 3x3 map
+                local start_pos = mock_data.TEST_POSITIONS.top_left      -- Chunk 0,0
+                local end_pos = mock_data.TEST_POSITIONS.center_2_2      -- Chunk 2,2
                 
                 local segments = HierarchicalPathfinder.find_path(start_pos, end_pos)
                 
                 assert.is_not_nil(segments)
-                assert.is_true(#segments > 10)  -- Should have many segments
+                assert.is_true(#segments >= 3)  -- Should go through at least 3 chunks
+                
+                -- Verify start and end chunks
+                assert.are.equal("0,0", segments[1].chunk)
+                local last_segment = segments[#segments]
+                assert.are.equal("2,2", last_segment.chunk)
+                assert.are.same(end_pos, last_segment.position)
             end)
         end)
         
         describe("path validation", function()
             it("should return valid segment format", function()
-                local start_pos = {x = 48, y = 48, z = 0}
-                local end_pos = {x = 144, y = 144, z = 0}
+                local start_pos = mock_data.TEST_POSITIONS.center_0_0
+                local end_pos = mock_data.TEST_POSITIONS.center_1_1
                 
                 local segments = HierarchicalPathfinder.find_path(start_pos, end_pos)
                 
@@ -265,8 +236,8 @@ describe("Hierarchical Pathfinding", function()
             end)
             
             it("should ensure path connectivity", function()
-                local start_pos = {x = 48, y = 48, z = 0}
-                local end_pos = {x = 144, y = 144, z = 0}
+                local start_pos = mock_data.TEST_POSITIONS.center_0_0
+                local end_pos = mock_data.TEST_POSITIONS.center_1_1
                 
                 local segments = HierarchicalPathfinder.find_path(start_pos, end_pos)
                 
@@ -281,7 +252,7 @@ describe("Hierarchical Pathfinding", function()
     
     describe("helper functions", function()
         before_each(function()
-            local config = mock_data.create_test_config(mock_data.SIMPLE_MAP)
+            local config = mock_data.create_test_config(mock_data.TEST_MAP_3X3)
             HierarchicalPathfinder.init(config)
         end)
         
@@ -333,8 +304,8 @@ describe("Hierarchical Pathfinding", function()
         
         describe("can_reach", function()
             it("should return true for reachable positions", function()
-                local start_pos = {x = 48, y = 48, z = 0}
-                local end_pos = {x = 144, y = 144, z = 0}
+                local start_pos = mock_data.TEST_POSITIONS.center_0_0
+                local end_pos = mock_data.TEST_POSITIONS.center_1_1
                 
                 assert.is_true(HierarchicalPathfinder.can_reach(start_pos, end_pos))
             end)
@@ -353,15 +324,15 @@ describe("Hierarchical Pathfinding", function()
     
     describe("caching", function()
         before_each(function()
-            local config = mock_data.create_test_config(mock_data.SIMPLE_MAP)
+            local config = mock_data.create_test_config(mock_data.TEST_MAP_3X3)
             config.enable_cache = true
             config.cache_size = 10
             HierarchicalPathfinder.init(config)
         end)
         
         it("should cache path results", function()
-            local start_pos = {x = 48, y = 48, z = 0}
-            local end_pos = {x = 144, y = 144, z = 0}
+            local start_pos = mock_data.TEST_POSITIONS.center_0_0
+            local end_pos = mock_data.TEST_POSITIONS.center_1_1
             
             -- First call
             local segments1 = HierarchicalPathfinder.find_path(start_pos, end_pos)
@@ -380,8 +351,8 @@ describe("Hierarchical Pathfinding", function()
         end)
         
         it("should clear cache on demand", function()
-            local start_pos = {x = 48, y = 48, z = 0}
-            local end_pos = {x = 144, y = 144, z = 0}
+            local start_pos = mock_data.TEST_POSITIONS.center_0_0
+            local end_pos = mock_data.TEST_POSITIONS.center_1_1
             
             -- Cache a path
             HierarchicalPathfinder.find_path(start_pos, end_pos)

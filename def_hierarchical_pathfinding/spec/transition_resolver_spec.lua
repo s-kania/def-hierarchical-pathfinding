@@ -152,8 +152,8 @@ describe("Transition Resolver", function()
             )
             
             assert.is_not_nil(pos)
-            assert.are.equal(95, pos.x)   -- Right edge of chunk 0,0
-            assert.are.equal(48, pos.y)   -- Middle row (position 3)
+            assert.are.equal(88, pos.x)   -- Center of rightmost tile (5 * 16 + 8)
+            assert.are.equal(56, pos.y)   -- Center of position 3 tile (3 * 16 + 8)
             assert.are.equal(0, pos.z)
         end)
         
@@ -170,8 +170,8 @@ describe("Transition Resolver", function()
             )
             
             assert.is_not_nil(pos)
-            assert.are.equal(32, pos.x)   -- Column 2
-            assert.are.equal(95, pos.y)   -- Bottom edge of chunk 0,0
+            assert.are.equal(40, pos.x)   -- Center of position 2 tile (2 * 16 + 8)
+            assert.are.equal(88, pos.y)   -- Center of bottommost tile (5 * 16 + 8)
             assert.are.equal(0, pos.z)
         end)
         
@@ -188,8 +188,8 @@ describe("Transition Resolver", function()
             )
             
             assert.is_not_nil(pos)
-            assert.are.equal(96, pos.x)   -- Left edge of chunk 1,0
-            assert.are.equal(48, pos.y)   -- Same row
+            assert.are.equal(104, pos.x)  -- Center of leftmost tile of chunk 1,0 (96 + 8)
+            assert.are.equal(56, pos.y)   -- Center of position 3 tile (3 * 16 + 8)
             assert.are.equal(0, pos.z)
         end)
     end)
