@@ -108,6 +108,26 @@
             },
             "problemMatcher": [],
             "detail": "Clean up test coverage files"
+        },
+        {
+            "label": "🚀 Serve Library Example",
+            "type": "shell",
+            "command": "cd library_example && python3 -m http.server 8000",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "detail": "Start HTTP server for library example on port 8000",
+            "isBackground": true,
+            "runOptions": {
+                "instanceLimit": 1
+            }
         }
     ]
 } 
