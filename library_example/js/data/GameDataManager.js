@@ -8,8 +8,30 @@
 export class GameDataManager {
     constructor(chunkSize) {
         this.chunkSize = chunkSize;
-        this.transitionPoints = [];  // Array punktów z ID i connections
-        this.chunks = [];            // Array chunków dla A*
+        
+        /**
+         * TRANSITION POINTS - Array punktów przejścia między chunkami
+         * Format każdego punktu:
+         * {
+         *   id: string,           // "chunkA-chunkB-position" np. "0,0-1,0-15"
+         *   chunks: [string],     // ["chunkA_id", "chunkB_id"] np. ["0,0", "1,0"]
+         *   position: number,     // pozycja na krawędzi chunka (0-chunkSize-1)
+         *   connections: [object] // [{id: "point_id", weight: number}] połączenia z wagami
+         * }
+         */
+        this.transitionPoints = [];
+        
+        /**
+         * CHUNKS - Array chunków zawierających dane mapy
+         * Format każdego chunka:
+         * {
+         *   id: string,           // "x,y" np. "0,0", "1,0"
+         *   tiles: [number],      // 1D array tiles (0=ocean, 1=land) o rozmiarze chunkSize²
+         *   ...inne pola          // mogą zawierać dodatkowe dane specyficzne dla chunka
+         * }
+         */
+        this.chunks = [];
+        
         this.chunkConnections = new Map(); // Cache połączeń per chunk
     }
     
