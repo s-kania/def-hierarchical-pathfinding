@@ -1,178 +1,106 @@
 /**
- * Lokalny pathfinding w obrębie pojedynczego chunka używając algorytmu A*
- * Znajduje ścieżki na kafelkach wody (wartość 0) unikając kafelków lądu (wartość 1)
+ * Lokalny pathfinding w obrębie pojedynczego chunka używając A*
+ * Znajduje ścieżki na kafelkach wody (0) omijając ląd (1)
  */
-
-import { PriorityQueue } from './utils/DataStructures.js';
 
 export class LocalPathfinder {
     /**
-     * Sprawdź czy pozycja jest dostępna (kafelek wody)
-     * @param {Array} chunkData - Dwuwymiarowa tablica kafelków
+     * Sprawdź czy pozycja jest dostępna (woda)
+     * @param {Array} chunkData - 2D tablica kafelków
      * @param {Object} pos - Pozycja {x, y}
      * @returns {boolean}
      */
     static isWalkable(chunkData, pos) {
-        if (pos.x < 0 || pos.y < 0) {
+        // Sprawdzamy granice
+        if (pos.x < 0 || pos.y < 0 || 
+            pos.y >= chunkData.length || 
+            pos.x >= chunkData[0].length) {
             return false;
         }
-
-        const row = chunkData[pos.y];
-        if (!row) {
-            return false;
-        }
-
-        const tile = row[pos.x];
-        return tile === 0; // 0 = woda (dostępne)
+        
+        // 0 = woda (dostępne), 1 = ląd (niedostępne)
+        return chunkData[pos.y][pos.x] === 0;
     }
 
     /**
-     * Pobierz prawidłowych sąsiadów dla ruchu 4-kierunkowego
-     * @param {Array} chunkData - Dwuwymiarowa tablica kafelków
-     * @param {Object} pos - Aktualna pozycja {x, y}
-     * @returns {Array} - Tablica pozycji sąsiadów
+     * Znajdź ścieżkę używając A*
+     * @param {Array} chunkData - 2D tablica kafelków (0=woda, 1=ląd)
+     * @param {Object} startPos - Start {x, y}
+     * @param {Object} endPos - Koniec {x, y}
+     * @returns {Array|null} - Tablica pozycji lub null
      */
-    static getNeighbors(chunkData, pos) {
-        const neighbors = [];
-        const directions = [
-            { x: 0, y: -1 }, // Góra
-            { x: 0, y: 1 },  // Dół
-            { x: -1, y: 0 }, // Lewo
-            { x: 1, y: 0 }   // Prawo
-        ];
-
-        for (const dir of directions) {
-            const neighbor = { x: pos.x + dir.x, y: pos.y + dir.y };
-            if (this.isWalkable(chunkData, neighbor)) {
-                neighbors.push(neighbor);
-            }
-        }
-
-        return neighbors;
-    }
-
-    /**
-     * Oblicz heurystyczną odległość (Manhattan domyślnie)
-     * @param {Object} a - Pozycja {x, y}
-     * @param {Object} b - Pozycja {x, y}
-     * @param {string} heuristic - "manhattan" lub "euclidean"
-     * @returns {number} - Odległość
-     */
-    static calculateHeuristic(a, b, heuristic = 'manhattan') {
-        if (heuristic === 'euclidean') {
-            const dx = b.x - a.x;
-            const dy = b.y - a.y;
-            return Math.sqrt(dx * dx + dy * dy);
-        } else { // manhattan (domyślny)
-            return Math.abs(b.x - a.x) + Math.abs(b.y - a.y);
-        }
-    }
-
-    /**
-     * Znajdź ścieżkę używając algorytmu A*
-     * @param {Array} chunkData - Dwuwymiarowa tablica kafelków (0 = woda, 1 = ląd)
-     * @param {Object} startPos - Pozycja startowa {x, y} we współrzędnych lokalnych
-     * @param {Object} endPos - Pozycja końcowa {x, y} we współrzędnych lokalnych
-     * @param {Object} config - Opcjonalna konfiguracja {heuristic = "manhattan"|"euclidean", optimizePath = boolean}
-     * @returns {Array|null} - Tablica pozycji tworzących ścieżkę, lub null jeśli brak ścieżki
-     */
-    static findPath(chunkData, startPos, endPos, config = {}) {
-        const heuristic = config.heuristic || 'manhattan';
-
-        // Waliduj pozycje
-        if (startPos.x < 0 || startPos.y < 0 || endPos.x < 0 || endPos.y < 0) {
-            throw new Error("Nieprawidłowa pozycja: ujemne współrzędne");
-        }
-
-        const chunkSize = chunkData.length;
-        if (chunkSize === 0 || chunkData[0].length === 0) {
-            throw new Error("Nieprawidłowe dane chunka: puste");
-        }
-
-        if (startPos.x >= chunkSize || startPos.y >= chunkSize ||
-            endPos.x >= chunkSize || endPos.y >= chunkSize) {
-            throw new Error("Pozycja poza granicami chunka");
-        }
-
-        // Sprawdź czy start i koniec są dostępne
-        if (!this.isWalkable(chunkData, startPos) || !this.isWalkable(chunkData, endPos)) {
+    static findPath(chunkData, startPos, endPos) {
+        // Sprawdzamy czy start i koniec są dostępne
+        if (!this.isWalkable(chunkData, startPos) || 
+            !this.isWalkable(chunkData, endPos)) {
             return null;
         }
 
-        // Obsłuż tę samą pozycję
+        // Ta sama pozycja
         if (startPos.x === endPos.x && startPos.y === endPos.y) {
             return [startPos];
         }
 
-        // Implementacja A*
-        const openSet = new PriorityQueue();
+        // Struktury dla A*
+        const openList = [];
+        const closedSet = new Set();
         const cameFrom = {};
         const gScore = {};
-        const closedSet = new Set();
+        const fScore = {};
 
-        // Helper do tworzenia klucza pozycji
-        const posKey = (pos) => `${pos.x},${pos.y}`;
+        // Helper do kluczy
+        const key = (pos) => `${pos.x},${pos.y}`;
 
-        // Inicjalizuj węzeł startowy
-        const startKey = posKey(startPos);
+        // Inicjalizacja startu
+        const startKey = key(startPos);
         gScore[startKey] = 0;
-
-        openSet.push({
-            pos: startPos,
-            gScore: 0,
-            fScore: this.calculateHeuristic(startPos, endPos, heuristic),
-            priority: this.calculateHeuristic(startPos, endPos, heuristic)
-        });
+        fScore[startKey] = this.heuristic(startPos, endPos);
+        openList.push({ pos: startPos, f: fScore[startKey] });
 
         // Główna pętla A*
-        while (!openSet.empty()) {
-            const current = openSet.pop();
-            const currentKey = posKey(current.pos);
+        while (openList.length > 0) {
+            // Znajdź węzeł z najniższym f-score
+            openList.sort((a, b) => a.f - b.f);
+            const current = openList.shift();
+            const currentKey = key(current.pos);
 
-            // Sprawdź czy osiągnęliśmy cel
+            // Znaleźliśmy cel!
             if (current.pos.x === endPos.x && current.pos.y === endPos.y) {
-                // Zrekonstruuj ścieżkę
-                const path = [];
-                let pos = endPos;
-
-                while (pos) {
-                    path.unshift({ x: pos.x, y: pos.y });
-                    const key = posKey(pos);
-                    pos = cameFrom[key];
-                }
-
-                // Optymalizuj ścieżkę jeśli żądano
-                if (config.optimizePath) {
-                    return this.optimizePath(path, chunkData);
-                }
-
-                return path;
+                return this.reconstructPath(cameFrom, endPos);
             }
 
             closedSet.add(currentKey);
 
-            // Sprawdź sąsiadów
-            const neighbors = this.getNeighbors(chunkData, current.pos);
+            // Sprawdzamy sąsiadów (4 kierunki)
+            const neighbors = [
+                { x: current.pos.x, y: current.pos.y - 1 }, // Góra
+                { x: current.pos.x, y: current.pos.y + 1 }, // Dół
+                { x: current.pos.x - 1, y: current.pos.y }, // Lewo
+                { x: current.pos.x + 1, y: current.pos.y }   // Prawo
+            ];
 
             for (const neighbor of neighbors) {
-                const neighborKey = posKey(neighbor);
+                // Pomijamy niedostępne
+                if (!this.isWalkable(chunkData, neighbor)) continue;
 
-                if (!closedSet.has(neighborKey)) {
-                    const tentativeG = current.gScore + 1; // Koszt to 1 dla sąsiadujących kafelków
+                const neighborKey = key(neighbor);
+                
+                // Pomijamy już odwiedzone
+                if (closedSet.has(neighborKey)) continue;
 
-                    if (!(neighborKey in gScore) || tentativeG < gScore[neighborKey]) {
-                        // Aktualizuj punkty
-                        cameFrom[neighborKey] = current.pos;
-                        gScore[neighborKey] = tentativeG;
-                        const fScore = tentativeG + this.calculateHeuristic(neighbor, endPos, heuristic);
+                // Obliczamy koszt
+                const tentativeG = gScore[currentKey] + 1;
 
-                        // Dodaj do zbioru otwartego
-                        openSet.push({
-                            pos: neighbor,
-                            gScore: tentativeG,
-                            fScore: fScore,
-                            priority: fScore
-                        });
+                // Sprawdzamy czy to lepsza ścieżka
+                if (!(neighborKey in gScore) || tentativeG < gScore[neighborKey]) {
+                    // Zapisujemy ścieżkę
+                    cameFrom[neighborKey] = current.pos;
+                    gScore[neighborKey] = tentativeG;
+                    fScore[neighborKey] = tentativeG + this.heuristic(neighbor, endPos);
+
+                    // Dodajemy do open list jeśli nie ma
+                    if (!openList.some(n => n.pos.x === neighbor.x && n.pos.y === neighbor.y)) {
+                        openList.push({ pos: neighbor, f: fScore[neighborKey] });
                     }
                 }
             }
@@ -183,77 +111,31 @@ export class LocalPathfinder {
     }
 
     /**
-     * Optymalizuj ścieżkę przez usunięcie niepotrzebnych punktów drogi
-     * @param {Array} path - Tablica pozycji
-     * @param {Array} chunkData - Dane chunka do sprawdzania linii wzroku
-     * @returns {Array} - Zoptymalizowana ścieżka
+     * Heurystyka - odległość Manhattan
+     * @param {Object} a - Pozycja {x, y}
+     * @param {Object} b - Pozycja {x, y}
+     * @returns {number} - Odległość
      */
-    static optimizePath(path, chunkData) {
-        if (path.length <= 2) {
-            return path;
-        }
-
-        const optimized = [path[0]];
-        let currentIndex = 0;
-
-        while (currentIndex < path.length - 1) {
-            let furthestVisible = currentIndex + 1;
-
-            // Znajdź najdalszy punkt który widzimy w linii prostej
-            for (let i = currentIndex + 2; i < path.length; i++) {
-                if (this.hasLineOfSight(path[currentIndex], path[i], chunkData)) {
-                    furthestVisible = i;
-                } else {
-                    break;
-                }
-            }
-
-            optimized.push(path[furthestVisible]);
-            currentIndex = furthestVisible;
-        }
-
-        return optimized;
+    static heuristic(a, b) {
+        return Math.abs(b.x - a.x) + Math.abs(b.y - a.y);
     }
 
     /**
-     * Sprawdź czy istnieje linia wzroku między dwoma punktami
-     * @param {Object} from - Pozycja startowa
-     * @param {Object} to - Pozycja końcowa
-     * @param {Array} chunkData - Dane chunka
-     * @returns {boolean} - True jeśli linia wzroku jest czysta
+     * Odtwórz ścieżkę z mapy poprzedników
+     * @param {Object} cameFrom - Mapa poprzedników
+     * @param {Object} endPos - Pozycja końcowa
+     * @returns {Array} - Ścieżka pozycji
      */
-    static hasLineOfSight(from, to, chunkData) {
-        const dx = Math.abs(to.x - from.x);
-        const dy = Math.abs(to.y - from.y);
-        const sx = from.x < to.x ? 1 : -1;
-        const sy = from.y < to.y ? 1 : -1;
-        let err = dx - dy;
-
-        let x = from.x;
-        let y = from.y;
-
-        while (true) {
-            // Sprawdź czy aktualny punkt jest dostępny
-            if (!this.isWalkable(chunkData, { x, y })) {
-                return false;
-            }
-
-            // Osiągnęliśmy cel
-            if (x === to.x && y === to.y) {
-                break;
-            }
-
-            const e2 = 2 * err;
-            if (e2 > -dy) {
-                err -= dy;
-                x += sx;
-            }
-            if (e2 < dx) {
-                err += dx;
-                y += sy;
-            }
+    static reconstructPath(cameFrom, endPos) {
+        const path = [];
+        let current = endPos;
+        
+        while (current) {
+            path.unshift({ x: current.x, y: current.y });
+            const key = `${current.x},${current.y}`;
+            current = cameFrom[key];
         }
-
-        return true;
+        
+        return path;
     }
 } 
