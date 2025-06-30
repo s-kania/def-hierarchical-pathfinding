@@ -4,14 +4,26 @@
  */
 
 export class TransitionGraph {
-    constructor(transitionPoints) {
+    constructor(transitionPoints, gridConfig = null) {
         this.points = new Map(); // id -> point
         this.graph = new Map();  // id -> connections
+        this.gridConfig = gridConfig; // {gridWidth, gridHeight, chunkSize, tileSize}
         
         // Buduj struktury danych
         for (const point of transitionPoints) {
+            // Waliduj punkt przejścia jeśli mamy konfigurację grida
+            if (this.gridConfig && !this.isPointValid(point)) {
+                console.warn(`⚠️ Punkt przejścia poza gridem: ${point.id}`);
+                continue;
+            }
+            
             this.points.set(point.id, point);
             this.graph.set(point.id, point.connections || []);
+        }
+        
+        // Waliduj connections jeśli mamy konfigurację grida
+        if (this.gridConfig) {
+            this.validateConnections();
         }
     }
     
@@ -83,6 +95,12 @@ export class TransitionGraph {
      * @returns {Array} - Tablica punktów przejścia
      */
     getPointsInChunk(chunkId) {
+        // Sprawdź czy chunk jest w granicach grida
+        if (this.gridConfig && !this.isChunkInBounds(chunkId)) {
+            console.warn(`⚠️ Żądanie punktów dla chunka poza gridem: ${chunkId}`);
+            return [];
+        }
+
         const result = [];
         for (const [id, point] of this.points) {
             if (point.chunks.includes(chunkId)) {
@@ -119,7 +137,16 @@ export class TransitionGraph {
         const chunk1 = this.parseChunkId(point1.chunks[0]);
         const chunk2 = this.parseChunkId(point2.chunks[0]);
         
-        return Math.abs(chunk2.x - chunk1.x) + Math.abs(chunk2.y - chunk1.y);
+        // Podstawowa odległość Manhattan
+        let distance = Math.abs(chunk2.x - chunk1.x) + Math.abs(chunk2.y - chunk1.y);
+        
+        // Jeśli mamy konfigurację grida, możemy zastosować lepsze skalowanie
+        if (this.gridConfig) {
+            // Skaluj według rozmiaru chunka i kafelka dla lepszej heurystyki
+            distance *= this.gridConfig.chunkSize * this.gridConfig.tileSize;
+        }
+        
+        return distance;
     }
     
     /**
@@ -167,5 +194,74 @@ export class TransitionGraph {
             connectionCount: connectionCount / 2, // Dwukierunkowe połączenia
             avgConnectionsPerPoint: pointCount > 0 ? connectionCount / pointCount : 0
         };
+    }
+
+    /**
+     * Sprawdź czy punkt przejścia jest prawidłowy w kontekście grida
+     * @param {Object} point - Punkt przejścia
+     * @returns {boolean} - Czy punkt jest prawidłowy
+     */
+    isPointValid(point) {
+        if (!this.gridConfig) {
+            return true; // Brak walidacji bez konfiguracji grida
+        }
+
+        for (const chunkId of point.chunks) {
+            const chunkCoords = this.parseChunkId(chunkId);
+            
+            // Sprawdź czy chunk mieści się w gridzie
+            if (chunkCoords.x < 0 || chunkCoords.x >= this.gridConfig.gridWidth ||
+                chunkCoords.y < 0 || chunkCoords.y >= this.gridConfig.gridHeight) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /**
+     * Waliduj wszystkie connections w grafie
+     */
+    validateConnections() {
+        let invalidConnections = 0;
+        
+        for (const [pointId, connections] of this.graph) {
+            for (const conn of connections) {
+                if (!this.points.has(conn.id)) {
+                    console.warn(`⚠️ Connection do nieistniejącego punktu: ${pointId} -> ${conn.id}`);
+                    invalidConnections++;
+                }
+            }
+        }
+        
+        if (invalidConnections > 0) {
+            console.warn(`⚠️ Znaleziono ${invalidConnections} nieprawidłowych connections`);
+        }
+    }
+
+    /**
+     * Sprawdź czy chunk mieści się w granicach grida
+     * @param {string} chunkId - ID chunka
+     * @returns {boolean} - Czy chunk jest w granicach
+     */
+    isChunkInBounds(chunkId) {
+        if (!this.gridConfig) {
+            return true;
+        }
+
+        const coords = this.parseChunkId(chunkId);
+        return coords.x >= 0 && coords.x < this.gridConfig.gridWidth &&
+               coords.y >= 0 && coords.y < this.gridConfig.gridHeight;
+    }
+
+    /**
+     * Pobierz rozmiar grida w chunkach
+     * @returns {Object|null} - {width, height} lub null jeśli brak konfiguracji
+     */
+    getGridSize() {
+        return this.gridConfig ? {
+            width: this.gridConfig.gridWidth,
+            height: this.gridConfig.gridHeight
+        } : null;
     }
 } 

@@ -18,6 +18,8 @@ export class HierarchicalPathfinding {
      * @param {Object} config - Konfiguracja z wymaganymi polami:
      *   chunkSize: Rozmiar chunka w kafelkach
      *   tileSize: Rozmiar kafelka w jednostkach świata
+     *   gridWidth: Szerokość całego grida w chunkach
+     *   gridHeight: Wysokość całego grida w chunkach
      *   getChunkData: Funkcja(chunkId) -> 2D array danych chunka
      *   transitionPoints: Tablica punktów przejścia z connections
      */
@@ -25,8 +27,14 @@ export class HierarchicalPathfinding {
         this.validateConfig(config);
         this.config = config;
         
-        // Zbuduj graf przejść
-        this.transitionGraph = new TransitionGraph(config.transitionPoints);
+        // Zbuduj graf przejść z konfiguracją grida
+        const gridConfig = {
+            gridWidth: config.gridWidth,
+            gridHeight: config.gridHeight,
+            chunkSize: config.chunkSize,
+            tileSize: config.tileSize
+        };
+        this.transitionGraph = new TransitionGraph(config.transitionPoints, gridConfig);
         
         console.log('🗺️ HierarchicalPathfinding zainicjalizowany');
         console.log('📊 Statystyki grafu:', this.transitionGraph.getStats());
@@ -41,6 +49,16 @@ export class HierarchicalPathfinding {
     findPath(startPos, endPos) {
         if (!this.config) {
             throw new Error("Pathfinder nie został zainicjalizowany. Wywołaj init() najpierw.");
+        }
+
+        // Sprawdź czy pozycje mieszczą się w granicach świata
+        if (!this.isPositionInBounds(startPos)) {
+            console.warn('❌ Pozycja startowa poza granicami świata:', startPos);
+            return null;
+        }
+        if (!this.isPositionInBounds(endPos)) {
+            console.warn('❌ Pozycja końcowa poza granicami świata:', endPos);
+            return null;
         }
 
         // 1. Konwertuj pozycje na chunki
@@ -252,6 +270,12 @@ export class HierarchicalPathfinding {
         if (typeof config.tileSize !== 'number' || config.tileSize <= 0) {
             throw new Error("Nieprawidłowy tileSize");
         }
+        if (typeof config.gridWidth !== 'number' || config.gridWidth <= 0) {
+            throw new Error("Nieprawidłowy gridWidth");
+        }
+        if (typeof config.gridHeight !== 'number' || config.gridHeight <= 0) {
+            throw new Error("Nieprawidłowy gridHeight");
+        }
         if (typeof config.getChunkData !== 'function') {
             throw new Error("getChunkData musi być funkcją");
         }
@@ -267,6 +291,11 @@ export class HierarchicalPathfinding {
      */
     isPositionWalkable(globalPos) {
         if (!this.config) {
+            return false;
+        }
+
+        // Sprawdź czy pozycja mieści się w granicach świata
+        if (!this.isPositionInBounds(globalPos)) {
             return false;
         }
 
@@ -297,6 +326,71 @@ export class HierarchicalPathfinding {
      * @returns {Object} - Statystyki
      */
     getGraphStats() {
-        return this.transitionGraph ? this.transitionGraph.getStats() : null;
+        if (!this.transitionGraph) {
+            return null;
+        }
+
+        const baseStats = this.transitionGraph.getStats();
+        const gridSize = this.transitionGraph.getGridSize();
+        
+        return {
+            ...baseStats,
+            gridSize,
+            gridInfo: gridSize ? {
+                totalChunks: gridSize.width * gridSize.height,
+                pointDensity: baseStats.pointCount / (gridSize.width * gridSize.height)
+            } : null
+        };
+    }
+
+    /**
+     * Sprawdź czy pozycja globalna mieści się w granicach świata
+     * @param {Object} globalPos - Pozycja globalna {x, y}
+     * @returns {boolean}
+     */
+    isPositionInBounds(globalPos) {
+        if (!this.config) {
+            return false;
+        }
+
+        const worldWidth = this.config.gridWidth * this.config.chunkSize * this.config.tileSize;
+        const worldHeight = this.config.gridHeight * this.config.chunkSize * this.config.tileSize;
+
+        return globalPos.x >= 0 && globalPos.x < worldWidth &&
+               globalPos.y >= 0 && globalPos.y < worldHeight;
+    }
+
+    /**
+     * Pobierz rozmiar całego świata w jednostkach globalnych
+     * @returns {Object} - {width, height} w jednostkach świata
+     */
+    getWorldSize() {
+        if (!this.config) {
+            return null;
+        }
+
+        return {
+            width: this.config.gridWidth * this.config.chunkSize * this.config.tileSize,
+            height: this.config.gridHeight * this.config.chunkSize * this.config.tileSize
+        };
+    }
+
+    /**
+     * Pobierz informacje o gridzie chunków
+     * @returns {Object} - Informacje o gridzie
+     */
+    getGridInfo() {
+        if (!this.config) {
+            return null;
+        }
+
+        return {
+            gridWidth: this.config.gridWidth,
+            gridHeight: this.config.gridHeight,
+            totalChunks: this.config.gridWidth * this.config.gridHeight,
+            chunkSize: this.config.chunkSize,
+            tileSize: this.config.tileSize,
+            worldSize: this.getWorldSize()
+        };
     }
 } 

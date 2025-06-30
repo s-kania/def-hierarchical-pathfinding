@@ -39,6 +39,8 @@ const pathfinder = new HierarchicalPathfinding();
 pathfinder.init({
     chunkSize: 32,               // Rozmiar chunka w kafelkach
     tileSize: 10,                // Rozmiar kafelka w jednostkach świata
+    gridWidth: 10,               // Szerokość całego grida w chunkach
+    gridHeight: 8,               // Wysokość całego grida w chunkach
     getChunkData: (chunkId) => chunks[chunkId], // 2D array danych chunka
     transitionPoints: [          // KLUCZOWE: punkty z connections!
         {
@@ -74,6 +76,15 @@ pathfinder.isPositionWalkable({x: 100, y: 100});
 
 // Sprawdź łączność
 pathfinder.canReach(startPos, endPos);
+
+// Sprawdź czy pozycja mieści się w granicach świata
+pathfinder.isPositionInBounds({x: 100, y: 100});
+
+// Pobierz rozmiar całego świata
+pathfinder.getWorldSize(); // {width: 3200, height: 2560}
+
+// Pobierz informacje o gridzie
+pathfinder.getGridInfo(); // pełne informacje o konfiguracji grida
 
 // Pobierz statystyki grafu
 pathfinder.getGraphStats();
@@ -150,6 +161,8 @@ const transitionPoints = gameDataManager.transitionPoints;
 pathfinder.init({
     chunkSize: chunkSize,
     tileSize: tileSize,
+    gridWidth: gridWidth,
+    gridHeight: gridHeight,
     getChunkData: (chunkId) => getChunkData(chunkId),
     transitionPoints: transitionPoints  // Już zawiera connections!
 });
