@@ -327,19 +327,30 @@ export class HierarchicalPathfinding {
                 console.log(`   Następny punkt dane:`, nextPoint);
                 
                 if (nextPoint) {
-                    // Znajdujemy chunk po drugiej stronie przejścia
-                    const nextChunk = nextPoint.chunks.find(id => id !== currentChunk);
+                    // Znajdujemy chunk po drugiej stronie obecnego punktu przejścia
+                    const nextChunk = point.chunks.find(id => id !== currentChunk);
                     console.log(`   Następny chunk:`, nextChunk);
                     
                     if (nextChunk) {
+                        // Pozycja startowa w nowym chunku to pozycja obecnego punktu przejścia w tym chunku
                         const newPos = CoordUtils.getTransitionGlobalPosition(
                             point, nextChunk, this.config.chunkWidth, this.config.tileSize
                         );
                         console.log(`   Nowa pozycja startowa:`, newPos);
-                        currentPos = newPos;
+                        
+                        if (newPos) {
+                            currentPos = newPos;
+                        } else {
+                            console.log('❌ Nie można obliczyć pozycji w następnym chunku');
+                            return null;
+                        }
+                    } else {
+                        console.log('❌ Nie można znaleźć następnego chunka');
+                        return null;
                     }
                 } else {
                     console.log('❌ Nie można znaleźć następnego punktu');
+                    return null;
                 }
             }
         }

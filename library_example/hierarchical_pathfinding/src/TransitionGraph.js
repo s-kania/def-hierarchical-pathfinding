@@ -134,8 +134,6 @@ export class TransitionGraph {
             iterations++;
             const current = openSet.pop();
             
-            console.log(`🔄 A* iteracja ${iterations}: sprawdzam punkt ${current.id} (f=${current.f})`);
-            
             // Znaleźliśmy cel!
             if (current.id === endId) {
                 const path = this.reconstructPath(cameFrom, endId);
@@ -148,17 +146,13 @@ export class TransitionGraph {
             
             // Sprawdzamy wszystkie połączenia
             const connections = this.graph.get(current.id) || [];
-            console.log(`   📎 Punkt ${current.id} ma ${connections.length} połączeń:`, connections);
             
             for (const connection of connections) {
                 const neighbor = connection.id;
                 const weight = connection.weight || 1;
                 
-                console.log(`     🔍 Sprawdzam sąsiada: ${neighbor} (waga: ${weight})`);
-                
                 // Pomijamy już odwiedzone
                 if (closedSet.has(neighbor)) {
-                    console.log('       ⏭️ Już odwiedzony, pomijam');
                     continue;
                 }
                 
@@ -169,7 +163,6 @@ export class TransitionGraph {
                 // Sprawdzamy czy mamy lepszą ścieżkę
                 const existingG = gScore.get(neighbor);
                 if (existingG !== undefined && tentativeG >= existingG) {
-                    console.log(`       ⏭️ Gorszy koszt (${tentativeG} >= ${existingG}), pomijam`);
                     continue;
                 }
                 
@@ -179,8 +172,6 @@ export class TransitionGraph {
                 
                 const heuristicValue = this.heuristic(neighbor, endId);
                 const fScore = tentativeG + heuristicValue;
-                
-                console.log(`       ✅ Dodaję do kolejki: g=${tentativeG}, h=${heuristicValue}, f=${fScore}`);
                 
                 // Dodajemy do kolejki priorytetowej
                 openSet.push({
