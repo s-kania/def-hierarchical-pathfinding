@@ -2,7 +2,7 @@
  * KONTROLER INTERFEJSU UŻYTKOWNIKA
  */
 
-import { ISLAND_PRESETS, capitalizeFirst } from '../config/Settings.js';
+import { ISLAND_PRESETS, capitalizeFirst, RENDER_CONSTANTS } from '../config/Settings.js';
 import { getCanvasCoordinates } from '../utils/MathUtils.js';
 
 export class UIController {
@@ -438,17 +438,59 @@ export class UIController {
      * AKTUALIZUJE POZYCJĘ MYSZY W UI
      */
     updateMousePosition(mouseX, mouseY) {
-        const tileX = Math.floor(mouseX / this.settings.tileSize);
-        const tileY = Math.floor(mouseY / this.settings.tileSize);
+        // Uwzględnij CANVAS_PADDING - odejmij padding od pozycji myszy
+        const adjustedMouseX = mouseX - RENDER_CONSTANTS.CANVAS_PADDING;
+        const adjustedMouseY = mouseY - RENDER_CONSTANTS.CANVAS_PADDING;
         
-        const chunkX = Math.floor(tileX / this.settings.chunkSize);
-        const chunkY = Math.floor(tileY / this.settings.chunkSize);
+        // Sprawdź czy mysz jest w obszarze paddingu (poza chunkami)
+        if (adjustedMouseX < 0 || adjustedMouseY < 0) {
+            const mousePositionElement = document.getElementById('mousePosition');
+            if (mousePositionElement) {
+                mousePositionElement.textContent = 'Poza obszarem mapy';
+            }
+            return;
+        }
         
-        const localX = tileX % this.settings.chunkSize;
-        const localY = tileY % this.settings.chunkSize;
+        const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
+        const chunkWithGapSize = chunkPixelSize + RENDER_CONSTANTS.GAP_SIZE;
         
-        const globalX = tileX * this.settings.tileSize + this.settings.tileSize / 2;
-        const globalY = tileY * this.settings.tileSize + this.settings.tileSize / 2;
+        // Znajdź chunk na podstawie pozycji (uwzględniając gaps)
+        const chunkX = Math.floor(adjustedMouseX / chunkWithGapSize);
+        const chunkY = Math.floor(adjustedMouseY / chunkWithGapSize);
+        
+        // Sprawdź czy nie wykraczamy poza mapę
+        if (chunkX >= this.settings.chunkCols || chunkY >= this.settings.chunkRows) {
+            const mousePositionElement = document.getElementById('mousePosition');
+            if (mousePositionElement) {
+                mousePositionElement.textContent = 'Poza obszarem mapy';
+            }
+            return;
+        }
+        
+        // Oblicz pozycję lokalną w chunku
+        const localPixelX = adjustedMouseX - (chunkX * chunkWithGapSize);
+        const localPixelY = adjustedMouseY - (chunkY * chunkWithGapSize);
+        
+        // Sprawdź czy nie jesteśmy w gap między chunkami
+        if (localPixelX >= chunkPixelSize || localPixelY >= chunkPixelSize) {
+            const mousePositionElement = document.getElementById('mousePosition');
+            if (mousePositionElement) {
+                mousePositionElement.textContent = 'Między chunkami';
+            }
+            return;
+        }
+        
+        // Oblicz pozycję tile lokalną w chunku
+        const localX = Math.floor(localPixelX / this.settings.tileSize);
+        const localY = Math.floor(localPixelY / this.settings.tileSize);
+        
+        // Oblicz globalną pozycję tile
+        const tileX = chunkX * this.settings.chunkSize + localX;
+        const tileY = chunkY * this.settings.chunkSize + localY;
+        
+        // Oblicz środek tile'a w pikselach (względem oryginalnego canvas z paddingiem)
+        const globalX = tileX * this.settings.tileSize + this.settings.tileSize / 2 + RENDER_CONSTANTS.CANVAS_PADDING + chunkX * RENDER_CONSTANTS.GAP_SIZE;
+        const globalY = tileY * this.settings.tileSize + this.settings.tileSize / 2 + RENDER_CONSTANTS.CANVAS_PADDING + chunkY * RENDER_CONSTANTS.GAP_SIZE;
         
         const positionText = `(${globalX.toFixed(0)}, ${globalY.toFixed(0)}) | Tile: (${tileX}, ${tileY}) | Chunk: ${chunkX},${chunkY} [${localX},${localY}]`;
         
