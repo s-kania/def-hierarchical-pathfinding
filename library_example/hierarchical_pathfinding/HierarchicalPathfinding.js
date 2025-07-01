@@ -247,7 +247,7 @@ export class HierarchicalPathfinding {
     }
 
     /**
-     * Zwraca czyste punkty przejścia
+     * Zwraca czyste punkty przejścia z optymalizacją redundantnych węzłów
      * @param {Object} startPos - Pozycja startowa 
      * @param {Object} endPos - Pozycja końcowa  
      * @param {Array} transitionPath - Lista ID punktów przejścia
@@ -269,41 +269,60 @@ export class HierarchicalPathfinding {
             return segments;
         }
         
-        // Pierwszy segment: od startu do pierwszego punktu przejścia
-        const firstPoint = this.transitionGraph.getPoint(transitionPath[0]);
-        const firstPointPos = CoordUtils.getTransitionGlobalPosition(
-            firstPoint, startChunk, this.config.chunkWidth, this.config.tileSize
-        );
+        // Tworzymy kopię ścieżki do optymalizacji
+        let effectivePath = [...transitionPath];
         
-        segments.push({
-            chunk: startChunk,
-            position: firstPointPos
-        });
+        // 🔥 WERYFIKACJA PIERWSZEGO WĘZŁA
+        if (effectivePath.length >= 2) {
+            const firstPoint = this.transitionGraph.getPoint(effectivePath[0]);
+            const secondPoint = this.transitionGraph.getPoint(effectivePath[1]);
+            
+            // Sprawdź czy drugi punkt jest dostępny z chunk'a startowego
+            if (secondPoint.chunks.includes(startChunk)) {
+                console.log('✂️ Optymalizacja: usuwam pierwszy węzeł (redundantny)');
+                effectivePath.shift(); // Usuń pierwszy
+            }
+        }
         
-        // Środkowe segmenty: między punktami przejścia
-        for (let i = 0; i < transitionPath.length - 1; i++) {
-            const currentPoint = this.transitionGraph.getPoint(transitionPath[i]);
-            const nextPoint = this.transitionGraph.getPoint(transitionPath[i + 1]);
+        // 🔥 WERYFIKACJA OSTATNIEGO WĘZŁA  
+        if (effectivePath.length >= 2) {
+            const lastPoint = this.transitionGraph.getPoint(effectivePath[effectivePath.length - 1]);
+            const secondLastPoint = this.transitionGraph.getPoint(effectivePath[effectivePath.length - 2]);
+            
+            // Sprawdź czy przedostatni prowadzi do końcowego chunk'a
+            if (secondLastPoint.chunks.includes(endChunk)) {
+                console.log('✂️ Optymalizacja: usuwam ostatni węzeł (redundantny)');
+                effectivePath.pop(); // Usuń ostatni
+            }
+        }
+        
+        // Buduj segmenty z zoptymalizowanej ścieżki
+        for (let i = 0; i < effectivePath.length - 1; i++) {
+            const currentPoint = this.transitionGraph.getPoint(effectivePath[i]);
+            const nextPoint = this.transitionGraph.getPoint(effectivePath[i + 1]);
             
             // Znajdujemy wspólny chunk między punktami
             const commonChunk = currentPoint.chunks.find(chunk => nextPoint.chunks.includes(chunk));
             
+            if (!commonChunk) {
+                console.log('❌ Brak wspólnego chunk\'a między punktami:', currentPoint.id, 'i', nextPoint.id);
+                continue;
+            }
+            
             const nextPointPos = CoordUtils.getTransitionGlobalPosition(
                 nextPoint, commonChunk, this.config.chunkWidth, this.config.tileSize
             );
+            
+            if (!nextPointPos) {
+                console.log('❌ Nie można obliczyć pozycji dla punktu:', nextPoint.id);
+                continue;
+            }
             
             segments.push({
                 chunk: commonChunk,
                 position: nextPointPos
             });
         }
-        
-        // Ostatni segment: od ostatniego punktu przejścia do końca
-        segments.push({
-            chunk: endChunk,
-            position: endPos
-        });
-        
         return segments;
     }
 } 
