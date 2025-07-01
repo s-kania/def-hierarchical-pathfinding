@@ -248,12 +248,62 @@ export class HierarchicalPathfinding {
 
     /**
      * Zwraca czyste punkty przejścia
-     * @param {Object} startPos - Pozycja startowa
+     * @param {Object} startPos - Pozycja startowa 
      * @param {Object} endPos - Pozycja końcowa  
      * @param {Array} transitionPath - Lista ID punktów przejścia
      * @returns {Array} - Lista punktów przejścia
      */
     buildPathSegments(startPos, endPos, transitionPath) {
-        return transitionPath;
+        const segments = [];
+        
+        // Określamy chunk startowy i końcowy
+        const startChunk = CoordUtils.globalToChunkId(startPos, this.config.chunkWidth, this.config.tileSize);
+        const endChunk = CoordUtils.globalToChunkId(endPos, this.config.chunkWidth, this.config.tileSize);
+        
+        // Jeśli nie ma punktów przejścia (bezpośrednia ścieżka)
+        if (transitionPath.length === 0) {
+            segments.push({
+                chunk: startChunk,
+                position: endPos
+            });
+            return segments;
+        }
+        
+        // Pierwszy segment: od startu do pierwszego punktu przejścia
+        const firstPoint = this.transitionGraph.getPoint(transitionPath[0]);
+        const firstPointPos = CoordUtils.getTransitionGlobalPosition(
+            firstPoint, startChunk, this.config.chunkWidth, this.config.tileSize
+        );
+        
+        segments.push({
+            chunk: startChunk,
+            position: firstPointPos
+        });
+        
+        // Środkowe segmenty: między punktami przejścia
+        for (let i = 0; i < transitionPath.length - 1; i++) {
+            const currentPoint = this.transitionGraph.getPoint(transitionPath[i]);
+            const nextPoint = this.transitionGraph.getPoint(transitionPath[i + 1]);
+            
+            // Znajdujemy wspólny chunk między punktami
+            const commonChunk = currentPoint.chunks.find(chunk => nextPoint.chunks.includes(chunk));
+            
+            const nextPointPos = CoordUtils.getTransitionGlobalPosition(
+                nextPoint, commonChunk, this.config.chunkWidth, this.config.tileSize
+            );
+            
+            segments.push({
+                chunk: commonChunk,
+                position: nextPointPos
+            });
+        }
+        
+        // Ostatni segment: od ostatniego punktu przejścia do końca
+        segments.push({
+            chunk: endChunk,
+            position: endPos
+        });
+        
+        return segments;
     }
 } 
