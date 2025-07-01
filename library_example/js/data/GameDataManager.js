@@ -63,7 +63,8 @@ export class GameDataManager {
      * BUDUJE GRAF POŁĄCZEŃ MIĘDZY PUNKTAMI PRZEJŚCIA
      */
     buildConnections(chunks) {
-        this.chunks = chunks;
+        // Konwertuj chunks z 1D na 2D format dla kompatybilności z HierarchicalPathfinding
+        this.chunks = chunks.map(chunk => this.convertChunkTo2D(chunk));
         
         // Wyczyść poprzednie connections
         this.transitionPoints.forEach(point => point.connections = []);
@@ -78,6 +79,38 @@ export class GameDataManager {
                 this.buildChunkConnections(chunkId, points);
             }
         });
+    }
+    
+    /**
+     * KONWERTUJE CHUNK Z 1D TILES ARRAY NA 2D FORMAT
+     */
+    convertChunkTo2D(chunk) {
+        if (!chunk || !chunk.tiles) {
+            return chunk;
+        }
+        
+        // Sprawdź czy już ma format 2D
+        if (Array.isArray(chunk.tiles[0])) {
+            return chunk; // Już jest 2D
+        }
+        
+        // Konwertuj 1D → 2D
+        const tiles2D = [];
+        for (let y = 0; y < this.chunkSize; y++) {
+            const row = [];
+            for (let x = 0; x < this.chunkSize; x++) {
+                const index = y * this.chunkSize + x;
+                row.push(chunk.tiles[index]); // 0=ocean, 1=land
+            }
+            tiles2D.push(row);
+        }
+        
+        // Zwróć chunk z 2D tiles oraz zachowaj oryginalne 1D jako backup
+        return {
+            ...chunk,
+            tiles: tiles2D,           // 2D format dla HierarchicalPathfinding
+            tilesOriginal: chunk.tiles // Backup 1D format
+        };
     }
     
     /**
@@ -287,18 +320,24 @@ export class GameDataManager {
      * SPRAWDZA CZY TILE JEST OCEANEM
      */
     isOceanTile(chunk, x, y) {
-        // Chunks używają pola 'tiles', nie 'data'
-        const tileIndex = y * this.chunkSize + x;
-        
         if (!chunk.tiles) {
             return false;
         }
         
-        if (tileIndex < 0 || tileIndex >= chunk.tiles.length) {
+        // Sprawdź granice
+        if (x < 0 || y < 0 || y >= chunk.tiles.length || x >= chunk.tiles[0].length) {
             return false;
         }
         
-        return chunk.tiles[tileIndex] === 0;
+        // Obsługa zarówno 2D jak i 1D format (dla kompatybilności)
+        if (Array.isArray(chunk.tiles[0])) {
+            // 2D format: chunk.tiles[y][x]
+            return chunk.tiles[y][x] === 0;
+        } else {
+            // 1D format: chunk.tiles[index] (backup)
+            const tileIndex = y * this.chunkSize + x;
+            return chunk.tiles[tileIndex] === 0;
+        }
     }
     
     /**
@@ -442,6 +481,34 @@ export class GameDataManager {
         const separator = chunkId.includes(',') ? ',' : '_';
         const [x, y] = chunkId.split(separator).map(Number);
         return { x, y };
+    }
+    
+    /**
+     * POBIERA DANE CHUNKA W FORMACIE 2D DLA HIERARCHICAL PATHFINDING
+     */
+    getChunkData(chunkId) {
+        const chunk = this.findChunk(chunkId);
+        if (!chunk || !chunk.tiles) {
+            return null;
+        }
+        
+        // Jeśli już jest w formacie 2D, zwróć bezpośrednio
+        if (Array.isArray(chunk.tiles[0])) {
+            return chunk.tiles; // 2D array gotowy dla LocalPathfinder
+        }
+        
+        // Konwertuj z 1D na 2D w razie potrzeby (nie powinno się zdarzyć po buildConnections)
+        const tiles2D = [];
+        for (let y = 0; y < this.chunkSize; y++) {
+            const row = [];
+            for (let x = 0; x < this.chunkSize; x++) {
+                const index = y * this.chunkSize + x;
+                row.push(chunk.tiles[index]); // 0=ocean, 1=land
+            }
+            tiles2D.push(row);
+        }
+        
+        return tiles2D;
     }
     
     /**

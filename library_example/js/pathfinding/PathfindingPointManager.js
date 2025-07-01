@@ -80,11 +80,20 @@ export class PathfindingPointManager {
             const chunkPixelX = RENDER_CONSTANTS.CANVAS_PADDING + chunk.x * (chunkPixelSize + RENDER_CONSTANTS.GAP_SIZE);
             const chunkPixelY = RENDER_CONSTANTS.CANVAS_PADDING + chunk.y * (chunkPixelSize + RENDER_CONSTANTS.GAP_SIZE);
             
-            for (let localY = 0; localY < this.settings.chunkSize; localY++) {
-                for (let localX = 0; localX < this.settings.chunkSize; localX++) {
-                    const index = localY * this.settings.chunkSize + localX;
-                    
-                    if (chunk.tiles[index] === 0) { // Ocean - używam chunk.tiles zamiast chunk.data
+                            for (let localY = 0; localY < this.settings.chunkSize; localY++) {
+                    for (let localX = 0; localX < this.settings.chunkSize; localX++) {
+                        // Sprawdź czy tile jest oceanem - obsługa zarówno 2D jak i 1D format
+                        let isOcean = false;
+                        if (Array.isArray(chunk.tiles[0])) {
+                            // 2D format: chunk.tiles[y][x]
+                            isOcean = chunk.tiles[localY][localX] === 0;
+                        } else {
+                            // 1D format: chunk.tiles[index] (backup)
+                            const index = localY * this.settings.chunkSize + localX;
+                            isOcean = chunk.tiles[index] === 0;
+                        }
+                        
+                        if (isOcean) { // Ocean
                         const globalX = chunk.x * this.settings.chunkSize + localX;
                         const globalY = chunk.y * this.settings.chunkSize + localY;
                         
@@ -297,8 +306,15 @@ export class PathfindingPointManager {
     isTileOcean(tilePos) {
         if (!tilePos || !tilePos.chunk) return false;
         
-        const index = tilePos.localY * this.settings.chunkSize + tilePos.localX;
-        return tilePos.chunk.tiles[index] === 0; // 0 = ocean
+        // Obsługa zarówno 2D jak i 1D format
+        if (Array.isArray(tilePos.chunk.tiles[0])) {
+            // 2D format: chunk.tiles[y][x]
+            return tilePos.chunk.tiles[tilePos.localY][tilePos.localX] === 0;
+        } else {
+            // 1D format: chunk.tiles[index] (backup)
+            const index = tilePos.localY * this.settings.chunkSize + tilePos.localX;
+            return tilePos.chunk.tiles[index] === 0; // 0 = ocean
+        }
     }
 
     /**
