@@ -6,8 +6,9 @@
  * MENEDŻER DANYCH GIER Z GRAFIKĄ PUNKTÓW PRZEJŚCIA
  */
 export class GameDataManager {
-    constructor(chunkSize) {
-        this.chunkSize = chunkSize;
+    constructor(gridWidth, gridHeight) {
+        this.gridWidth = gridWidth;   // Liczba chunków w poziomie
+        this.gridHeight = gridHeight; // Liczba chunków w pionie
         
         /**
          * TRANSITION POINTS - Array punktów przejścia między chunkami
@@ -22,17 +23,15 @@ export class GameDataManager {
         this.transitionPoints = [];
         
         /**
-         * CHUNKS - Array chunków zawierających dane mapy
-         * Format każdego chunka:
+         * CHUNKS - Obiekt chunków gdzie klucze to ID chunków, wartości to tiles
+         * Format:
          * {
-         *   id: string,           // "x,y" np. "0,0", "1,0"
-         *   tiles: [number],      // 1D array tiles (0=ocean, 1=land) o rozmiarze chunkSize²
-         *   ...inne pola          // mogą zawierać dodatkowe dane specyficzne dla chunka
+         *   "0,0": [[0,1,0,1], [1,0,0,1], ...],  // 2D array tiles (0=ocean, 1=land)
+         *   "1,0": [[1,0,1,0], [0,1,1,0], ...],
+         *   ...
          * }
          */
-        this.chunks = [];
-        
-        this.chunkConnections = new Map(); // Cache połączeń per chunk
+        this.chunks = {};
     }
     
     /**
@@ -63,12 +62,14 @@ export class GameDataManager {
      * BUDUJE GRAF POŁĄCZEŃ MIĘDZY PUNKTAMI PRZEJŚCIA
      */
     buildConnections(chunks) {
-        // Konwertuj chunks z 1D na 2D format dla kompatybilności z HierarchicalPathfinding
-        this.chunks = chunks.map(chunk => this.convertChunkTo2D(chunk));
+        // Konwertuj chunks array na obiekt z kluczami jako ID chunka
+        this.chunks = {};
+        chunks.forEach(chunk => {
+            this.chunks[chunk.id] = this.convertChunkTo2D(chunk);
+        });
         
         // Wyczyść poprzednie connections
         this.transitionPoints.forEach(point => point.connections = []);
-        this.chunkConnections.clear();
         
         // Grupuj punkty przejścia według chunków
         const pointsByChunk = this.groupPointsByChunk();
@@ -86,31 +87,29 @@ export class GameDataManager {
      */
     convertChunkTo2D(chunk) {
         if (!chunk || !chunk.tiles) {
-            return chunk;
+            return null;
         }
         
         // Sprawdź czy już ma format 2D
         if (Array.isArray(chunk.tiles[0])) {
-            return chunk; // Już jest 2D
+            return chunk.tiles; // Zwróć tylko tiles w formacie 2D
         }
+        
+        // Oblicz chunkSize z tiles array (sqrt z długości)
+        const chunkSize = Math.sqrt(chunk.tiles.length);
         
         // Konwertuj 1D → 2D
         const tiles2D = [];
-        for (let y = 0; y < this.chunkSize; y++) {
+        for (let y = 0; y < chunkSize; y++) {
             const row = [];
-            for (let x = 0; x < this.chunkSize; x++) {
-                const index = y * this.chunkSize + x;
+            for (let x = 0; x < chunkSize; x++) {
+                const index = y * chunkSize + x;
                 row.push(chunk.tiles[index]); // 0=ocean, 1=land
             }
             tiles2D.push(row);
         }
         
-        // Zwróć chunk z 2D tiles oraz zachowaj oryginalne 1D jako backup
-        return {
-            ...chunk,
-            tiles: tiles2D,           // 2D format dla HierarchicalPathfinding
-            tilesOriginal: chunk.tiles // Backup 1D format
-        };
+        return tiles2D; // Zwróć tylko tiles w formacie 2D
     }
     
     /**
@@ -135,8 +134,8 @@ export class GameDataManager {
      * BUDUJE POŁĄCZENIA W OBRĘBIE JEDNEGO CHUNKA UŻYWAJĄC A*
      */
     buildChunkConnections(chunkId, points) {
-        const chunk = this.findChunk(chunkId);
-        if (!chunk) {
+        const chunkTiles = this.chunks[chunkId];
+        if (!chunkTiles) {
             return;
         }
         
@@ -146,7 +145,7 @@ export class GameDataManager {
                 const pointA = points[i];
                 const pointB = points[j];
                 
-                const pathData = this.canConnectPointsWithWeight(chunk, chunkId, pointA, pointB);
+                const pathData = this.canConnectPointsWithWeight(chunkTiles, chunkId, pointA, pointB);
                 if (pathData) {
                     // Dodaj dwukierunkowe połączenie z wagą
                     pointA.connections.push({
@@ -165,7 +164,7 @@ export class GameDataManager {
     /**
      * SPRAWDZA CZY DWA PUNKTY PRZEJŚCIA MOGĄ BYĆ POŁĄCZONE A* I ZWRACA WAGĘ
      */
-    canConnectPointsWithWeight(chunk, chunkId, pointA, pointB) {
+    canConnectPointsWithWeight(chunkTiles, chunkId, pointA, pointB) {
         // Oblicz pozycje punktów w chunka
         const posA = this.getPointPositionInChunk(chunkId, pointA);
         const posB = this.getPointPositionInChunk(chunkId, pointB);
@@ -175,7 +174,7 @@ export class GameDataManager {
         }
         
         // Użyj A* do znalezienia ścieżki
-        const path = this.findPathAStar(chunk, posA, posB);
+        const path = this.findPathAStar(chunkTiles, posA, posB);
         if (path) {
             return {
                 weight: path.length - 1, // Liczba kroków (węzłów - 1)
@@ -189,8 +188,8 @@ export class GameDataManager {
     /**
      * SPRAWDZA CZY DWA PUNKTY PRZEJŚCIA MOGĄ BYĆ POŁĄCZONE A* (STARA METODA - KOMPATYBILNOŚĆ)
      */
-    canConnectPoints(chunk, chunkId, pointA, pointB) {
-        const pathData = this.canConnectPointsWithWeight(chunk, chunkId, pointA, pointB);
+    canConnectPoints(chunkTiles, chunkId, pointA, pointB) {
+        const pathData = this.canConnectPointsWithWeight(chunkTiles, chunkId, pointA, pointB);
         return pathData !== null;
     }
     
@@ -198,6 +197,13 @@ export class GameDataManager {
      * OBLICZA POZYCJĘ PUNKTU PRZEJŚCIA W CHUNKA (LOKALNE WSPÓŁRZĘDNE)
      */
     getPointPositionInChunk(chunkId, point) {
+        // Pobierz chunkTiles i oblicz chunkSize
+        const chunkTiles = this.chunks[chunkId];
+        if (!chunkTiles || !Array.isArray(chunkTiles)) {
+            return null;
+        }
+        const chunkSize = chunkTiles.length; // Wysokość = szerokość dla kwadratowych chunków
+        
         // Znajdź która krawędź chunka zawiera ten punkt
         const chunkCoords = this.parseChunkId(chunkId);
         const [chunkA, chunkB] = point.chunks.map(id => this.parseChunkId(id));
@@ -208,7 +214,7 @@ export class GameDataManager {
             if (chunkA.y < chunkB.y) {
                 // Jeśli to chunk A (górny)
                 if (chunkCoords.x === chunkA.x && chunkCoords.y === chunkA.y) {
-                    return { x: point.position, y: this.chunkSize - 1 };
+                    return { x: point.position, y: chunkSize - 1 };
                 }
                 // Jeśli to chunk B (dolny)
                 else if (chunkCoords.x === chunkB.x && chunkCoords.y === chunkB.y) {
@@ -217,7 +223,7 @@ export class GameDataManager {
             } else {
                 // Jeśli to chunk B (górny)
                 if (chunkCoords.x === chunkB.x && chunkCoords.y === chunkB.y) {
-                    return { x: point.position, y: this.chunkSize - 1 };
+                    return { x: point.position, y: chunkSize - 1 };
                 }
                 // Jeśli to chunk A (dolny)
                 else if (chunkCoords.x === chunkA.x && chunkCoords.y === chunkA.y) {
@@ -229,7 +235,7 @@ export class GameDataManager {
             if (chunkA.x < chunkB.x) {
                 // Jeśli to chunk A (lewy)
                 if (chunkCoords.x === chunkA.x && chunkCoords.y === chunkA.y) {
-                    return { x: this.chunkSize - 1, y: point.position };
+                    return { x: chunkSize - 1, y: point.position };
                 }
                 // Jeśli to chunk B (prawy)
                 else if (chunkCoords.x === chunkB.x && chunkCoords.y === chunkB.y) {
@@ -238,7 +244,7 @@ export class GameDataManager {
             } else {
                 // Jeśli to chunk B (lewy)
                 if (chunkCoords.x === chunkB.x && chunkCoords.y === chunkB.y) {
-                    return { x: this.chunkSize - 1, y: point.position };
+                    return { x: chunkSize - 1, y: point.position };
                 }
                 // Jeśli to chunk A (prawy)
                 else if (chunkCoords.x === chunkA.x && chunkCoords.y === chunkA.y) {
@@ -253,13 +259,14 @@ export class GameDataManager {
     /**
      * ALGORYTM A* DO ZNAJDOWANIA ŚCIEŻKI W CHUNKA
      */
-    findPathAStar(chunk, start, goal) {
+    findPathAStar(chunkTiles, start, goal) {
         // Sprawdź czy start i goal są na oceanie
-        if (!this.isOceanTile(chunk, start.x, start.y) || 
-            !this.isOceanTile(chunk, goal.x, goal.y)) {
+        if (!this.isOceanTile(chunkTiles, start.x, start.y) || 
+            !this.isOceanTile(chunkTiles, goal.x, goal.y)) {
             return null;
         }
         
+        const chunkSize = chunkTiles.length; // Wysokość chunka
         const openSet = [];
         const closedSet = new Set();
         const cameFrom = new Map();
@@ -292,9 +299,9 @@ export class GameDataManager {
                 const neighborKey = `${neighbor.x},${neighbor.y}`;
                 
                 // Sprawdź czy sąsiad jest w granicach chunka i na oceanie
-                if (neighbor.x < 0 || neighbor.x >= this.chunkSize ||
-                    neighbor.y < 0 || neighbor.y >= this.chunkSize ||
-                    !this.isOceanTile(chunk, neighbor.x, neighbor.y) ||
+                if (neighbor.x < 0 || neighbor.x >= chunkSize ||
+                    neighbor.y < 0 || neighbor.y >= chunkSize ||
+                    !this.isOceanTile(chunkTiles, neighbor.x, neighbor.y) ||
                     closedSet.has(neighborKey)) {
                     continue;
                 }
@@ -319,25 +326,18 @@ export class GameDataManager {
     /**
      * SPRAWDZA CZY TILE JEST OCEANEM
      */
-    isOceanTile(chunk, x, y) {
-        if (!chunk.tiles) {
+    isOceanTile(chunkTiles, x, y) {
+        if (!chunkTiles || !Array.isArray(chunkTiles)) {
             return false;
         }
         
         // Sprawdź granice
-        if (x < 0 || y < 0 || y >= chunk.tiles.length || x >= chunk.tiles[0].length) {
+        if (x < 0 || y < 0 || y >= chunkTiles.length || x >= chunkTiles[0].length) {
             return false;
         }
         
-        // Obsługa zarówno 2D jak i 1D format (dla kompatybilności)
-        if (Array.isArray(chunk.tiles[0])) {
-            // 2D format: chunk.tiles[y][x]
-            return chunk.tiles[y][x] === 0;
-        } else {
-            // 1D format: chunk.tiles[index] (backup)
-            const tileIndex = y * this.chunkSize + x;
-            return chunk.tiles[tileIndex] === 0;
-        }
+        // 2D format: chunkTiles[y][x]
+        return chunkTiles[y][x] === 0;
     }
     
     /**
@@ -373,15 +373,6 @@ export class GameDataManager {
         }
         
         return path;
-    }
-    
-    /**
-     * ZNAJDUJE CHUNK PO ID
-     */
-    findChunk(chunkId) {
-        // Normalizuj format ID do przecinków
-        const normalizedId = chunkId.replace('_', ',');
-        return this.chunks.find(chunk => chunk.id === normalizedId);
     }
     
     /**
@@ -445,17 +436,21 @@ export class GameDataManager {
         return this.transitionPoints.map(point => {
             const [a, b] = point.chunks.map(id => this.parseChunkId(id));
             
+            // Pobierz chunkSize z pierwszego dostępnego chunka
+            const firstChunk = this.chunks[point.chunks[0]];
+            const chunkSize = firstChunk ? firstChunk.length : 11; // fallback na 11
+            
             // Dedukuj kierunek z pozycji chunków
             const direction = a.x === b.x ? 'vertical' : 'horizontal';
             
             // Oblicz globalne współrzędne
             let globalX, globalY;
             if (direction === 'vertical') {
-                globalX = a.x * this.chunkSize + point.position;
-                globalY = a.y * this.chunkSize + this.chunkSize;
+                globalX = a.x * chunkSize + point.position;
+                globalY = a.y * chunkSize + chunkSize;
             } else {
-                globalX = a.x * this.chunkSize + this.chunkSize;
-                globalY = a.y * this.chunkSize + point.position;
+                globalX = a.x * chunkSize + chunkSize;
+                globalY = a.y * chunkSize + point.position;
             }
             
             return {
@@ -487,28 +482,9 @@ export class GameDataManager {
      * POBIERA DANE CHUNKA W FORMACIE 2D DLA HIERARCHICAL PATHFINDING
      */
     getChunkData(chunkId) {
-        const chunk = this.findChunk(chunkId);
-        if (!chunk || !chunk.tiles) {
-            return null;
-        }
-        
-        // Jeśli już jest w formacie 2D, zwróć bezpośrednio
-        if (Array.isArray(chunk.tiles[0])) {
-            return chunk.tiles; // 2D array gotowy dla LocalPathfinder
-        }
-        
-        // Konwertuj z 1D na 2D w razie potrzeby (nie powinno się zdarzyć po buildConnections)
-        const tiles2D = [];
-        for (let y = 0; y < this.chunkSize; y++) {
-            const row = [];
-            for (let x = 0; x < this.chunkSize; x++) {
-                const index = y * this.chunkSize + x;
-                row.push(chunk.tiles[index]); // 0=ocean, 1=land
-            }
-            tiles2D.push(row);
-        }
-        
-        return tiles2D;
+        // Normalizuj format ID do przecinków
+        const normalizedId = chunkId.replace('_', ',');
+        return this.chunks[normalizedId] || null;
     }
     
     /**

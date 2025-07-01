@@ -96,7 +96,7 @@ class ChunkMapGenerator {
         this.uiController = new UIController(this.settings, this.islandSettings, this.pathfindingSettings);
         this.pathfindingUIController = new PathfindingUIController();
         this.inspector = new Inspector(this.inspectorPanel);
-        this.gameDataManager = new GameDataManager(this.settings.chunkSize);
+        this.gameDataManager = new GameDataManager(this.settings.chunkCols, this.settings.chunkRows);
     }
     
     /**
