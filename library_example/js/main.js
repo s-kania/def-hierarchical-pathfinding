@@ -421,10 +421,26 @@ class ChunkMapGenerator {
             pathfinder.init(config);
             
             // Pobierz punkty start/end z PathfindingPointManager
-            const startPos = this.pathfindingPointManager.getStartPoint();
-            const endPos = this.pathfindingPointManager.getEndPoint();
+            const startPoint = this.pathfindingPointManager.getStartPoint();
+            const endPoint = this.pathfindingPointManager.getEndPoint();
             
-            console.log('🚀 Szukanie ścieżki:', { startPos, endPos });
+            // Konwertuj pozycje tile na pozycje świata (w jednostkach world)
+            // PathfindingPointManager przechowuje numery tile'ów, ale biblioteca oczekuje pozycji świata
+            const startPos = {
+                x: startPoint.x * this.settings.tileSize + this.settings.tileSize / 2,
+                y: startPoint.y * this.settings.tileSize + this.settings.tileSize / 2,
+                z: 0
+            };
+            
+            const endPos = {
+                x: endPoint.x * this.settings.tileSize + this.settings.tileSize / 2,
+                y: endPoint.y * this.settings.tileSize + this.settings.tileSize / 2,
+                z: 0
+            };
+            
+            console.log('🚀 Szukanie ścieżki:');
+            console.log('   Start tile:', startPoint.x, startPoint.y, '→ world pos:', startPos.x, startPos.y);
+            console.log('   End tile:', endPoint.x, endPoint.y, '→ world pos:', endPos.x, endPos.y);
             
             // Znajdź ścieżkę
             const pathSegments = pathfinder.findPath(startPos, endPos);
