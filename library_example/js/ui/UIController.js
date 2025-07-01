@@ -190,12 +190,16 @@ export class UIController {
     setupCanvasInteractivity(canvas, inspector, transitionPointManager) {
         // Obsługa ruchu myszy
         canvas.addEventListener('mousemove', (e) => {
+            const { mouseX, mouseY } = getCanvasCoordinates(e, canvas);
+            
+            // Aktualizuj pozycję myszy w UI
+            this.updateMousePosition(mouseX, mouseY);
+            
             if (!this.pathfindingSettings.showTransitionPoints) {
                 inspector.hideInspector();
                 return;
             }
 
-            const { mouseX, mouseY } = getCanvasCoordinates(e, canvas);
             const hoveredPoint = transitionPointManager.getTransitionPointAt(mouseX, mouseY);
 
             if (hoveredPoint) {
@@ -220,6 +224,12 @@ export class UIController {
             canvas.classList.remove('pointer-cursor');
             if (!inspector.getSelectedPoint()) {
                 inspector.hideInspector();
+            }
+            
+            // Wyczyść pozycję myszy
+            const mousePositionElement = document.getElementById('mousePosition');
+            if (mousePositionElement) {
+                mousePositionElement.textContent = '-';
             }
         });
 
@@ -422,5 +432,31 @@ export class UIController {
         this.onPathfindingUpdate = onPathfindingUpdate;
         this.onExportPNG = onExportPNG;
         this.onReset = onReset;
+    }
+
+    /**
+     * AKTUALIZUJE POZYCJĘ MYSZY W UI
+     */
+    updateMousePosition(mouseX, mouseY) {
+        const tileX = Math.floor(mouseX / this.settings.tileSize);
+        const tileY = Math.floor(mouseY / this.settings.tileSize);
+        
+        const chunkX = Math.floor(tileX / this.settings.chunkSize);
+        const chunkY = Math.floor(tileY / this.settings.chunkSize);
+        
+        const localX = tileX % this.settings.chunkSize;
+        const localY = tileY % this.settings.chunkSize;
+        
+        const globalX = tileX * this.settings.tileSize + this.settings.tileSize / 2;
+        const globalY = tileY * this.settings.tileSize + this.settings.tileSize / 2;
+        
+        const positionText = `(${globalX.toFixed(0)}, ${globalY.toFixed(0)}) | Tile: (${tileX}, ${tileY}) | Chunk: ${chunkX},${chunkY} [${localX},${localY}]`;
+        
+        const mousePositionElement = document.getElementById('mousePosition');
+        if (mousePositionElement) {
+            mousePositionElement.textContent = positionText;
+        } else {
+            console.warn('Element mousePosition nie został znaleziony!');
+        }
     }
 } 

@@ -461,6 +461,9 @@ class ChunkMapGenerator {
         this.canvas.addEventListener('mousemove', (e) => {
             const { mouseX, mouseY } = getCanvasCoordinates(e, this.canvas);
             
+            // Aktualizuj pozycję myszy w UI
+            this.uiController.updateMousePosition(mouseX, mouseY);
+            
             // Aktualizuj przeciąganie punktów pathfinding
             if (this.pathfindingPointManager.isDraggingPoint()) {
                 const success = this.pathfindingPointManager.updateDragging(mouseX, mouseY);
@@ -572,6 +575,12 @@ class ChunkMapGenerator {
             if (this.pathfindingPointManager.isDraggingPoint()) {
                 this.pathfindingPointManager.stopDragging();
                 this.pathfindingUIController.updateAll(this.pathfindingPointManager);
+            }
+            
+            // Wyczyść pozycję myszy
+            const mousePositionElement = document.getElementById('mousePosition');
+            if (mousePositionElement) {
+                mousePositionElement.textContent = '-';
             }
             
             // Resetuj hover (ale zachowaj selected)
