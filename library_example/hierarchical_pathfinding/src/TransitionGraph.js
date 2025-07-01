@@ -87,15 +87,29 @@ export class TransitionGraph {
      * @returns {Array|null} - Tablica ID punktów lub null
      */
     findPath(startId, endId) {
+        console.log('🗺️ === TRANSITION GRAPH A* DEBUG ===');
+        console.log('🎯 Szukanie ścieżki od:', startId, '→ do:', endId);
+        
         // Przypadek trywialny
         if (startId === endId) {
+            console.log('✅ Ten sam punkt - zwracam [' + startId + ']');
             return [startId];
         }
         
         // Sprawdzamy czy punkty istnieją
         if (!this.points.has(startId) || !this.points.has(endId)) {
+            console.log('❌ Punkty nie istnieją w grafie');
+            console.log('   Start exists:', this.points.has(startId));
+            console.log('   End exists:', this.points.has(endId));
             return null;
         }
+        
+        console.log('📊 Graf info:');
+        console.log('   Punkty w grafie:', this.points.size);
+        console.log('   Start punkt:', this.points.get(startId));
+        console.log('   End punkt:', this.points.get(endId));
+        console.log('   Start connections:', this.graph.get(startId));
+        console.log('   End connections:', this.graph.get(endId));
         
         // Implementacja A*
         const openSet = new MinHeap();
@@ -110,26 +124,43 @@ export class TransitionGraph {
             f: this.heuristic(startId, endId) 
         });
         
+        console.log('🚀 Rozpoczynanie A* z heurystyką:', this.heuristic(startId, endId));
+        
+        let iterations = 0;
+        const maxIterations = 1000; // zabezpieczenie przed nieskończoną pętlą
+        
         // Główna pętla A*
-        while (!openSet.isEmpty()) {
+        while (!openSet.isEmpty() && iterations < maxIterations) {
+            iterations++;
             const current = openSet.pop();
+            
+            console.log(`🔄 A* iteracja ${iterations}: sprawdzam punkt ${current.id} (f=${current.f})`);
             
             // Znaleźliśmy cel!
             if (current.id === endId) {
-                return this.reconstructPath(cameFrom, endId);
+                const path = this.reconstructPath(cameFrom, endId);
+                console.log('🎉 Znaleziono ścieżkę po', iterations, 'iteracjach:', path);
+                console.log('🗺️ === KONIEC TRANSITION GRAPH DEBUG ===');
+                return path;
             }
             
             closedSet.add(current.id);
             
             // Sprawdzamy wszystkie połączenia
             const connections = this.graph.get(current.id) || [];
+            console.log(`   📎 Punkt ${current.id} ma ${connections.length} połączeń:`, connections);
             
             for (const connection of connections) {
                 const neighbor = connection.id;
                 const weight = connection.weight || 1;
                 
+                console.log(`     🔍 Sprawdzam sąsiada: ${neighbor} (waga: ${weight})`);
+                
                 // Pomijamy już odwiedzone
-                if (closedSet.has(neighbor)) continue;
+                if (closedSet.has(neighbor)) {
+                    console.log('       ⏭️ Już odwiedzony, pomijam');
+                    continue;
+                }
                 
                 // Obliczamy nowy koszt
                 const currentG = gScore.get(current.id) || 0;
@@ -138,6 +169,7 @@ export class TransitionGraph {
                 // Sprawdzamy czy mamy lepszą ścieżkę
                 const existingG = gScore.get(neighbor);
                 if (existingG !== undefined && tentativeG >= existingG) {
+                    console.log(`       ⏭️ Gorszy koszt (${tentativeG} >= ${existingG}), pomijam`);
                     continue;
                 }
                 
@@ -145,15 +177,26 @@ export class TransitionGraph {
                 cameFrom.set(neighbor, current.id);
                 gScore.set(neighbor, tentativeG);
                 
+                const heuristicValue = this.heuristic(neighbor, endId);
+                const fScore = tentativeG + heuristicValue;
+                
+                console.log(`       ✅ Dodaję do kolejki: g=${tentativeG}, h=${heuristicValue}, f=${fScore}`);
+                
                 // Dodajemy do kolejki priorytetowej
                 openSet.push({
                     id: neighbor,
-                    f: tentativeG + this.heuristic(neighbor, endId)
+                    f: fScore
                 });
             }
         }
         
+        if (iterations >= maxIterations) {
+            console.log('⚠️ Osiągnięto maksymalną liczbę iteracji:', maxIterations);
+        }
+        
         // Nie znaleźliśmy ścieżki
+        console.log('❌ Nie znaleziono ścieżki po', iterations, 'iteracjach');
+        console.log('🗺️ === KONIEC TRANSITION GRAPH DEBUG ===');
         return null;
     }
     
