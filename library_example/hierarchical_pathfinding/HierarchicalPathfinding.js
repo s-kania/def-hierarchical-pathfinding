@@ -254,11 +254,6 @@ export class HierarchicalPathfinding {
      * @returns {Array} - Tablica segmentów ścieżki
      */
     buildPathSegments(startPos, endPos, transitionPath) {
-        console.log('🔨 === BUDOWANIE SEGMENTÓW ŚCIEŻKI ===');
-        console.log('📍 Start budowy:', startPos);
-        console.log('📍 End budowy:', endPos);
-        console.log('🛤️ Ścieżka punktów przejścia:', transitionPath);
-        
         const segments = [];
         let currentPos = startPos;
 
@@ -267,19 +262,12 @@ export class HierarchicalPathfinding {
             const pointId = transitionPath[i];
             const point = this.transitionGraph.getPoint(pointId);
 
-            console.log(`\n🔄 === KROK ${i + 1}/${transitionPath.length} ===`);
-            console.log(`📍 Obecna pozycja:`, currentPos);
-            console.log(`🎯 Punkt przejścia ID:`, pointId);
-            console.log(`🎯 Punkt przejścia dane:`, point);
-
             if (!point) {
-                console.log('❌ Nie można znaleźć punktu przejścia');
                 return null;
             }
 
             // Określamy obecny chunk
             const currentChunk = CoordUtils.globalToChunkId(currentPos, this.config.chunkWidth, this.config.tileSize);
-            console.log(`🗂️ Obecny chunk:`, currentChunk);
             
             // Określamy pozycję docelową dla tego kroku
             let targetPos;
@@ -287,34 +275,24 @@ export class HierarchicalPathfinding {
             if (i === transitionPath.length - 1) {
                 // Ostatni punkt - idziemy do finalnej pozycji
                 targetPos = endPos;
-                console.log(`🏁 OSTATNI KROK - cel: finalna pozycja`, targetPos);
             } else {
                 // Punkt pośredni - idziemy do punktu przejścia
                 targetPos = CoordUtils.getTransitionGlobalPosition(
                     point, currentChunk, this.config.chunkWidth, this.config.tileSize
                 );
-                console.log(`🔄 POŚREDNI KROK - cel: punkt przejścia`, targetPos);
 
                 if (!targetPos) {
-                    console.log('❌ Nie można obliczyć pozycji docelowej punktu przejścia');
                     return null;
                 }
             }
 
-            console.log(`🎯 Pozycja docelowa dla tego kroku:`, targetPos);
-            console.log(`🗂️ Chunk docelowy dla pozycji ${targetPos.x},${targetPos.y}:`, 
-                CoordUtils.globalToChunkId(targetPos, this.config.chunkWidth, this.config.tileSize));
-
             // Znajdujemy lokalną ścieżkę do celu
-            console.log(`🔍 Szukanie lokalnej ścieżki w chunku ${currentChunk} od ${currentPos.x},${currentPos.y} do ${targetPos.x},${targetPos.y}`);
             const segmentPath = this.findLocalPath(currentChunk, currentPos, targetPos);
             
             if (!segmentPath) {
-                console.log('❌ Nie można znaleźć lokalnej ścieżki');
                 return null;
             }
 
-            console.log(`✅ Znaleziono lokalną ścieżkę:`, segmentPath);
             segments.push(...segmentPath);
 
             // Przesuwamy się do następnego chunka (jeśli nie ostatni punkt)
@@ -322,41 +300,30 @@ export class HierarchicalPathfinding {
                 const nextPointId = transitionPath[i + 1];
                 const nextPoint = this.transitionGraph.getPoint(nextPointId);
                 
-                console.log(`⏭️ Przygotowanie do następnego kroku:`);
-                console.log(`   Następny punkt ID:`, nextPointId);
-                console.log(`   Następny punkt dane:`, nextPoint);
-                
                 if (nextPoint) {
                     // Znajdujemy chunk po drugiej stronie obecnego punktu przejścia
                     const nextChunk = point.chunks.find(id => id !== currentChunk);
-                    console.log(`   Następny chunk:`, nextChunk);
                     
                     if (nextChunk) {
                         // Pozycja startowa w nowym chunku to pozycja obecnego punktu przejścia w tym chunku
                         const newPos = CoordUtils.getTransitionGlobalPosition(
                             point, nextChunk, this.config.chunkWidth, this.config.tileSize
                         );
-                        console.log(`   Nowa pozycja startowa:`, newPos);
                         
                         if (newPos) {
                             currentPos = newPos;
                         } else {
-                            console.log('❌ Nie można obliczyć pozycji w następnym chunku');
                             return null;
                         }
                     } else {
-                        console.log('❌ Nie można znaleźć następnego chunka');
                         return null;
                     }
                 } else {
-                    console.log('❌ Nie można znaleźć następnego punktu');
                     return null;
                 }
             }
         }
 
-        console.log('🔨 === KONIEC BUDOWANIA SEGMENTÓW ===');
-        console.log('📊 Wszystkie segmenty:', segments);
         return segments;
     }
 } 
