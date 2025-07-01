@@ -79,7 +79,9 @@ class ChunkMapGenerator {
         // Udostępnij globalnie dla konsoli deweloperskiej
         window.mapGenerator = this;
         window.app = this;
+        window.gameDataManager = this.gameDataManager;
         console.log('🎮 MapGenerator dostępny jako window.mapGenerator i window.app');
+        console.log('📊 GameDataManager dostępny jako window.gameDataManager');
     }
     
     /**
