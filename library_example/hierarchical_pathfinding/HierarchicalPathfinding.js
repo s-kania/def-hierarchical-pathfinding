@@ -247,83 +247,13 @@ export class HierarchicalPathfinding {
     }
 
     /**
-     * Buduje kompletne segmenty ścieżki przechodząc przez punkty przejścia
+     * Zwraca czyste punkty przejścia
      * @param {Object} startPos - Pozycja startowa
      * @param {Object} endPos - Pozycja końcowa  
      * @param {Array} transitionPath - Lista ID punktów przejścia
-     * @returns {Array} - Tablica segmentów ścieżki
+     * @returns {Array} - Lista punktów przejścia
      */
     buildPathSegments(startPos, endPos, transitionPath) {
-        const segments = [];
-        let currentPos = startPos;
-
-        // Przechodzimy przez każdy punkt przejścia
-        for (let i = 0; i < transitionPath.length; i++) {
-            const pointId = transitionPath[i];
-            const point = this.transitionGraph.getPoint(pointId);
-
-            if (!point) {
-                return null;
-            }
-
-            // Określamy obecny chunk
-            const currentChunk = CoordUtils.globalToChunkId(currentPos, this.config.chunkWidth, this.config.tileSize);
-            
-            // Określamy pozycję docelową dla tego kroku
-            let targetPos;
-            
-            if (i === transitionPath.length - 1) {
-                // Ostatni punkt - idziemy do finalnej pozycji
-                targetPos = endPos;
-            } else {
-                // Punkt pośredni - idziemy do punktu przejścia
-                targetPos = CoordUtils.getTransitionGlobalPosition(
-                    point, currentChunk, this.config.chunkWidth, this.config.tileSize
-                );
-
-                if (!targetPos) {
-                    return null;
-                }
-            }
-
-            // Znajdujemy lokalną ścieżkę do celu
-            const segmentPath = this.findLocalPath(currentChunk, currentPos, targetPos);
-            
-            if (!segmentPath) {
-                return null;
-            }
-
-            segments.push(...segmentPath);
-
-            // Przesuwamy się do następnego chunka (jeśli nie ostatni punkt)
-            if (i < transitionPath.length - 1) {
-                const nextPointId = transitionPath[i + 1];
-                const nextPoint = this.transitionGraph.getPoint(nextPointId);
-                
-                if (nextPoint) {
-                    // Znajdujemy chunk po drugiej stronie obecnego punktu przejścia
-                    const nextChunk = point.chunks.find(id => id !== currentChunk);
-                    
-                    if (nextChunk) {
-                        // Pozycja startowa w nowym chunku to pozycja obecnego punktu przejścia w tym chunku
-                        const newPos = CoordUtils.getTransitionGlobalPosition(
-                            point, nextChunk, this.config.chunkWidth, this.config.tileSize
-                        );
-                        
-                        if (newPos) {
-                            currentPos = newPos;
-                        } else {
-                            return null;
-                        }
-                    } else {
-                        return null;
-                    }
-                } else {
-                    return null;
-                }
-            }
-        }
-
-        return segments;
+        return transitionPath;
     }
 } 
