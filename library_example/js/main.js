@@ -18,6 +18,7 @@ import { PathfindingUIController } from './ui/PathfindingUIController.js';
 import { Inspector } from './ui/Inspector.js';
 import { GameDataManager } from './data/GameDataManager.js';
 import { getCanvasCoordinates } from './utils/MathUtils.js';
+import { HierarchicalPathfinding } from '../hierarchical_pathfinding/HierarchicalPathfinding.js';
 
 /**
  * GŁÓWNA KLASA APLIKACJI
@@ -96,7 +97,12 @@ class ChunkMapGenerator {
         this.uiController = new UIController(this.settings, this.islandSettings, this.pathfindingSettings);
         this.pathfindingUIController = new PathfindingUIController();
         this.inspector = new Inspector(this.inspectorPanel);
-        this.gameDataManager = new GameDataManager(this.settings.chunkCols, this.settings.chunkRows);
+        this.gameDataManager = new GameDataManager(
+            this.settings.chunkCols, 
+            this.settings.chunkRows,
+            this.settings.chunkSize,  // chunkWidth
+            this.settings.chunkSize   // chunkHeight (dla kwadratowych chunków)
+        );
     }
     
     /**
@@ -281,6 +287,14 @@ class ChunkMapGenerator {
         this.pathfindingPointManager.updateSettings(this.settings);
         this.renderer.updateSettings(this.settings);
         this.renderer.updatePathfindingSettings(this.pathfindingSettings);
+        
+        // Aktualizuj GameDataManager z nowymi wymiarami chunka
+        this.gameDataManager = new GameDataManager(
+            this.settings.chunkCols, 
+            this.settings.chunkRows,
+            this.settings.chunkSize,  // chunkWidth
+            this.settings.chunkSize   // chunkHeight (dla kwadratowych chunków)
+        );
     }
     
     /**
@@ -386,11 +400,57 @@ class ChunkMapGenerator {
             this.pathfindingUIController.showError('Brak punktów do obliczenia ścieżki');
             return;
         }
-        
-        // Tutaj można dodać prawdziwy algorytm pathfinding
-        const distance = this.pathfindingPointManager.calculateLinearDistance();
-        this.pathfindingUIController.showSuccess(`Obliczono ścieżkę: ${distance.tiles} tiles`);
-        this.pathfindingUIController.updateAll(this.pathfindingPointManager);
+
+        // NOWA IMPLEMENTACJA - HierarchicalPathfinding
+        try {
+            // Tworzymy nową instancję HierarchicalPathfinding
+            const pathfinder = new HierarchicalPathfinding();
+            
+            // Konfiguracja z wymiarami chunka z ustawień
+            const config = {
+                tileSize: this.settings.tileSize,
+                gridWidth: this.gameDataManager.gridWidth,
+                gridHeight: this.gameDataManager.gridHeight,
+                chunkWidth: this.gameDataManager.chunkWidth,
+                chunkHeight: this.gameDataManager.chunkHeight,
+                getChunkData: (chunkId) => this.gameDataManager.getChunkData(chunkId),
+                transitionPoints: this.gameDataManager.transitionPoints
+            };
+            
+            // Inicjalizuj pathfinder
+            pathfinder.init(config);
+            
+            // Pobierz punkty start/end z PathfindingPointManager
+            const startPos = this.pathfindingPointManager.getStartPoint();
+            const endPos = this.pathfindingPointManager.getEndPoint();
+            
+            console.log('🚀 Szukanie ścieżki:', { startPos, endPos });
+            
+            // Znajdź ścieżkę
+            const pathSegments = pathfinder.findPath(startPos, endPos);
+            
+            if (pathSegments) {
+                console.log('✅ Znaleziono ścieżkę!');
+                console.log('📊 Segmenty ruchu:', pathSegments);
+                
+                // Wyświetl segmenty w czytelnym formacie
+                pathSegments.forEach((segment, index) => {
+                    console.log(`Segment ${index + 1}:`, {
+                        chunk: segment.chunk,
+                        pozycja: segment.position
+                    });
+                });
+                
+                this.pathfindingUIController.showSuccess(`Znaleziono ścieżkę z ${pathSegments.length} segmentami`);
+            } else {
+                console.log('❌ Nie znaleziono ścieżki');
+                this.pathfindingUIController.showError('Nie można znaleźć ścieżki między punktami');
+            }
+            
+        } catch (error) {
+            console.error('❌ Błąd podczas obliczania ścieżki:', error);
+            this.pathfindingUIController.showError(`Błąd: ${error.message}`);
+        }
     }
 
     /**
@@ -594,8 +654,10 @@ class ChunkMapGenerator {
 
         
         console.log('\n📐 Settings:');
-        console.log('- Chunk Size:', this.gameDataManager.chunkSize);
+        console.log(`- Chunk Size: ${this.gameDataManager.chunkWidth}x${this.gameDataManager.chunkHeight}`);
+        console.log(`- Grid Size: ${this.gameDataManager.gridWidth}x${this.gameDataManager.gridHeight}`);
         console.log('- Total Transition Points:', this.gameDataManager.transitionPoints.length);
+        console.log('- Total Chunks:', Object.keys(this.gameDataManager.chunks).length);
         
         console.log('\n📋 JSON Export (New Format):');
         console.log(JSON.stringify(this.gameDataManager.transitionPoints, null, 2));

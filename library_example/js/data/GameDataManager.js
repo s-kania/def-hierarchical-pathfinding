@@ -6,9 +6,11 @@
  * MENEDŻER DANYCH GIER Z GRAFIKĄ PUNKTÓW PRZEJŚCIA
  */
 export class GameDataManager {
-    constructor(gridWidth, gridHeight) {
-        this.gridWidth = gridWidth;   // Liczba chunków w poziomie
-        this.gridHeight = gridHeight; // Liczba chunków w pionie
+    constructor(gridWidth, gridHeight, chunkWidth, chunkHeight) {
+        this.gridWidth = gridWidth;       // Liczba chunków w poziomie
+        this.gridHeight = gridHeight;     // Liczba chunków w pionie
+        this.chunkWidth = chunkWidth;     // Szerokość chunka w kafelkach (z ustawień)
+        this.chunkHeight = chunkHeight;   // Wysokość chunka w kafelkach (z ustawień)
         
         /**
          * TRANSITION POINTS - Array punktów przejścia między chunkami
@@ -32,6 +34,8 @@ export class GameDataManager {
          * }
          */
         this.chunks = {};
+        
+        console.log(`✓ GameDataManager: zainicjalizowano z chunks ${chunkWidth}x${chunkHeight}, grid ${gridWidth}x${gridHeight}`);
     }
     
     /**
@@ -197,12 +201,11 @@ export class GameDataManager {
      * OBLICZA POZYCJĘ PUNKTU PRZEJŚCIA W CHUNKA (LOKALNE WSPÓŁRZĘDNE)
      */
     getPointPositionInChunk(chunkId, point) {
-        // Pobierz chunkTiles i oblicz chunkSize
-        const chunkTiles = this.chunks[chunkId];
-        if (!chunkTiles || !Array.isArray(chunkTiles)) {
+        // Sprawdź czy mamy informacje o wymiarach chunka
+        if (!this.chunkWidth || !this.chunkHeight) {
+            console.warn('GameDataManager: brak informacji o wymiarach chunka');
             return null;
         }
-        const chunkSize = chunkTiles.length; // Wysokość = szerokość dla kwadratowych chunków
         
         // Znajdź która krawędź chunka zawiera ten punkt
         const chunkCoords = this.parseChunkId(chunkId);
@@ -214,7 +217,7 @@ export class GameDataManager {
             if (chunkA.y < chunkB.y) {
                 // Jeśli to chunk A (górny)
                 if (chunkCoords.x === chunkA.x && chunkCoords.y === chunkA.y) {
-                    return { x: point.position, y: chunkSize - 1 };
+                    return { x: point.position, y: this.chunkHeight - 1 };
                 }
                 // Jeśli to chunk B (dolny)
                 else if (chunkCoords.x === chunkB.x && chunkCoords.y === chunkB.y) {
@@ -223,7 +226,7 @@ export class GameDataManager {
             } else {
                 // Jeśli to chunk B (górny)
                 if (chunkCoords.x === chunkB.x && chunkCoords.y === chunkB.y) {
-                    return { x: point.position, y: chunkSize - 1 };
+                    return { x: point.position, y: this.chunkHeight - 1 };
                 }
                 // Jeśli to chunk A (dolny)
                 else if (chunkCoords.x === chunkA.x && chunkCoords.y === chunkA.y) {
@@ -235,7 +238,7 @@ export class GameDataManager {
             if (chunkA.x < chunkB.x) {
                 // Jeśli to chunk A (lewy)
                 if (chunkCoords.x === chunkA.x && chunkCoords.y === chunkA.y) {
-                    return { x: chunkSize - 1, y: point.position };
+                    return { x: this.chunkWidth - 1, y: point.position };
                 }
                 // Jeśli to chunk B (prawy)
                 else if (chunkCoords.x === chunkB.x && chunkCoords.y === chunkB.y) {
@@ -244,7 +247,7 @@ export class GameDataManager {
             } else {
                 // Jeśli to chunk B (lewy)
                 if (chunkCoords.x === chunkB.x && chunkCoords.y === chunkB.y) {
-                    return { x: chunkSize - 1, y: point.position };
+                    return { x: this.chunkWidth - 1, y: point.position };
                 }
                 // Jeśli to chunk A (prawy)
                 else if (chunkCoords.x === chunkA.x && chunkCoords.y === chunkA.y) {
@@ -436,9 +439,9 @@ export class GameDataManager {
         return this.transitionPoints.map(point => {
             const [a, b] = point.chunks.map(id => this.parseChunkId(id));
             
-            // Pobierz chunkSize z pierwszego dostępnego chunka
-            const firstChunk = this.chunks[point.chunks[0]];
-            const chunkSize = firstChunk ? firstChunk.length : 11; // fallback na 11
+            // Użyj wymiarów chunka z GameDataManager
+            const chunkWidth = this.chunkWidth || 11;   // fallback na 11
+            const chunkHeight = this.chunkHeight || 11; // fallback na 11
             
             // Dedukuj kierunek z pozycji chunków
             const direction = a.x === b.x ? 'vertical' : 'horizontal';
@@ -446,11 +449,11 @@ export class GameDataManager {
             // Oblicz globalne współrzędne
             let globalX, globalY;
             if (direction === 'vertical') {
-                globalX = a.x * chunkSize + point.position;
-                globalY = a.y * chunkSize + chunkSize;
+                globalX = a.x * chunkWidth + point.position;
+                globalY = a.y * chunkHeight + chunkHeight;
             } else {
-                globalX = a.x * chunkSize + chunkSize;
-                globalY = a.y * chunkSize + point.position;
+                globalX = a.x * chunkWidth + chunkWidth;
+                globalY = a.y * chunkHeight + point.position;
             }
             
             return {

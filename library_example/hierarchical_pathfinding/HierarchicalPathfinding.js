@@ -16,27 +16,31 @@ export class HierarchicalPathfinding {
     /**
      * Inicjalizuje system pathfinding
      * @param {Object} config - Konfiguracja zawierająca:
-     *   - chunkSize: rozmiar chunka (w kafelkach)
      *   - tileSize: rozmiar kafelka (w jednostkach świata)
      *   - gridWidth/gridHeight: wymiary grida (w chunkach)
+     *   - chunkWidth/chunkHeight: wymiary chunka (w kafelkach)
      *   - getChunkData: funkcja zwracająca dane chunka
      *   - transitionPoints: tablica punktów przejścia między chunkami
      */
     init(config) {
         // Walidacja podstawowa
-        if (!config || !config.chunkSize || !config.tileSize || 
+        if (!config || !config.tileSize || 
             !config.gridWidth || !config.gridHeight || 
+            !config.chunkWidth || !config.chunkHeight ||
             !config.getChunkData || !config.transitionPoints) {
             throw new Error("Brakuje wymaganych parametrów konfiguracji");
         }
         
+        // Zapisz konfigurację
         this.config = config;
+        
+        console.log(`✓ HierarchicalPathfinding: chunk ${config.chunkWidth}x${config.chunkHeight}, grid ${config.gridWidth}x${config.gridHeight}`);
         
         // Budujemy graf połączeń między punktami przejścia
         this.transitionGraph = new TransitionGraph(config.transitionPoints, {
             gridWidth: config.gridWidth,
             gridHeight: config.gridHeight,
-            chunkSize: config.chunkSize,
+            chunkSize: config.chunkWidth, // Używamy chunkWidth jako chunkSize dla kompatybilności
             tileSize: config.tileSize
         });
     }
@@ -53,8 +57,8 @@ export class HierarchicalPathfinding {
         }
 
         // Sprawdzamy czy pozycje mieszczą się w świecie
-        const worldWidth = this.config.gridWidth * this.config.chunkSize * this.config.tileSize;
-        const worldHeight = this.config.gridHeight * this.config.chunkSize * this.config.tileSize;
+        const worldWidth = this.config.gridWidth * this.config.chunkWidth * this.config.tileSize;
+        const worldHeight = this.config.gridHeight * this.config.chunkHeight * this.config.tileSize;
         
         if (startPos.x < 0 || startPos.x >= worldWidth || 
             startPos.y < 0 || startPos.y >= worldHeight ||
@@ -64,8 +68,8 @@ export class HierarchicalPathfinding {
         }
 
         // Określamy w jakich chunkach są start i koniec
-        const startChunk = CoordUtils.globalToChunkId(startPos, this.config.chunkSize, this.config.tileSize);
-        const endChunk = CoordUtils.globalToChunkId(endPos, this.config.chunkSize, this.config.tileSize);
+        const startChunk = CoordUtils.globalToChunkId(startPos, this.config.chunkWidth, this.config.tileSize);
+        const endChunk = CoordUtils.globalToChunkId(endPos, this.config.chunkWidth, this.config.tileSize);
 
         // Jeśli ten sam chunk - zwykły A* lokalny
         if (startChunk === endChunk) {
@@ -112,7 +116,7 @@ export class HierarchicalPathfinding {
         for (const point of points) {
             // Obliczamy globalną pozycję punktu przejścia
             const pointPos = CoordUtils.getTransitionGlobalPosition(
-                point, chunkId, this.config.chunkSize, this.config.tileSize
+                point, chunkId, this.config.chunkWidth, this.config.tileSize
             );
 
             if (!pointPos) continue;
@@ -151,8 +155,8 @@ export class HierarchicalPathfinding {
         }
 
         // Konwertujemy pozycje globalne na lokalne w chunku
-        const localStart = CoordUtils.globalToLocal(startPos, chunkId, this.config.chunkSize, this.config.tileSize);
-        const localEnd = CoordUtils.globalToLocal(endPos, chunkId, this.config.chunkSize, this.config.tileSize);
+        const localStart = CoordUtils.globalToLocal(startPos, chunkId, this.config.chunkWidth, this.config.tileSize);
+        const localEnd = CoordUtils.globalToLocal(endPos, chunkId, this.config.chunkWidth, this.config.tileSize);
 
         // Szukamy ścieżki lokalnym A*
         const localPath = LocalPathfinder.findPath(chunkData, localStart, localEnd);
@@ -187,7 +191,7 @@ export class HierarchicalPathfinding {
             if (!point) return null;
 
             // Określamy obecny chunk
-            const currentChunk = CoordUtils.globalToChunkId(currentPos, this.config.chunkSize, this.config.tileSize);
+            const currentChunk = CoordUtils.globalToChunkId(currentPos, this.config.chunkWidth, this.config.tileSize);
             
             // Określamy pozycję docelową dla tego kroku
             let targetPos;
@@ -198,7 +202,7 @@ export class HierarchicalPathfinding {
             } else {
                 // Punkt pośredni - idziemy do punktu przejścia
                 targetPos = CoordUtils.getTransitionGlobalPosition(
-                    point, currentChunk, this.config.chunkSize, this.config.tileSize
+                    point, currentChunk, this.config.chunkWidth, this.config.tileSize
                 );
 
                 if (!targetPos) return null;
@@ -221,7 +225,7 @@ export class HierarchicalPathfinding {
                     const nextChunk = nextPoint.chunks.find(id => id !== currentChunk);
                     if (nextChunk) {
                         currentPos = CoordUtils.getTransitionGlobalPosition(
-                            point, nextChunk, this.config.chunkSize, this.config.tileSize
+                            point, nextChunk, this.config.chunkWidth, this.config.tileSize
                         );
                     }
                 }
