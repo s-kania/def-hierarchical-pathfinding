@@ -49,6 +49,8 @@ export class PathfindingPointManager {
             y: startTile.y,
             chunkX: startTile.chunkX,
             chunkY: startTile.chunkY,
+            localX: startTile.localX,
+            localY: startTile.localY,
             pixelX: startTile.pixelX,
             pixelY: startTile.pixelY,
             type: 'start'
@@ -59,6 +61,8 @@ export class PathfindingPointManager {
             y: endTile.y,
             chunkX: endTile.chunkX,
             chunkY: endTile.chunkY,
+            localX: endTile.localX,
+            localY: endTile.localY,
             pixelX: endTile.pixelX,
             pixelY: endTile.pixelY,
             type: 'end'
@@ -106,6 +110,8 @@ export class PathfindingPointManager {
                             y: globalY,
                             chunkX: chunk.x,
                             chunkY: chunk.y,
+                            localX: localX,
+                            localY: localY,
                             pixelX: pixelX + this.settings.tileSize / 2,
                             pixelY: pixelY + this.settings.tileSize / 2
                         });
@@ -186,6 +192,8 @@ export class PathfindingPointManager {
             this.draggedPoint.y = tilePos.y;
             this.draggedPoint.chunkX = tilePos.chunkX;
             this.draggedPoint.chunkY = tilePos.chunkY;
+            this.draggedPoint.localX = tilePos.localX;
+            this.draggedPoint.localY = tilePos.localY;
             return true;
         }
         
@@ -221,6 +229,8 @@ export class PathfindingPointManager {
                 this.draggedPoint.y = tilePos.y;
                 this.draggedPoint.chunkX = tilePos.chunkX;
                 this.draggedPoint.chunkY = tilePos.chunkY;
+                this.draggedPoint.localX = tilePos.localX;
+                this.draggedPoint.localY = tilePos.localY;
             }
         }
         

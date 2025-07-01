@@ -6,12 +6,18 @@
 export class CoordUtils {
     /**
      * Konwertuj globalną pozycję na ID chunka
-     * @param {Object} globalPos - Pozycja globalna {x, y}
+     * @param {Object} globalPos - Pozycja globalna {x, y} lub obiekt z chunkX/chunkY
      * @param {number} chunkSize - Rozmiar chunka w kafelkach
      * @param {number} tileSize - Rozmiar kafelka w jednostkach świata
      * @returns {string} - ID chunka "x,y"
      */
     static globalToChunkId(globalPos, chunkSize, tileSize) {
+        // Sprawdź czy pozycja już ma obliczone współrzędne chunka
+        if (globalPos.chunkX !== undefined && globalPos.chunkY !== undefined) {
+            return `${globalPos.chunkX},${globalPos.chunkY}`;
+        }
+        
+        // Oblicz z pozycji globalnej
         const chunkWorldSize = chunkSize * tileSize;
         const chunkX = Math.floor(globalPos.x / chunkWorldSize);
         const chunkY = Math.floor(globalPos.y / chunkWorldSize);
@@ -20,16 +26,30 @@ export class CoordUtils {
     
     /**
      * Konwertuj globalną pozycję na lokalną w obrębie chunka
-     * @param {Object} globalPos - Pozycja globalna {x, y}
+     * @param {Object} globalPos - Pozycja globalna {x, y} lub obiekt z localX/localY
      * @param {string} chunkId - ID chunka
      * @param {number} chunkSize - Rozmiar chunka w kafelkach
      * @param {number} tileSize - Rozmiar kafelka w jednostkach świata
      * @returns {Object} - Pozycja lokalna {x, y}
      */
     static globalToLocal(globalPos, chunkId, chunkSize, tileSize) {
-        const chunkCoords = this.chunkIdToCoords(chunkId);
-        const chunkWorldSize = chunkSize * tileSize;
+        // Sprawdź czy pozycja już ma obliczone współrzędne lokalne
+        if (globalPos.localX !== undefined && globalPos.localY !== undefined) {
+            const expectedChunkId = globalPos.chunkX !== undefined && globalPos.chunkY !== undefined 
+                ? `${globalPos.chunkX},${globalPos.chunkY}` 
+                : null;
+            
+            if (expectedChunkId === chunkId) {
+                return { x: globalPos.localX, y: globalPos.localY };
+            }
+        }
         
+        // Oblicz pozycję lokalną
+        const chunkCoords = globalPos.chunkX !== undefined && globalPos.chunkY !== undefined
+            ? { x: globalPos.chunkX, y: globalPos.chunkY }
+            : this.chunkIdToCoords(chunkId);
+            
+        const chunkWorldSize = chunkSize * tileSize;
         const localX = Math.floor((globalPos.x - chunkCoords.x * chunkWorldSize) / tileSize);
         const localY = Math.floor((globalPos.y - chunkCoords.y * chunkWorldSize) / tileSize);
         
@@ -102,16 +122,12 @@ export class CoordUtils {
         
         // Określ pozycję na krawędzi chunka
         if (otherCoords.x > coords.x) {
-            // Połączenie na prawej krawędzi
             return { x: chunkSize - 1, y: point.position };
         } else if (otherCoords.x < coords.x) {
-            // Połączenie na lewej krawędzi
             return { x: 0, y: point.position };
         } else if (otherCoords.y > coords.y) {
-            // Połączenie na dolnej krawędzi
             return { x: point.position, y: chunkSize - 1 };
         } else if (otherCoords.y < coords.y) {
-            // Połączenie na górnej krawędzi
             return { x: point.position, y: 0 };
         }
         
