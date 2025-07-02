@@ -8,6 +8,9 @@ export class Inspector {
         this.gameDataManager = gameDataManager;
         this.selectedPoint = null;
         this.hoveredPoint = null;
+        
+        // Konfiguruj listenery przycisków
+        this.setupDebugButton();
     }
 
     /**
@@ -126,8 +129,24 @@ export class Inspector {
             } else if (elements.detailConnections) {
                 elements.detailConnections.textContent = 'Brak danych';
             }
-        } else if (elements.detailConnections) {
-            elements.detailConnections.textContent = 'GameDataManager niedostępny';
+            
+            // Ustaw stan przycisku debug
+            if (elements.debugConnectionsBtn) {
+                elements.debugConnectionsBtn.disabled = !gdPoint;
+                elements.debugConnectionsBtn.title = gdPoint ? 
+                    'Wyświetl szczegóły połączeń w konsoli' : 
+                    'Punkt nie znaleziony w GameDataManager';
+            }
+        } else {
+            if (elements.detailConnections) {
+                elements.detailConnections.textContent = 'GameDataManager niedostępny';
+            }
+            
+            // Wyłącz przycisk debug jeśli GameDataManager niedostępny
+            if (elements.debugConnectionsBtn) {
+                elements.debugConnectionsBtn.disabled = true;
+                elements.debugConnectionsBtn.title = 'GameDataManager niedostępny';
+            }
         }
     }
 
@@ -142,6 +161,7 @@ export class Inspector {
             detailDirection: document.getElementById('detailDirection'),
             detailSegmentLength: document.getElementById('detailSegmentLength'),
             detailConnections: document.getElementById('detailConnections'),
+            debugConnectionsBtn: document.getElementById('debugConnectionsBtn'),
             noSelection: this.inspectorPanel.querySelector('.no-selection'),
             pointInfo: document.getElementById('selectedPointInfo'),
             inspectorCard: this.inspectorPanel.closest('.transition-point-inspector')
@@ -249,5 +269,42 @@ export class Inspector {
      */
     setGameDataManager(gameDataManager) {
         this.gameDataManager = gameDataManager;
+    }
+
+    /**
+     * KONFIGURUJE PRZYCISK DEBUG POŁĄCZEŃ
+     */
+    setupDebugButton() {
+        const debugBtn = document.getElementById('debugConnectionsBtn');
+        if (debugBtn) {
+            debugBtn.addEventListener('click', () => {
+                this.onDebugConnections();
+            });
+        }
+    }
+
+    /**
+     * OBSŁUGUJE KLIKNIĘCIE PRZYCISKU DEBUG POŁĄCZEŃ
+     */
+    onDebugConnections() {
+        if (!this.selectedPoint) {
+            console.warn('🔍 Debug Połączeń: Brak zaznaczonego punktu przejścia');
+            return;
+        }
+
+        if (!this.gameDataManager) {
+            console.warn('🔍 Debug Połączeń: GameDataManager niedostępny');
+            return;
+        }
+
+        // Znajdź odpowiedni punkt w GameDataManager
+        const gdPoint = this.findGameDataPoint(this.selectedPoint, this.gameDataManager);
+        if (gdPoint) {
+            console.log('🔍 Debug Połączeń: Wywołuję printPointConnections dla punktu:', gdPoint.id);
+            this.gameDataManager.printPointConnections(gdPoint.id);
+        } else {
+            console.warn('🔍 Debug Połączeń: Nie znaleziono punktu w GameDataManager');
+            console.log('Zaznaczony punkt:', this.selectedPoint);
+        }
     }
 } 

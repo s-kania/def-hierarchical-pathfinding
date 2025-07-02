@@ -19,7 +19,7 @@ export class GameDataManager {
          *   id: string,           // "chunkA-chunkB-position" np. "0,0-1,0-15"
          *   chunks: [string],     // ["chunkA_id", "chunkB_id"] np. ["0,0", "1,0"]
          *   position: number,     // pozycja na krawędzi chunka (0-chunkSize-1)
-         *   connections: [object] // [{id: "point_id", weight: number}] połączenia z wagami
+         *   connections: [object] // [{id: "point_id", weight: number, chunk: "chunk_id"}] połączenia z wagami i chunkiem
          * }
          */
         this.transitionPoints = [];
@@ -151,15 +151,20 @@ export class GameDataManager {
                 
                 const pathData = this.canConnectPointsWithWeight(chunkTiles, chunkId, pointA, pointB);
                 if (pathData) {
-                    // Dodaj dwukierunkowe połączenie z wagą
-                    pointA.connections.push({
+                    // Dodaj dwukierunkowe połączenie z wagą i informacją o chunku
+                    const connectionA = {
                         id: pointB.id,
-                        weight: pathData.weight
-                    });
-                    pointB.connections.push({
+                        weight: pathData.weight,
+                        chunk: chunkId
+                    };
+                    const connectionB = {
                         id: pointA.id,
-                        weight: pathData.weight
-                    });
+                        weight: pathData.weight,
+                        chunk: chunkId
+                    };
+                    
+                    pointA.connections.push(connectionA);
+                    pointB.connections.push(connectionB);
                 }
             }
         }
@@ -195,6 +200,71 @@ export class GameDataManager {
     canConnectPoints(chunkTiles, chunkId, pointA, pointB) {
         const pathData = this.canConnectPointsWithWeight(chunkTiles, chunkId, pointA, pointB);
         return pathData !== null;
+    }
+
+    /**
+     * SPRAWDZA POŁĄCZENIE MIĘDZY PUNKTAMI PRZEJŚCIA NA KONKRETNYM CHUNKU
+     */
+    checkConnectionOnChunk(chunkId, pointAId, pointBId) {
+        // Sprawdź czy chunk istnieje
+        const chunkTiles = this.chunks[chunkId];
+        if (!chunkTiles) {
+            return {
+                canConnect: false,
+                error: `Chunk ${chunkId} nie istnieje`
+            };
+        }
+
+        // Znajdź punkty przejścia
+        const pointA = this.getTransitionPointById(pointAId);
+        const pointB = this.getTransitionPointById(pointBId);
+        
+        if (!pointA) {
+            return {
+                canConnect: false,
+                error: `Punkt przejścia ${pointAId} nie istnieje`
+            };
+        }
+        
+        if (!pointB) {
+            return {
+                canConnect: false,
+                error: `Punkt przejścia ${pointBId} nie istnieje`
+            };
+        }
+
+        // Sprawdź czy oba punkty należą do tego chunka
+        if (!pointA.chunks.includes(chunkId)) {
+            return {
+                canConnect: false,
+                error: `Punkt ${pointAId} nie należy do chunka ${chunkId}`
+            };
+        }
+        
+        if (!pointB.chunks.includes(chunkId)) {
+            return {
+                canConnect: false,
+                error: `Punkt ${pointBId} nie należy do chunka ${chunkId}`
+            };
+        }
+
+        // Sprawdź połączenie A*
+        const pathData = this.canConnectPointsWithWeight(chunkTiles, chunkId, pointA, pointB);
+        
+        if (pathData) {
+            return {
+                canConnect: true,
+                weight: pathData.weight,
+                pathLength: pathData.path.length,
+                chunk: chunkId,
+                path: pathData.path
+            };
+        } else {
+            return {
+                canConnect: false,
+                error: `Brak możliwej ścieżki między punktami na chunku ${chunkId}`
+            };
+        }
     }
     
     /**
@@ -490,6 +560,47 @@ export class GameDataManager {
         return this.chunks[normalizedId] || null;
     }
     
+    /**
+     * WYŚWIETLA WSZYSTKIE POŁĄCZENIA DLA KONKRETNEGO PUNKTU PRZEJŚCIA
+     */
+    printPointConnections(pointId) {
+        const point = this.getTransitionPointById(pointId);
+        if (!point) {
+            console.error(`❌ Punkt przejścia ${pointId} nie istnieje`);
+            return;
+        }
+
+        console.log(`\n=== POŁĄCZENIA PUNKTU ${pointId} ===`);
+        console.log(`📍 Chunki: [${point.chunks.join(', ')}]`);
+        console.log(`📐 Pozycja: ${point.position}`);
+        console.log(`🔗 Liczba połączeń: ${point.connections.length}`);
+        
+        if (point.connections.length === 0) {
+            console.log('❌ Brak połączeń');
+            return;
+        }
+
+        // Grupuj połączenia według chunków
+        const connectionsByChunk = {};
+        point.connections.forEach(conn => {
+            const chunk = conn.chunk || 'unknown';
+            if (!connectionsByChunk[chunk]) {
+                connectionsByChunk[chunk] = [];
+            }
+            connectionsByChunk[chunk].push(conn);
+        });
+
+        // Wyświetl połączenia pogrupowane według chunków
+        Object.entries(connectionsByChunk).forEach(([chunk, connections]) => {
+            console.log(`\n📦 Chunk: ${chunk}`);
+            connections.forEach(conn => {
+                console.log(`  → ${conn.id} (waga: ${conn.weight})`);
+            });
+        });
+        
+        console.log('===============================\n');
+    }
+
     /**
      * DRUKUJE STATYSTYKI GRAFU
      */

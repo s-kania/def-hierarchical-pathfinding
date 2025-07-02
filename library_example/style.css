@@ -1007,6 +1007,10 @@ input[type="range"]::-moz-range-thumb:hover {
   padding: var(--space-8);
 }
 
+
+
+
+
 .info-item {
   display: flex;
   justify-content: space-between;
@@ -1034,6 +1038,13 @@ input[type="range"]::-moz-range-thumb:hover {
   color: #ff6b6b;
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-sm);
+}
+
+.info-item .btn {
+  margin: 0;
+  min-width: auto;
+  font-size: var(--font-size-xs);
+  padding: var(--space-4) var(--space-8);
 }
 
 .legend.card {
