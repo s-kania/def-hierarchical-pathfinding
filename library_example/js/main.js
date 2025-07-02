@@ -97,13 +97,13 @@ class ChunkMapGenerator {
         this.renderer = new CanvasRenderer(this.canvas, this.settings, this.pathfindingSettings);
         this.uiController = new UIController(this.settings, this.islandSettings, this.pathfindingSettings);
         this.pathfindingUIController = new PathfindingUIController();
-        this.inspector = new Inspector(this.inspectorPanel);
         this.gameDataManager = new GameDataManager(
             this.settings.chunkCols, 
             this.settings.chunkRows,
             this.settings.chunkSize,  // chunkWidth
             this.settings.chunkSize   // chunkHeight (dla kwadratowych chunków)
         );
+        this.inspector = new Inspector(this.inspectorPanel, this.gameDataManager);
     }
     
     /**
@@ -544,7 +544,7 @@ class ChunkMapGenerator {
             if (hoveredPoint) {
                 this.inspector.setHoveredPoint(hoveredPoint);
                 this.canvas.classList.add('pointer-cursor');
-                this.inspector.showInspector(hoveredPoint);
+                this.inspector.showInspector(hoveredPoint, this.gameDataManager);
                 this.canvas.style.cursor = 'pointer';
                 
                 // Renderuj mapę tylko jeśli hover się zmienił
@@ -557,7 +557,7 @@ class ChunkMapGenerator {
                 this.canvas.style.cursor = 'default';
                 
                 if (this.inspector.getSelectedPoint()) {
-                    this.inspector.showInspector(this.inspector.getSelectedPoint());
+                    this.inspector.showInspector(this.inspector.getSelectedPoint(), this.gameDataManager);
                 } else {
                     this.inspector.hideInspector();
                 }
@@ -587,7 +587,7 @@ class ChunkMapGenerator {
                 const clickedPoint = this.transitionPointManager.getTransitionPointAt(mouseX, mouseY);
                 if (clickedPoint) {
                     this.inspector.setSelectedPoint(clickedPoint);
-                    this.inspector.showInspector(clickedPoint);
+                    this.inspector.showInspector(clickedPoint, this.gameDataManager);
                     // Renderuj mapę z liniami połączeń dla selectedPoint
                     this.renderMap();
                 } else {
@@ -634,7 +634,7 @@ class ChunkMapGenerator {
             
             // Pokaż selectedPoint jeśli istnieje, inaczej ukryj inspector
             if (this.inspector.getSelectedPoint()) {
-                this.inspector.showInspector(this.inspector.getSelectedPoint());
+                this.inspector.showInspector(this.inspector.getSelectedPoint(), this.gameDataManager);
             } else {
                 this.inspector.hideInspector();
             }
@@ -675,6 +675,9 @@ class ChunkMapGenerator {
             }
         });
         
+        // Zaktualizuj referencję gameDataManager w Inspector'ze
+        this.inspector.setGameDataManager(this.gameDataManager);
+        
         // Graf połączeń będzie budowany na żądanie przez przycisk "Zbuduj Graf Przejść"
         // this.gameDataManager.buildConnections(this.chunks);
         
@@ -693,6 +696,9 @@ class ChunkMapGenerator {
         
         // Buduj graf połączeń
         this.gameDataManager.buildConnections(this.chunks);
+        
+        // Zaktualizuj referencję gameDataManager w Inspector'ze po zbudowaniu połączeń
+        this.inspector.setGameDataManager(this.gameDataManager);
         
         // Pokaż sukces
         this.pathfindingUIController.showSuccess('Zbudowano graf połączeń');

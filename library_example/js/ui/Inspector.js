@@ -3,8 +3,9 @@
  */
 
 export class Inspector {
-    constructor(inspectorPanelElement) {
+    constructor(inspectorPanelElement, gameDataManager = null) {
         this.inspectorPanel = inspectorPanelElement;
+        this.gameDataManager = gameDataManager;
         this.selectedPoint = null;
         this.hoveredPoint = null;
     }
@@ -12,14 +13,35 @@ export class Inspector {
     /**
      * POKAZUJE INSPECTOR Z DANYMI PUNKTU PRZEJŚCIA
      */
-    showInspector(point) {
+    showInspector(point, currentGameDataManager = null) {
         if (!this.inspectorPanel) return;
         
-        // Wygeneruj unikalne ID dla punktu
-        const pointId = `${point.chunkA}-${point.chunkB}-${point.direction}`;
+        // Użyj aktualnego gameDataManager jeśli został przekazany, inaczej użyj zapisanego
+        const gameDataManager = currentGameDataManager || this.gameDataManager;
+        
+        // Wygeneruj unikalne ID dla punktu używając aktualnego GameDataManager jeśli dostępny
+        let pointId;
+        let chunksDisplay;
+        
+        if (gameDataManager) {
+            // Użyj lepszego systemu ID z aktualnego GameDataManager
+            const gdPoint = this.findGameDataPoint(point, gameDataManager);
+            if (gdPoint) {
+                pointId = gdPoint.id;
+                chunksDisplay = `${gdPoint.chunks[0]} ↔ ${gdPoint.chunks[1]}`;
+            } else {
+                // Fallback na stary format
+                pointId = `${point.chunkA}-${point.chunkB}-${point.direction}`;
+                chunksDisplay = `${point.chunkA} ↔ ${point.chunkB}`;
+            }
+        } else {
+            // Stary format jako fallback
+            pointId = `${point.chunkA}-${point.chunkB}-${point.direction}`;
+            chunksDisplay = `${point.chunkA} ↔ ${point.chunkB}`;
+        }
         
         // Zaktualizuj zawartość inspectora
-        this.updateInspectorContent(pointId, point);
+        this.updateInspectorContent(pointId, point, chunksDisplay, gameDataManager);
         
         // Pokaż info punktu, ukryj placeholder
         this.showPointInfo();
@@ -32,6 +54,39 @@ export class Inspector {
             this.selectedPoint.y === point.y;
         
         this.updateInspectorStyles(isShowingSelectedPoint);
+    }
+
+    /**
+     * ZNAJDUJE ODPOWIEDNI PUNKT W GAMEDATA MANAGER
+     */
+    findGameDataPoint(point, gameDataManager = null) {
+        const gdm = gameDataManager || this.gameDataManager;
+        if (!gdm || !gdm.transitionPoints) {
+            return null;
+        }
+        
+        // Szukaj punktu przejścia w GameDataManager który odpowiada naszemu punktowi
+        return gdm.transitionPoints.find(gdPoint => {
+            // Sprawdź czy chunk'i się zgadzają (w dowolnej kolejności)
+            const [gdChunkA, gdChunkB] = gdPoint.chunks;
+            const pointMatches = (gdChunkA === point.chunkA && gdChunkB === point.chunkB) ||
+                                (gdChunkA === point.chunkB && gdChunkB === point.chunkA);
+            
+            if (!pointMatches) return false;
+            
+            // Sprawdź pozycję na podstawie kierunku
+            if (point.direction === 'horizontal') {
+                // Dla punktów poziomych pozycja to Y względem chunka
+                const localY = point.y % gdm.chunkHeight;
+                return gdPoint.position === localY;
+            } else if (point.direction === 'vertical') {
+                // Dla punktów pionowych pozycja to X względem chunka  
+                const localX = point.x % gdm.chunkWidth;
+                return gdPoint.position === localX;
+            }
+            
+            return false;
+        });
     }
 
     /**
@@ -54,14 +109,26 @@ export class Inspector {
     /**
      * AKTUALIZUJE ZAWARTOŚĆ INSPECTORA
      */
-    updateInspectorContent(pointId, point) {
+    updateInspectorContent(pointId, point, chunksDisplay, gameDataManager = null) {
         const elements = this.getInspectorElements();
         
         if (elements.detailId) elements.detailId.textContent = pointId;
-        if (elements.detailChunks) elements.detailChunks.textContent = `${point.chunkA} ↔ ${point.chunkB}`;
+        if (elements.detailChunks) elements.detailChunks.textContent = chunksDisplay;
         if (elements.detailPosition) elements.detailPosition.textContent = `(${point.x}, ${point.y})`;
         if (elements.detailDirection) elements.detailDirection.textContent = point.direction === 'horizontal' ? 'Poziomo' : 'Pionowo';
         if (elements.detailSegmentLength) elements.detailSegmentLength.textContent = `${point.segmentLength} kafelków`;
+        
+        // Dodaj informacje z GameDataManager jeśli dostępne
+        if (gameDataManager) {
+            const gdPoint = this.findGameDataPoint(point, gameDataManager);
+            if (gdPoint && elements.detailConnections) {
+                elements.detailConnections.textContent = `${gdPoint.connections.length} połączeń`;
+            } else if (elements.detailConnections) {
+                elements.detailConnections.textContent = 'Brak danych';
+            }
+        } else if (elements.detailConnections) {
+            elements.detailConnections.textContent = 'GameDataManager niedostępny';
+        }
     }
 
     /**
@@ -74,6 +141,7 @@ export class Inspector {
             detailPosition: document.getElementById('detailPosition'),
             detailDirection: document.getElementById('detailDirection'),
             detailSegmentLength: document.getElementById('detailSegmentLength'),
+            detailConnections: document.getElementById('detailConnections'),
             noSelection: this.inspectorPanel.querySelector('.no-selection'),
             pointInfo: document.getElementById('selectedPointInfo'),
             inspectorCard: this.inspectorPanel.closest('.transition-point-inspector')
@@ -174,5 +242,12 @@ export class Inspector {
                this.selectedPoint.chunkB === point.chunkB && 
                this.selectedPoint.x === point.x && 
                this.selectedPoint.y === point.y;
+    }
+
+    /**
+     * USTAWIA REFERENCJĘ DO GAMEDATA MANAGER
+     */
+    setGameDataManager(gameDataManager) {
+        this.gameDataManager = gameDataManager;
     }
 } 
