@@ -271,6 +271,7 @@ export class HierarchicalPathfinding {
         
         // Tworzymy kopię ścieżki do optymalizacji
         let effectivePath = [...transitionPath];
+        console.log('effectivePath', effectivePath);
         
         // 🔥 WERYFIKACJA PIERWSZEGO WĘZŁA
         if (effectivePath.length >= 2) {
