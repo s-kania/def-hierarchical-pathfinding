@@ -34,6 +34,7 @@ class ChunkMapGenerator {
         this.chunks = [];
         this.baseMap = null;
         this.mapDimensions = { width: 0, height: 0 };
+        this.pathSegments = null; // Segmenty obliczonej ścieżki pathfinding
         
         // Komponenty
         this.mapGenerator = null;
@@ -145,8 +146,9 @@ class ChunkMapGenerator {
         // Aktualizuj ustawienia w komponentach
         this.updateComponentSettings();
         
-        // Wyczyść punkty pathfinding gdy generujemy nową mapę
+        // Wyczyść punkty pathfinding i ścieżkę gdy generujemy nową mapę
         this.pathfindingPointManager.clearPoints();
+        this.pathSegments = null;
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
         
         // Generuj mapę
@@ -274,7 +276,8 @@ class ChunkMapGenerator {
             transitionPoints, 
             activePoint,
             this.pathfindingPointManager,
-            this.gameDataManager
+            this.gameDataManager,
+            this.pathSegments
         );
     }
     
@@ -347,8 +350,9 @@ class ChunkMapGenerator {
     onReset() {
         console.log('🔄 Resetting to defaults...');
         
-        // Reset punktów pathfinding
+        // Reset punktów pathfinding i ścieżki
         this.pathfindingPointManager.clearPoints();
+        this.pathSegments = null;
         
         // Reset ustawień UI
         this.uiController.resetToDefaults();
@@ -385,6 +389,7 @@ class ChunkMapGenerator {
     onClearPathfindingPoints() {
         console.log('🗑️ Czyszczenie punktów pathfinding...');
         this.pathfindingPointManager.clearPoints();
+        this.pathSegments = null; // Wyczyść też obliczoną ścieżkę
         this.pathfindingUIController.showSuccess('Wyczyszczono punkty');
         this.renderMap();
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
@@ -457,9 +462,30 @@ class ChunkMapGenerator {
                     });
                 });
                 
+                // Stwórz kompletną ścieżkę zaczynającą się od pozycji startowej
+                const completePath = [];
+                
+                // Dodaj pozycję startową jako pierwszy punkt
+                completePath.push({
+                    chunk: 'start',
+                    position: startPos
+                });
+                
+                // Dodaj segmenty ścieżki z biblioteki
+                completePath.push(...pathSegments);
+                
+                // Zapisz kompletną ścieżkę do renderowania
+                this.pathSegments = completePath;
+                
+                // Rerenderuj mapę z narysowaną ścieżką
+                this.renderMap();
+                
                 this.pathfindingUIController.showSuccess(`Znaleziono ścieżkę z ${pathSegments.length} segmentami`);
             } else {
                 console.log('❌ Nie znaleziono ścieżki');
+                // Wyczyść poprzednią ścieżkę
+                this.pathSegments = null;
+                this.renderMap();
                 this.pathfindingUIController.showError('Nie można znaleźć ścieżki między punktami');
             }
             
@@ -484,6 +510,8 @@ class ChunkMapGenerator {
             if (this.pathfindingPointManager.isDraggingPoint()) {
                 const success = this.pathfindingPointManager.updateDragging(mouseX, mouseY);
                 if (success) {
+                    // Wyczyść obliczoną ścieżkę bo punkty się zmieniły
+                    this.pathSegments = null;
                     this.renderMap();
                     this.pathfindingUIController.updateAll(this.pathfindingPointManager);
                 }

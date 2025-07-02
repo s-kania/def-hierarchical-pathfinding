@@ -15,7 +15,7 @@ export class CanvasRenderer {
     /**
      * RENDERUJE CAŁĄ MAPĘ
      */
-    renderMap(chunks, chunkManager, transitionPoints, activePoint = null, pathfindingPoints = null, gameDataManager = null) {
+    renderMap(chunks, chunkManager, transitionPoints, activePoint = null, pathfindingPoints = null, gameDataManager = null, pathSegments = null) {
         const canvasSize = chunkManager.calculateCanvasSize();
         
         // Ustaw rozmiar canvas
@@ -36,6 +36,11 @@ export class CanvasRenderer {
         // Renderuj linie połączeń PRZED punktami przejścia (żeby były pod nimi)
         if (this.pathfindingSettings.showTransitionPoints && gameDataManager) {
             this.renderAllConnectionLines(transitionPoints, gameDataManager);
+        }
+
+        // Renderuj obliczoną ścieżkę pathfinding (zielone przerywane linie)
+        if (pathSegments && pathSegments.length > 0) {
+            this.renderPathSegments(pathSegments);
         }
 
         // Renderuj punkty przejścia jeśli włączone
@@ -449,5 +454,103 @@ export class CanvasRenderer {
 
     getContext() {
         return this.ctx;
+    }
+
+    /**
+     * RENDERUJE ŚCIEŻKĘ PATHFINDING NA PODSTAWIE SEGMENTÓW
+     * @param {Array} pathSegments - Tablica segmentów [{chunk, position}, ...]
+     */
+    renderPathSegments(pathSegments) {
+        if (!pathSegments || pathSegments.length < 2) {
+            return; // Potrzebujemy przynajmniej 2 punkty do narysowania linii
+        }
+
+        // Ustaw style dla ścieżki - zielone przerywane linie
+        this.ctx.save();
+        this.ctx.strokeStyle = '#00ff00'; // Zielony kolor
+        this.ctx.lineWidth = 4;
+        this.ctx.setLineDash([10, 5]); // Przerywana linia
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+
+        // Rysuj linie między kolejnymi segmentami
+        this.ctx.beginPath();
+        
+        for (let i = 0; i < pathSegments.length; i++) {
+            const segment = pathSegments[i];
+            
+            // Konwertuj pozycję świata na pozycję pixel na canvasie
+            const pixelPos = this.worldToPixel(segment.position);
+            
+            if (i === 0) {
+                // Pierwszy punkt - rozpocznij ścieżkę
+                this.ctx.moveTo(pixelPos.x, pixelPos.y);
+            } else {
+                // Kolejne punkty - rysuj linie
+                this.ctx.lineTo(pixelPos.x, pixelPos.y);
+            }
+        }
+        
+        this.ctx.stroke();
+        
+        // Dodaj kółka na węzłach ścieżki dla lepszej widoczności
+        pathSegments.forEach((segment, index) => {
+            const pixelPos = this.worldToPixel(segment.position);
+            
+            // Ustaw różne kolory dla start/end vs punkty pośrednie
+            if (index === 0 && segment.chunk === 'start') {
+                // Punkt startowy - niebieski (żeby odróżnić od punktów przejścia)
+                this.ctx.fillStyle = '#4499ff';
+            } else if (index === pathSegments.length - 1) {
+                // Punkt końcowy - ciemnozielony
+                this.ctx.fillStyle = '#00aa00';
+            } else {
+                // Punkty pośrednie (punkty przejścia) - zielony
+                this.ctx.fillStyle = '#00ff00';
+            }
+            
+            this.ctx.beginPath();
+            this.ctx.arc(pixelPos.x, pixelPos.y, 6, 0, 2 * Math.PI);
+            this.ctx.fill();
+            
+            // Białe obramowanie dla lepszej widoczności
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 2;
+            this.ctx.setLineDash([]);
+            this.ctx.stroke();
+            
+            // Przywróć styl linii
+            this.ctx.strokeStyle = '#00ff00';
+            this.ctx.lineWidth = 4;
+            this.ctx.setLineDash([10, 5]);
+        });
+
+        this.ctx.restore();
+    }
+
+    /**
+     * KONWERTUJE POZYCJĘ ŚWIATA NA POZYCJĘ PIXEL NA CANVASIE
+     * @param {Object} worldPos - Pozycja w świecie {x, y}
+     * @returns {Object} - Pozycja w pikselach {x, y}
+     */
+    worldToPixel(worldPos) {
+        // Oblicz w jakim chunku znajduje się pozycja
+        const chunkSize = this.settings.chunkSize * this.settings.tileSize;
+        const chunkX = Math.floor(worldPos.x / chunkSize);
+        const chunkY = Math.floor(worldPos.y / chunkSize);
+        
+        // Oblicz pozycję lokalną w chunku
+        const localX = worldPos.x % chunkSize;
+        const localY = worldPos.y % chunkSize;
+        
+        // Oblicz pozycję pixel na canvasie
+        const pixelX = RENDER_CONSTANTS.CANVAS_PADDING + 
+                      chunkX * (chunkSize + RENDER_CONSTANTS.GAP_SIZE) + 
+                      localX;
+        const pixelY = RENDER_CONSTANTS.CANVAS_PADDING + 
+                      chunkY * (chunkSize + RENDER_CONSTANTS.GAP_SIZE) + 
+                      localY;
+        
+        return { x: pixelX, y: pixelY };
     }
 } 
