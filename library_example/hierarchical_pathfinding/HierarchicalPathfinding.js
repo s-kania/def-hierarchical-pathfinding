@@ -296,7 +296,22 @@ export class HierarchicalPathfinding {
             }
         }
         
-        // Buduj segmenty z zoptymalizowanej ścieżki
+        // Dodaj segment startowy (od startPos do pierwszego punktu przejścia)
+        if (effectivePath.length > 0) {
+            const firstPoint = this.transitionGraph.getPoint(effectivePath[0]);
+            const firstPointPos = CoordUtils.getTransitionGlobalPosition(
+                firstPoint, startChunk, this.config.chunkWidth, this.config.tileSize
+            );
+            
+            if (firstPointPos) {
+                segments.push({
+                    chunk: startChunk,
+                    position: firstPointPos
+                });
+            }
+        }
+        
+        // Buduj segmenty między punktami przejścia
         for (let i = 0; i < effectivePath.length - 1; i++) {
             const currentPoint = this.transitionGraph.getPoint(effectivePath[i]);
             const nextPoint = this.transitionGraph.getPoint(effectivePath[i + 1]);
@@ -323,6 +338,15 @@ export class HierarchicalPathfinding {
                 position: nextPointPos
             });
         }
+        
+        // Dodaj segment końcowy (od ostatniego punktu przejścia do endPos)
+        if (effectivePath.length > 0) {
+            segments.push({
+                chunk: endChunk,
+                position: endPos
+            });
+        }
+        
         return segments;
     }
 } 
