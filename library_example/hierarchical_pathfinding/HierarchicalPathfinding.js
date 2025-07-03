@@ -317,25 +317,24 @@ export class HierarchicalPathfinding {
             const currentPoint = this.transitionGraph.getPoint(effectivePath[i]);
             const nextPoint = this.transitionGraph.getPoint(effectivePath[i + 1]);
             
-            // Znajdujemy wspólny chunk między punktami
-            const commonChunk = currentPoint.chunks.find(chunk => nextPoint.chunks.includes(chunk));
+            // Znajdujemy połączenie z currentPoint do nextPoint i bierzemy chunk z tego połączenia
+            const connection = currentPoint.connections.find(conn => conn.id === nextPoint.id);
             
-            if (!commonChunk) {
-                console.log('❌ Brak wspólnego chunk\'a między punktami:', currentPoint.id, 'i', nextPoint.id);
+            if (!connection) {
                 continue;
             }
+            const connectionChunk = connection.chunk;
             
             const nextPointPos = CoordUtils.getTransitionGlobalPosition(
-                nextPoint, commonChunk, this.config.chunkWidth, this.config.tileSize
+                nextPoint, connectionChunk, this.config.chunkWidth, this.config.tileSize
             );
-            
+
             if (!nextPointPos) {
-                console.log('❌ Nie można obliczyć pozycji dla punktu:', nextPoint.id);
                 continue;
             }
             
             segments.push({
-                chunk: commonChunk,
+                chunk: connectionChunk,
                 position: nextPointPos
             });
         }
