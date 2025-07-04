@@ -58,8 +58,8 @@ export class CanvasRenderer {
      * RENDERUJE PUNKTY PRZEJŚCIA
      */
     renderTransitionPoints(transitionPoints, activePoint = null) {
-        const baseRadius = Math.max(RENDER_CONSTANTS.MIN_POINT_RADIUS, this.settings.tileSize / 3);
-        const pointRadius = baseRadius * this.pathfindingSettings.transitionPointScale;
+        const baseBorderSize = Math.max(this.settings.tileSize * 0.5, 10);
+        const borderSize = baseBorderSize * this.pathfindingSettings.transitionPointScale;
         
         transitionPoints.forEach(point => {
             // Użyj pre-obliczonych współrzędnych, jeśli istnieją
@@ -76,34 +76,55 @@ export class CanvasRenderer {
                            activePoint.y === point.y;
             
             // Dostosuj rozmiar dla aktywnego punktu
-            const currentRadius = isActive ? pointRadius * 1.5 : pointRadius;
+            const currentBorderSize = isActive ? borderSize * 1.3 : borderSize;
+            const halfSize = currentBorderSize / 2;
 
-            // Narysuj punkt przejścia jako koło z lepszą widocznością
+            // Oblicz pozycję kwadratu - kwadrat ma zachodzić na oba chunki
+            // Dla horizontal: rozszerz w kierunku X (lewo-prawo)
+            // Dla vertical: rozszerz w kierunku Y (góra-dół)
+            let rectX, rectY, rectWidth, rectHeight;
             
-            // Zewnętrzne obramowanie (cień)
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-            this.ctx.beginPath();
-            this.ctx.arc(pixelX + 1, pixelY + 1, currentRadius + 1, 0, 2 * Math.PI);
-            this.ctx.fill();
-            
-            // Główny punkt przejścia
-            this.ctx.fillStyle = COLORS.transitionPoint;
-            this.ctx.beginPath();
-            this.ctx.arc(pixelX, pixelY, currentRadius, 0, 2 * Math.PI);
-            this.ctx.fill();
-            
-            // Obramowanie - zielone dla aktywnego punktu, białe dla zwykłego
-            this.ctx.strokeStyle = isActive ? '#00ff00' : '#ffffff';
-            this.ctx.lineWidth = Math.max(2, currentRadius / 3);
-            this.ctx.stroke();
-            
-            // Wewnętrzny punkt dla lepszej widoczności
-            if (currentRadius >= 8) {
-                this.ctx.fillStyle = '#ffffff';
-                this.ctx.beginPath();
-                this.ctx.arc(pixelX, pixelY, Math.max(2, currentRadius / 4), 0, 2 * Math.PI);
-                this.ctx.fill();
+            if (point.direction === 'horizontal') {
+                // Punkt na granicy pionowej - kwadrat rozciągnięty w poziomie
+                rectWidth = currentBorderSize * 1.5; // Szerszy żeby zachodził na oba chunki
+                rectHeight = currentBorderSize;
+                rectX = pixelX - rectWidth / 2;
+                rectY = pixelY - rectHeight / 2;
+            } else {
+                // Punkt na granicy poziomej - kwadrat rozciągnięty w pionie
+                rectWidth = currentBorderSize;
+                rectHeight = currentBorderSize * 1.5; // Wyższy żeby zachodził na oba chunki
+                rectX = pixelX - rectWidth / 2;
+                rectY = pixelY - rectHeight / 2;
             }
+
+            // Narysuj punkt przejścia jako przezroczysty kwadrat z borderem
+            
+            // Cień kwadratu
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            this.ctx.fillRect(rectX + 2, rectY + 2, rectWidth, rectHeight);
+            
+            // Przezroczyste wypełnienie
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            this.ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+            
+            // Border kwadratu - czerwony dla zwykłego, zielony dla aktywnego
+            this.ctx.strokeStyle = isActive ? '#00ff00' : '#ff4444';
+            this.ctx.lineWidth = Math.max(2, currentBorderSize / 10);
+            this.ctx.strokeRect(rectX, rectY, rectWidth, rectHeight);
+            
+            // Wewnętrzny border dla lepszej widoczności
+            if (currentBorderSize >= 16) {
+                this.ctx.strokeStyle = '#ffffff';
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeRect(rectX + 2, rectY + 2, rectWidth - 4, rectHeight - 4);
+            }
+            
+            // Opcjonalnie: małe kółko w środku dla identyfikacji pozycji
+            this.ctx.fillStyle = isActive ? '#00ff00' : '#ff4444';
+            this.ctx.beginPath();
+            this.ctx.arc(pixelX, pixelY, 3, 0, 2 * Math.PI);
+            this.ctx.fill();
         });
     }
 
@@ -493,31 +514,39 @@ export class CanvasRenderer {
         
         this.ctx.stroke();
         
-        // Dodaj kółka na węzłach ścieżki dla lepszej widoczności
+        // Dodaj kwadraciki na węzłach ścieżki dla lepszej widoczności
         pathSegments.forEach((segment, index) => {
             const pixelPos = this.worldToPixel(segment.position);
             
+            // Rozmiar kwadracika - mniejszy niż kafelek
+            const squareSize = Math.max(8, this.settings.tileSize * 0.6);
+            const halfSize = squareSize / 2;
+            
             // Ustaw różne kolory dla start/end vs punkty pośrednie
-            if (index === 0 && segment.chunk === 'start') {
+            let fillColor, strokeColor;
+            if (index === 0) {
                 // Punkt startowy - niebieski (żeby odróżnić od punktów przejścia)
-                this.ctx.fillStyle = '#4499ff';
+                fillColor = '#4499ff';
+                strokeColor = '#ffffff';
             } else if (index === pathSegments.length - 1) {
                 // Punkt końcowy - ciemnozielony
-                this.ctx.fillStyle = '#00aa00';
+                fillColor = '#00aa00';
+                strokeColor = '#ffffff';
             } else {
                 // Punkty pośrednie (punkty przejścia) - zielony
-                this.ctx.fillStyle = '#00ff00';
+                fillColor = '#00ff00';
+                strokeColor = '#ffffff';
             }
             
-            this.ctx.beginPath();
-            this.ctx.arc(pixelPos.x, pixelPos.y, 6, 0, 2 * Math.PI);
-            this.ctx.fill();
+            // Narysuj kwadracik
+            this.ctx.fillStyle = fillColor;
+            this.ctx.fillRect(pixelPos.x - halfSize, pixelPos.y - halfSize, squareSize, squareSize);
             
             // Białe obramowanie dla lepszej widoczności
-            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.strokeStyle = strokeColor;
             this.ctx.lineWidth = 2;
             this.ctx.setLineDash([]);
-            this.ctx.stroke();
+            this.ctx.strokeRect(pixelPos.x - halfSize, pixelPos.y - halfSize, squareSize, squareSize);
             
             // Przywróć styl linii
             this.ctx.strokeStyle = '#00ff00';
