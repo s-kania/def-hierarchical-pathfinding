@@ -1,10 +1,10 @@
 /**
- * KONTROLER UI DLA SEKCJI PATHFINDING
+ * UI CONTROLLER FOR PATHFINDING SECTION
  */
 
 export class PathfindingUIController {
     constructor() {
-        // Elementy UI
+        // UI elements
         this.startPointPosition = document.getElementById('startPointPosition');
         this.startPointCoords = document.getElementById('startPointCoords');
         this.startPointChunk = document.getElementById('startPointChunk');
@@ -16,15 +16,15 @@ export class PathfindingUIController {
         this.linearDistance = document.getElementById('linearDistance');
         this.pathfindingStatus = document.getElementById('pathfindingStatus');
         
-        // Przyciski (tylko te które zostały)
+        // Buttons (only those that remain)
         this.printDataBtn = document.getElementById('printData');
         
-        // Callbacki
+        // Callbacks
         this.onPrintData = null;
     }
 
     /**
-     * INICJALIZUJE EVENT LISTENERS
+     * INITIALIZES EVENT LISTENERS
      */
     setupEventListeners() {
         this.printDataBtn?.addEventListener('click', () => {
@@ -35,11 +35,11 @@ export class PathfindingUIController {
     }
 
     /**
-     * AKTUALIZUJE UI PUNKTU STARTOWEGO
+     * UPDATES START POINT UI
      */
     updateStartPoint(point) {
         if (!point) {
-            this.startPointPosition.textContent = 'Nie ustawiony';
+            this.startPointPosition.textContent = 'Not set';
             this.startPointCoords.textContent = '-';
             this.startPointChunk.textContent = '-';
             return;
@@ -51,11 +51,11 @@ export class PathfindingUIController {
     }
 
     /**
-     * AKTUALIZUJE UI PUNKTU KOŃCOWEGO
+     * UPDATES END POINT UI
      */
     updateEndPoint(point) {
         if (!point) {
-            this.endPointPosition.textContent = 'Nie ustawiony';
+            this.endPointPosition.textContent = 'Not set';
             this.endPointCoords.textContent = '-';
             this.endPointChunk.textContent = '-';
             return;
@@ -67,7 +67,7 @@ export class PathfindingUIController {
     }
 
     /**
-     * AKTUALIZUJE DYSTANS LINIOWY
+     * UPDATES LINEAR DISTANCE
      */
     updateLinearDistance(distance) {
         if (!distance) {
@@ -79,14 +79,14 @@ export class PathfindingUIController {
     }
 
     /**
-     * AKTUALIZUJE STATUS PATHFINDING
+     * UPDATES PATHFINDING STATUS
      */
     updateStatus(status) {
         this.pathfindingStatus.textContent = status;
     }
 
     /**
-     * AKTUALIZUJE WSZYSTKIE INFORMACJE
+     * UPDATES ALL INFORMATION
      */
     updateAll(pathfindingPointManager) {
         const startPoint = pathfindingPointManager.getStartPoint();
@@ -98,54 +98,54 @@ export class PathfindingUIController {
         const distance = pathfindingPointManager.calculateLinearDistance();
         this.updateLinearDistance(distance);
         
-        // Aktualizuj status
+        // Update status
         if (!startPoint && !endPoint) {
-            this.updateStatus('Oczekuje punktów');
+            this.updateStatus('Waiting for points');
         } else if (!startPoint) {
-            this.updateStatus('Brak punktu startowego');
+            this.updateStatus('Missing start point');
         } else if (!endPoint) {
-            this.updateStatus('Brak punktu końcowego');
+            this.updateStatus('Missing end point');
         } else {
-            this.updateStatus('Gotowy do obliczenia ścieżki');
+            this.updateStatus('Ready to calculate path');
         }
     }
 
     /**
-     * USTAWIA CALLBACKI
+     * SETS CALLBACKS
      */
     setCallbacks({ onPrintData }) {
         this.onPrintData = onPrintData;
     }
 
     /**
-     * POKAZUJE KOMUNIKAT O PRZECIĄGANIU
+     * SHOWS DRAGGING MESSAGE
      */
     showDraggingMessage(pointType) {
         const message = pointType === 'start' 
-            ? 'Przeciąganie punktu startowego...' 
-            : 'Przeciąganie punktu końcowego...';
+            ? 'Dragging start point...' 
+            : 'Dragging end point...';
         this.updateStatus(message);
     }
 
     /**
-     * POKAZUJE KOMUNIKAT O BŁĘDZIE
+     * SHOWS ERROR MESSAGE
      */
     showError(message) {
         this.updateStatus(`❌ ${message}`);
         
-        // Przywróć normalny status po 3 sekundach
+        // Restore normal status after 3 seconds
         setTimeout(() => {
             this.updateAll(window.app?.pathfindingPointManager);
         }, 3000);
     }
 
     /**
-     * POKAZUJE KOMUNIKAT O SUKCESIE
+     * SHOWS SUCCESS MESSAGE
      */
     showSuccess(message) {
         this.updateStatus(`✅ ${message}`);
         
-        // Przywróć normalny status po 2 sekundach
+        // Restore normal status after 2 seconds
         setTimeout(() => {
             this.updateAll(window.app?.pathfindingPointManager);
         }, 2000);

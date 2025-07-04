@@ -1,9 +1,9 @@
 /**
- * UTILITIES MATEMATYCZNE I POMOCNICZE
+ * MATHEMATICAL AND HELPER UTILITIES
  */
 
 /**
- * LICZY SĄSIADÓW KAFELKA (UNIFIED)
+ * COUNTS TILE NEIGHBORS (UNIFIED)
  */
 export function countNeighborsUnified(tiles, x, y, width, height) {
     let count = 0;
@@ -31,7 +31,7 @@ export function countNeighborsUnified(tiles, x, y, width, height) {
 }
 
 /**
- * LICZY SĄSIADÓW OCEANU
+ * COUNTS OCEAN NEIGHBORS
  */
 export function countOceanNeighborsUnified(tiles, x, y, width, height) {
     let count = 0;
@@ -60,7 +60,7 @@ export function countOceanNeighborsUnified(tiles, x, y, width, height) {
 }
 
 /**
- * LICZY SĄSIADÓW LĄDU
+ * COUNTS LAND NEIGHBORS
  */
 export function countLandNeighborsUnified(tiles, x, y, width, height) {
     let count = 0;
@@ -88,7 +88,7 @@ export function countLandNeighborsUnified(tiles, x, y, width, height) {
 }
 
 /**
- * KONWERTUJE WSPÓŁRZĘDNE MYSZY NA CANVAS
+ * CONVERTS MOUSE COORDINATES TO CANVAS
  */
 export function getCanvasCoordinates(e, canvas) {
     const rect = canvas.getBoundingClientRect();
@@ -102,25 +102,25 @@ export function getCanvasCoordinates(e, canvas) {
 }
 
 /**
- * OBLICZA ODLEGŁOŚĆ MIĘDZY DWOMA PUNKTAMI
+ * CALCULATES DISTANCE BETWEEN TWO POINTS
  */
 export function calculateDistance(x1, y1, x2, y2) {
     return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }
 
 /**
- * KLONUJE TABLICĘ (SHALLOW COPY)
+ * CLONES ARRAY (SHALLOW COPY)
  */
 export function cloneArray(array) {
     return [...array];
 }
 
 /**
- * TWORZY FUNKCJĘ LOSOWĄ O ZADANYM SEEDZIE (Mulberry32)
- * Zwraca funkcję generującą liczby z zakresu [0,1).
+ * CREATES RANDOM FUNCTION WITH GIVEN SEED (Mulberry32)
+ * Returns function generating numbers from range [0,1).
  */
 export function createSeededRandom(seed) {
-    // Konwersja na 32-bitowy unsigned int
+    // Convert to 32-bit unsigned int
     let a = (seed >>> 0) || 0;
     return function () {
         // Mulberry32 PRNG

@@ -1,5 +1,5 @@
 /**
- * ZARZĄDZANIE PUNKTAMI PATHFINDING - PUNKT STARTOWY I KOŃCOWY
+ * PATHFINDING POINT MANAGEMENT - START AND END POINTS
  */
 
 import { RENDER_CONSTANTS } from '../config/Settings.js';
@@ -8,25 +8,25 @@ export class PathfindingPointManager {
     constructor(settings) {
         this.settings = settings;
         
-        // Punkty startowy i końcowy
+        // Start and end points
         this.startPoint = null;
         this.endPoint = null;
         
-        // Stan drag and drop
+        // Drag and drop state
         this.isDragging = false;
         this.draggedPoint = null;
         this.dragOffset = { x: 0, y: 0 };
         
-        // Rozmiar punktów
+        // Point size
         this.pointRadius = 8;
         
-        // Aktualny rozmiar canvas i chunków
+        // Current canvas and chunk size
         this.canvasSize = null;
         this.chunks = null;
     }
 
     /**
-     * GENERUJE LOSOWE PUNKTY NA OCEANIE
+     * GENERATES RANDOM POINTS ON OCEAN
      */
     generateRandomPoints(chunks) {
         this.chunks = chunks;
@@ -34,16 +34,16 @@ export class PathfindingPointManager {
         const oceanTiles = this.findOceanTiles(chunks);
         
         if (oceanTiles.length < 2) {
-            console.warn('❌ Niewystarczająco dużo kafelków oceanu do wygenerowania punktów!');
+            console.warn('❌ Not enough ocean tiles to generate points!');
             return false;
         }
         
-        // Losuj dwa różne kafelki oceanu
+        // Randomly select two different ocean tiles
         const shuffled = oceanTiles.sort(() => 0.5 - Math.random());
         const startTile = shuffled[0];
         const endTile = shuffled[1];
         
-        // Konwertuj na pozycje pixel
+        // Convert to pixel positions
         this.startPoint = {
             x: startTile.x,
             y: startTile.y,
@@ -72,20 +72,20 @@ export class PathfindingPointManager {
     }
 
     /**
-     * ZNAJDUJE WSZYSTKIE KAFELKI OCEANU
+     * FINDS ALL OCEAN TILES
      */
     findOceanTiles(chunks) {
         const oceanTiles = [];
         
         chunks.forEach(chunk => {
-            // Oblicz pozycję pixel chunka
+            // Calculate chunk pixel position
             const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
             const chunkPixelX = RENDER_CONSTANTS.CANVAS_PADDING + chunk.x * (chunkPixelSize + RENDER_CONSTANTS.GAP_SIZE);
             const chunkPixelY = RENDER_CONSTANTS.CANVAS_PADDING + chunk.y * (chunkPixelSize + RENDER_CONSTANTS.GAP_SIZE);
             
                             for (let localY = 0; localY < this.settings.chunkSize; localY++) {
                     for (let localX = 0; localX < this.settings.chunkSize; localX++) {
-                        // Sprawdź czy tile jest oceanem - obsługa zarówno 2D jak i 1D format
+                        // Check if tile is ocean - handle both 2D and 1D format
                         let isOcean = false;
                         if (Array.isArray(chunk.tiles[0])) {
                             // 2D format: chunk.tiles[y][x]
@@ -100,7 +100,7 @@ export class PathfindingPointManager {
                         const globalX = chunk.x * this.settings.chunkSize + localX;
                         const globalY = chunk.y * this.settings.chunkSize + localY;
                         
-                        // Oblicz pozycję pixel
+                        // Calculate pixel position
                         const pixelX = chunkPixelX + localX * this.settings.tileSize;
                         const pixelY = chunkPixelY + localY * this.settings.tileSize;
                         
@@ -123,7 +123,7 @@ export class PathfindingPointManager {
     }
 
     /**
-     * WYCZYŚĆ PUNKTY
+     * CLEAR POINTS
      */
     clearPoints() {
         this.startPoint = null;
@@ -133,13 +133,13 @@ export class PathfindingPointManager {
     }
 
     /**
-     * SPRAWDZA CZY KLIKNIĘTO NA PUNKT
+     * CHECKS IF CLICKED ON POINT
      */
     getPointAt(mouseX, mouseY) {
-        // Zwiększ tolerancję dla większych map i większych tile'ów
+        // Increase tolerance for larger maps and larger tiles
         const baseTolerance = this.pointRadius + 5;
         const scaleTolerance = Math.max(baseTolerance, this.settings.tileSize);
-        const tolerance = Math.min(scaleTolerance, 30); // Maksymalna tolerancja 30px
+        const tolerance = Math.min(scaleTolerance, 30); // Maximum tolerance 30px
         
         if (this.startPoint && this.isPointNear(this.startPoint, mouseX, mouseY, tolerance)) {
             return this.startPoint;
@@ -153,7 +153,7 @@ export class PathfindingPointManager {
     }
 
     /**
-     * SPRAWDZA CZY PUNKT JEST BLISKO MYSZY
+     * CHECKS IF POINT IS NEAR MOUSE
      */
     isPointNear(point, mouseX, mouseY, tolerance) {
         const dx = point.pixelX - mouseX;
@@ -162,7 +162,7 @@ export class PathfindingPointManager {
     }
 
     /**
-     * ROZPOCZYNA PRZECIĄGANIE
+     * STARTS DRAGGING
      */
     startDragging(point, mouseX, mouseY) {
         this.isDragging = true;
@@ -172,7 +172,7 @@ export class PathfindingPointManager {
     }
 
     /**
-     * KONTYNUUJE PRZECIĄGANIE Z SNAPPING DO KAFELKÓW
+     * CONTINUES DRAGGING WITH TILE SNAPPING
      */
     updateDragging(mouseX, mouseY) {
         if (!this.isDragging || !this.draggedPoint) return false;
@@ -180,14 +180,14 @@ export class PathfindingPointManager {
         const newPixelX = mouseX - this.dragOffset.x;
         const newPixelY = mouseY - this.dragOffset.y;
         
-        // Sprawdź czy nowa pozycja jest na oceanie
+        // Check if new position is on ocean
         const tilePos = this.pixelToTilePosition(newPixelX, newPixelY);
         
         if (tilePos && this.isTileOcean(tilePos)) {
-            // SNAPPING DO KAFELKA - zawsze snapuj do środka kafelka
+            // TILE SNAPPING - always snap to tile center
             const snappedPixelPos = this.snapToTileCenter(tilePos);
             
-            // Zaktualizuj pozycję punktu na snapped pozycję
+            // Update point position to snapped position
             this.draggedPoint.pixelX = snappedPixelPos.x;
             this.draggedPoint.pixelY = snappedPixelPos.y;
             this.draggedPoint.x = tilePos.x;
@@ -199,13 +199,13 @@ export class PathfindingPointManager {
             return true;
         }
         
-        // Jeśli nie można przenieść do nowej pozycji, ale nadal przeciągamy
-        // przynajmniej zaktualizuj pozycję pixel dla płynniejszego efektu wizualnego
+        // If cannot move to new position, but still dragging
+        // at least update pixel position for smoother visual effect
         if (tilePos) {
-            // Pozycja jest na mapie, ale nie na oceanie - pozwól na wizualny ruch
+            // Position is on map but not on ocean - allow visual movement
             this.draggedPoint.pixelX = newPixelX;
             this.draggedPoint.pixelY = newPixelY;
-            // Ale nie aktualizuj tile coordinates
+            // But don't update tile coordinates
             return true;
         }
         
@@ -213,7 +213,7 @@ export class PathfindingPointManager {
     }
 
     /**
-     * SNAPPUJE POZYCJĘ DO ŚRODKA KAFELKA
+     * SNAPS POSITION TO TILE CENTER
      */
     snapToTileCenter(tilePos) {
         if (!tilePos || !this.chunks) return { x: 0, y: 0 };
@@ -226,7 +226,7 @@ export class PathfindingPointManager {
         const chunkPixelX = RENDER_CONSTANTS.CANVAS_PADDING + chunk.x * (chunkPixelSize + RENDER_CONSTANTS.GAP_SIZE);
         const chunkPixelY = RENDER_CONSTANTS.CANVAS_PADDING + chunk.y * (chunkPixelSize + RENDER_CONSTANTS.GAP_SIZE);
         
-        // Oblicz pozycję środka kafelka w pikselach
+        // Calculate tile center position in pixels
         const tileCenterX = chunkPixelX + tilePos.localX * this.settings.tileSize + this.settings.tileSize / 2;
         const tileCenterY = chunkPixelY + tilePos.localY * this.settings.tileSize + this.settings.tileSize / 2;
         
@@ -234,20 +234,20 @@ export class PathfindingPointManager {
     }
 
     /**
-     * KOŃCZY PRZECIĄGANIE Z SNAPPING DO KAFELKÓW
+     * ENDS DRAGGING WITH TILE SNAPPING
      */
     stopDragging() {
         if (this.isDragging && this.draggedPoint) {
-            // Sprawdź czy końcowa pozycja jest na oceanie
+            // Check if final position is on ocean
             const tilePos = this.pixelToTilePosition(this.draggedPoint.pixelX, this.draggedPoint.pixelY);
             
             if (!tilePos || !this.isTileOcean(tilePos)) {
-                // Jeśli końcowa pozycja nie jest na oceanie, przywróć punkt do ostatniej ważnej pozycji
-                // (współrzędne tile pozostały niezmienione w updateDragging)
+                // If final position is not on ocean, restore point to last valid position
+                // (tile coordinates remained unchanged in updateDragging)
                 this.updatePointPixelFromTileCoords(this.draggedPoint);
 
             } else {
-                // Jeśli pozycja jest ważna, zaktualizuj współrzędne tile i snapuj do środka kafelka
+                // If position is valid, update tile coordinates and snap to tile center
                 this.draggedPoint.x = tilePos.x;
                 this.draggedPoint.y = tilePos.y;
                 this.draggedPoint.chunkX = tilePos.chunkX;
@@ -255,7 +255,7 @@ export class PathfindingPointManager {
                 this.draggedPoint.localX = tilePos.localX;
                 this.draggedPoint.localY = tilePos.localY;
                 
-                // Snapuj do środka kafelka
+                // Snap to tile center
                 const snappedPixelPos = this.snapToTileCenter(tilePos);
                 this.draggedPoint.pixelX = snappedPixelPos.x;
                 this.draggedPoint.pixelY = snappedPixelPos.y;
@@ -269,7 +269,7 @@ export class PathfindingPointManager {
     }
 
     /**
-     * AKTUALIZUJE POZYCJĘ PIXEL PUNKTU NA PODSTAWIE WSPÓŁRZĘDNYCH TILE
+     * UPDATES POINT PIXEL POSITION BASED ON TILE COORDINATES
      */
     updatePointPixelFromTileCoords(point) {
         if (!point || !this.chunks) return;
@@ -290,14 +290,14 @@ export class PathfindingPointManager {
     }
 
     /**
-     * KONWERTUJE POZYCJĘ PIXEL NA POZYCJĘ TILE
+     * CONVERTS PIXEL POSITION TO TILE POSITION
      */
     pixelToTilePosition(pixelX, pixelY) {
         if (!this.chunks) return null;
         
         const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
         
-        // Znajdź chunk pod pozycją pixel
+        // Find chunk under pixel position
         for (const chunk of this.chunks) {
             const chunkPixelX = RENDER_CONSTANTS.CANVAS_PADDING + chunk.x * (chunkPixelSize + RENDER_CONSTANTS.GAP_SIZE);
             const chunkPixelY = RENDER_CONSTANTS.CANVAS_PADDING + chunk.y * (chunkPixelSize + RENDER_CONSTANTS.GAP_SIZE);
@@ -307,17 +307,17 @@ export class PathfindingPointManager {
             if (pixelX >= chunkPixelX && pixelX < chunkRight &&
                 pixelY >= chunkPixelY && pixelY < chunkBottom) {
                 
-                // Oblicz lokalną pozycję w chunku
+                // Calculate local position in chunk
                 const localPixelX = pixelX - chunkPixelX;
                 const localPixelY = pixelY - chunkPixelY;
                 
                 const localX = Math.floor(localPixelX / this.settings.tileSize);
                 const localY = Math.floor(localPixelY / this.settings.tileSize);
                 
-                // Walidacja granic - upewnij się że nie wykraczamy poza chunk
+                // Boundary validation - ensure we don't go beyond chunk
                 if (localX < 0 || localX >= this.settings.chunkSize || 
                     localY < 0 || localY >= this.settings.chunkSize) {
-                    continue; // Przejdź do następnego chunk'a
+                    continue; // Go to next chunk
                 }
                 
                 const globalX = chunk.x * this.settings.chunkSize + localX;
@@ -339,12 +339,12 @@ export class PathfindingPointManager {
     }
 
     /**
-     * SPRAWDZA CZY TILE JEST OCEANEM
+     * CHECKS IF TILE IS OCEAN
      */
     isTileOcean(tilePos) {
         if (!tilePos || !tilePos.chunk) return false;
         
-        // Obsługa zarówno 2D jak i 1D format
+        // Handle both 2D and 1D format
         if (Array.isArray(tilePos.chunk.tiles[0])) {
             // 2D format: chunk.tiles[y][x]
             return tilePos.chunk.tiles[tilePos.localY][tilePos.localX] === 0;
@@ -356,7 +356,7 @@ export class PathfindingPointManager {
     }
 
     /**
-     * OBLICZA DYSTANS LINIOWY MIĘDZY PUNKTAMI
+     * CALCULATES LINEAR DISTANCE BETWEEN POINTS
      */
     calculateLinearDistance() {
         if (!this.startPoint || !this.endPoint) return null;
@@ -372,7 +372,7 @@ export class PathfindingPointManager {
     }
 
     /**
-     * GETTERY
+     * GETTERS
      */
     getStartPoint() {
         return this.startPoint;
@@ -395,12 +395,12 @@ export class PathfindingPointManager {
     }
 
     /**
-     * AKTUALIZUJE USTAWIENIA
+     * UPDATES SETTINGS
      */
     updateSettings(newSettings) {
         this.settings = { ...this.settings, ...newSettings };
         
-        // Aktualizuj rozmiar punktów w zależności od rozmiaru tile
+        // Update point size based on tile size
         this.pointRadius = Math.max(6, this.settings.tileSize / 2);
     }
 } 

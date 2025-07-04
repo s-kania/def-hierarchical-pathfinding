@@ -1,5 +1,5 @@
 /**
- * RENDERER CANVAS - RENDEROWANIE MAPY I PUNKTÓW PRZEJŚCIA
+ * CANVAS RENDERER - MAP AND TRANSITION POINTS RENDERING
  */
 
 import { COLORS, RENDER_CONSTANTS } from '../config/Settings.js';
@@ -13,114 +13,114 @@ export class CanvasRenderer {
     }
 
     /**
-     * RENDERUJE CAŁĄ MAPĘ
+     * RENDERS ENTIRE MAP
      */
     renderMap(chunks, chunkManager, transitionPoints, activePoint = null, pathfindingPoints = null, gameDataManager = null, pathSegments = null) {
         const canvasSize = chunkManager.calculateCanvasSize();
         
-        // Ustaw rozmiar canvas
+        // Set canvas size
         this.canvas.width = canvasSize.width;
         this.canvas.height = canvasSize.height;
         
 
         
-        // Wyczyść canvas (tło)
+        // Clear canvas (background)
         this.ctx.fillStyle = COLORS.chunkBackground;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Renderuj każdy chunk
+        // Render each chunk
         chunks.forEach(chunk => {
             chunkManager.renderChunk(this.ctx, chunk);
         });
 
-        // Renderuj linie połączeń PRZED punktami przejścia (żeby były pod nimi)
+        // Render connection lines BEFORE transition points (so they're underneath)
         if (this.pathfindingSettings.showTransitionPoints && gameDataManager) {
             this.renderAllConnectionLines(transitionPoints, gameDataManager);
         }
 
-        // Renderuj obliczoną ścieżkę pathfinding (zielone przerywane linie)
+        // Render calculated pathfinding path (green dashed lines)
         if (pathSegments && pathSegments.length > 0) {
             this.renderPathSegments(pathSegments);
         }
 
-        // Renderuj punkty przejścia jeśli włączone
+        // Render transition points if enabled
         if (this.pathfindingSettings.showTransitionPoints && transitionPoints.length > 0) {
             this.renderTransitionPoints(transitionPoints, activePoint);
         }
         
-        // Renderuj punkty pathfinding jeśli istnieją
+        // Render pathfinding points if they exist
         if (pathfindingPoints) {
             this.renderPathfindingPoints(pathfindingPoints);
         }
     }
 
     /**
-     * RENDERUJE PUNKTY PRZEJŚCIA
+     * RENDERS TRANSITION POINTS
      */
     renderTransitionPoints(transitionPoints, activePoint = null) {
         const baseBorderSize = Math.max(this.settings.tileSize * 0.5, 10);
         const borderSize = baseBorderSize * this.pathfindingSettings.transitionPointScale;
         
         transitionPoints.forEach(point => {
-            // Użyj pre-obliczonych współrzędnych, jeśli istnieją
+            // Use pre-calculated coordinates if they exist
             if (!point.pixelX || !point.pixelY) return;
 
             const pixelX = point.pixelX;
             const pixelY = point.pixelY;
             
-            // Sprawdź czy punkt jest aktywny (zaznaczony lub hover)
+            // Check if point is active (selected or hovered)
             const isActive = activePoint && 
                            activePoint.chunkA === point.chunkA && 
                            activePoint.chunkB === point.chunkB && 
                            activePoint.x === point.x && 
                            activePoint.y === point.y;
             
-            // Dostosuj rozmiar dla aktywnego punktu
+            // Adjust size for active point
             const currentBorderSize = isActive ? borderSize * 1.3 : borderSize;
             const halfSize = currentBorderSize / 2;
 
-            // Oblicz pozycję kwadratu - kwadrat ma zachodzić na oba chunki
-            // Dla horizontal: rozszerz w kierunku X (lewo-prawo)
-            // Dla vertical: rozszerz w kierunku Y (góra-dół)
+            // Calculate square position - square should overlap both chunks
+            // For horizontal: extend in X direction (left-right)
+            // For vertical: extend in Y direction (up-down)
             let rectX, rectY, rectWidth, rectHeight;
             
             if (point.direction === 'horizontal') {
-                // Punkt na granicy pionowej - kwadrat rozciągnięty w poziomie
-                rectWidth = currentBorderSize * 1.5; // Szerszy żeby zachodził na oba chunki
+                // Point on vertical border - square stretched horizontally
+                rectWidth = currentBorderSize * 1.5; // Wider to overlap both chunks
                 rectHeight = currentBorderSize;
                 rectX = pixelX - rectWidth / 2;
                 rectY = pixelY - rectHeight / 2;
             } else {
-                // Punkt na granicy poziomej - kwadrat rozciągnięty w pionie
+                // Point on horizontal border - square stretched vertically
                 rectWidth = currentBorderSize;
-                rectHeight = currentBorderSize * 1.5; // Wyższy żeby zachodził na oba chunki
+                rectHeight = currentBorderSize * 1.5; // Taller to overlap both chunks
                 rectX = pixelX - rectWidth / 2;
                 rectY = pixelY - rectHeight / 2;
             }
 
-            // Narysuj punkt przejścia jako przezroczysty kwadrat z borderem
+            // Draw transition point as transparent square with border
             
-            // Cień kwadratu
+            // Square shadow
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
             this.ctx.fillRect(rectX + 2, rectY + 2, rectWidth, rectHeight);
             
-            // Przezroczyste wypełnienie
+            // Transparent fill
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
             this.ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
             
-            // Border kwadratu - czerwony dla zwykłego, zielony dla aktywnego
+            // Square border - red for normal, green for active
             this.ctx.strokeStyle = isActive ? '#00ff00' : '#ff4444';
             this.ctx.lineWidth = Math.max(2, currentBorderSize / 10);
             this.ctx.strokeRect(rectX, rectY, rectWidth, rectHeight);
             
-            // Wewnętrzny border dla lepszej widoczności
+            // Inner border for better visibility
             if (currentBorderSize >= 16) {
                 this.ctx.strokeStyle = '#ffffff';
                 this.ctx.lineWidth = 1;
                 this.ctx.strokeRect(rectX + 2, rectY + 2, rectWidth - 4, rectHeight - 4);
             }
             
-            // Opcjonalnie: małe kółko w środku dla identyfikacji pozycji
+            // Optionally: small circle in center for position identification
             this.ctx.fillStyle = isActive ? '#00ff00' : '#ff4444';
             this.ctx.beginPath();
             this.ctx.arc(pixelX, pixelY, 3, 0, 2 * Math.PI);
@@ -129,26 +129,26 @@ export class CanvasRenderer {
     }
 
     /**
-     * RENDERUJE PUNKTY PATHFINDING (START I KONIEC)
+     * RENDERS PATHFINDING POINTS (START AND END)
      */
     renderPathfindingPoints(pathfindingPointManager) {
         const startPoint = pathfindingPointManager.getStartPoint();
         const endPoint = pathfindingPointManager.getEndPoint();
         const draggedPoint = pathfindingPointManager.getDraggedPoint();
         
-        // Renderuj punkt startowy (zielony krzyżyk)
+        // Render start point (green cross)
         if (startPoint) {
             this.renderSinglePathfindingPoint(startPoint, '#00ff00', '', startPoint === draggedPoint);
         }
         
-        // Renderuj punkt końcowy (czerwony krzyżyk)
+        // Render end point (red cross)
         if (endPoint) {
             this.renderSinglePathfindingPoint(endPoint, '#ff4444', '', endPoint === draggedPoint);
         }
     }
 
     /**
-     * RENDERUJE POJEDYNCZY PUNKT PATHFINDING JAKO KRZYŻYK PIRACKI OBRÓCONY O 45°
+     * RENDERS SINGLE PATHFINDING POINT AS PIRATE CROSS ROTATED 45°
      */
     renderSinglePathfindingPoint(point, color, emoji, isDragged = false) {
         const baseSize = Math.max(12, this.settings.tileSize / 1.5);
@@ -159,54 +159,54 @@ export class CanvasRenderer {
         const x = point.pixelX;
         const y = point.pixelY;
         
-        // Zapisz stan kontekstu i obróć o 45 stopni
+        // Save context state and rotate by 45 degrees
         this.ctx.save();
         this.ctx.translate(x, y);
-        this.ctx.rotate(Math.PI / 4); // 45 stopni w radianach
+        this.ctx.rotate(Math.PI / 4); // 45 degrees in radians
         
-        // Cień krzyżyka (przesunięty o offset cienia po rotacji)
+        // Cross shadow (offset by shadow offset after rotation)
         this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
         this.ctx.lineWidth = Math.max(4, currentSize / 4) + 2;
         this.ctx.lineCap = 'round';
         
         this.ctx.beginPath();
-        // Pozioma linia cienia (przesunięta o cień w lokalnych współrzędnych)
+        // Horizontal shadow line (offset by shadow in local coordinates)
         this.ctx.moveTo(-halfSize + 1.5, 1.5);
         this.ctx.lineTo(halfSize + 1.5, 1.5);
-        // Pionowa linia cienia  
+        // Vertical shadow line  
         this.ctx.moveTo(1.5, -halfSize + 1.5);
         this.ctx.lineTo(1.5, halfSize + 1.5);
         this.ctx.stroke();
         
-        // Główny krzyżyk
+        // Main cross
         this.ctx.strokeStyle = color;
         this.ctx.lineWidth = Math.max(4, currentSize / 4);
         this.ctx.lineCap = 'round';
         
         this.ctx.beginPath();
-        // Pozioma linia
+        // Horizontal line
         this.ctx.moveTo(-halfSize, 0);
         this.ctx.lineTo(halfSize, 0);
-        // Pionowa linia
+        // Vertical line
         this.ctx.moveTo(0, -halfSize);
         this.ctx.lineTo(0, halfSize);
         this.ctx.stroke();
         
-        // Białe obramowanie krzyżyka
+        // White cross border
         this.ctx.strokeStyle = '#ffffff';
         this.ctx.lineWidth = Math.max(2, currentSize / 6);
         this.ctx.lineCap = 'round';
         
         this.ctx.beginPath();
-        // Pozioma linia
+        // Horizontal line
         this.ctx.moveTo(-halfSize, 0);
         this.ctx.lineTo(halfSize, 0);
-        // Pionowa linia
+        // Vertical line
         this.ctx.moveTo(0, -halfSize);
         this.ctx.lineTo(0, halfSize);
         this.ctx.stroke();
         
-        // Środkowe kółko dla lepszej widoczności
+        // Middle circle for better visibility
         this.ctx.fillStyle = color;
         this.ctx.beginPath();
         this.ctx.arc(0, 0, Math.max(3, currentSize / 8), 0, 2 * Math.PI);
@@ -216,10 +216,10 @@ export class CanvasRenderer {
         this.ctx.lineWidth = 1;
         this.ctx.stroke();
         
-        // Przywróć stan kontekstu
+        // Restore context state
         this.ctx.restore();
         
-        // Pulsujące obramowanie jeśli przeciągany (bez rotacji)
+        // Pulsing border if dragged (without rotation)
         if (isDragged) {
             this.ctx.strokeStyle = color;
             this.ctx.lineWidth = 2;
@@ -232,40 +232,40 @@ export class CanvasRenderer {
     }
 
     /**
-     * RENDERUJE WSZYSTKIE AKTYWNE LINIE POŁĄCZEŃ (SELECTED + HOVER)
+     * RENDERS ALL ACTIVE CONNECTION LINES (SELECTED + HOVER)
      */
     renderAllConnectionLines(allTransitionPoints, gameDataManager) {
-        // Renderuj połączenia dla zaznaczonego punktu (zielone linie)
+        // Render connections for selected point (green lines)
         if (this.selectedPoint) {
             this.renderConnectionLines(this.selectedPoint, allTransitionPoints, gameDataManager, {
-                color: '#00ff00',  // Zielony dla selected
-                lineWidth: 2.7,    // Zmniejszone o 10% (3 * 0.9)
+                color: '#00ff00',  // Green for selected
+                lineWidth: 2.7,    // Reduced by 10% (3 * 0.9)
                 dashPattern: [10, 5],
-                showArrows: false  // Usunięte strzałki
+                showArrows: false  // Removed arrows
             });
         }
         
-        // Renderuj połączenia dla hovered punktu (pomarańczowe linie)
+        // Render connections for hovered point (orange lines)
         if (this.hoveredPoint && (!this.selectedPoint || this.hoveredPoint !== this.selectedPoint)) {
             const hoveredId = `${this.hoveredPoint.chunkA}-${this.hoveredPoint.chunkB}`;
             const selectedId = this.selectedPoint ? `${this.selectedPoint.chunkA}-${this.selectedPoint.chunkB}` : null;
             
             if (hoveredId !== selectedId) {
                 this.renderConnectionLines(this.hoveredPoint, allTransitionPoints, gameDataManager, {
-                    color: '#ff8800',  // Pomarańczowy dla hover
-                    lineWidth: 1.8,    // Zmniejszone o 10% (2 * 0.9)
+                    color: '#ff8800',  // Orange for hover
+                    lineWidth: 1.8,    // Reduced by 10% (2 * 0.9)
                     dashPattern: [8, 4],
-                    showArrows: false  // Już były wyłączone, ale dla spójności
+                    showArrows: false  // Already removed, but for consistency
                 });
             }
         }
     }
 
     /**
-     * RENDERUJE LINIE POŁĄCZEŃ MIĘDZY PUNKTAMI PRZEJŚCIA
+     * RENDERS CONNECTION LINES BETWEEN TRANSITION POINTS
      */
     renderConnectionLines(selectedPoint, allTransitionPoints, gameDataManager, style = null) {
-        // Domyślny styl jeśli nie podano
+        // Default style if not provided
         const defaultStyle = {
             color: '#00ff00',
             lineWidth: 3,
@@ -274,45 +274,45 @@ export class CanvasRenderer {
         };
         const currentStyle = style || defaultStyle;
 
-        // Znajdź ID wybranego punktu w formacie GameDataManager
+        // Find ID of selected point in GameDataManager
         const selectedPointId = this.findPointIdInGameData(selectedPoint, gameDataManager);
         if (!selectedPointId) {
             return;
         }
 
-        // Pobierz połączenia dla wybranego punktu
+        // Get connections for selected point
         const connections = gameDataManager.getConnections(selectedPointId);
         if (!connections || connections.length === 0) {
             return;
         }
 
-        // Ustaw style dla linii
+        // Set style for lines
         this.ctx.strokeStyle = currentStyle.color;
         this.ctx.lineWidth = currentStyle.lineWidth;
         this.ctx.setLineDash(currentStyle.dashPattern);
         this.ctx.lineCap = 'round';
 
-        // Dla każdego połączenia narysuj linię
+        // Draw line for each connection
         connections.forEach(connection => {
-            // Obsługa nowego formatu z wagami i starego formatu
+            // Handle new format with weights and old format
             const connectedPointId = typeof connection === 'string' ? connection : connection.id;
             const weight = typeof connection === 'object' && connection.weight ? connection.weight : 1;
             
             const connectedPoint = this.findTransitionPointById(connectedPointId, allTransitionPoints, gameDataManager);
             if (connectedPoint && connectedPoint.pixelX && connectedPoint.pixelY) {
-                // Narysuj linię od wybranego punktu do połączonego
+                // Draw line from selected point to connected point
                 this.ctx.beginPath();
                 this.ctx.moveTo(selectedPoint.pixelX, selectedPoint.pixelY);
                 this.ctx.lineTo(connectedPoint.pixelX, connectedPoint.pixelY);
                 this.ctx.stroke();
 
-                // Dodaj strzałkę na końcu linii (opcjonalne)
+                // Add arrow at end of line (optional)
                 if (currentStyle.showArrows) {
                     this.drawArrowHead(selectedPoint.pixelX, selectedPoint.pixelY, 
                                      connectedPoint.pixelX, connectedPoint.pixelY);
                 }
                 
-                // Narysuj wagę na środku linii
+                // Draw connection weight in middle of line
                 if (typeof connection === 'object' && connection.weight && this.pathfindingSettings.showConnectionWeights) {
                     this.drawConnectionWeight(selectedPoint.pixelX, selectedPoint.pixelY,
                                             connectedPoint.pixelX, connectedPoint.pixelY, weight);
@@ -320,19 +320,19 @@ export class CanvasRenderer {
             }
         });
 
-        // Przywróć domyślne style
+        // Restore default styles
         this.ctx.setLineDash([]);
     }
 
     /**
-     * ZNAJDUJE ID PUNKTU W GAMEDATA MANAGER
+     * FIND POINT ID IN GAMEDATA MANAGER
      */
     findPointIdInGameData(point, gameDataManager) {
-        // Konwertuj punkt z TransitionPointManager na format GameDataManager
+        // Convert point from TransitionPointManager to GameDataManager format
         const chunkA = point.chunkA.replace('_', ',');
         const chunkB = point.chunkB.replace('_', ',');
         
-        // Określ pozycję na podstawie kierunku
+        // Determine position based on direction
         let position;
         if (point.direction === 'vertical') {
             position = point.x % this.settings.chunkSize;
@@ -340,7 +340,7 @@ export class CanvasRenderer {
             position = point.y % this.settings.chunkSize;
         }
         
-        // Znajdź punkt w GameDataManager
+        // Find point in GameDataManager
         const gameDataPoint = gameDataManager.transitionPoints.find(gdPoint => {
             const [gdChunkA, gdChunkB] = gdPoint.chunks;
             return (gdChunkA === chunkA && gdChunkB === chunkB && gdPoint.position === position) ||
@@ -351,16 +351,16 @@ export class CanvasRenderer {
     }
 
     /**
-     * ZNAJDUJE PUNKT PRZEJŚCIA PO ID W DANYCH RENDEROWANIA
+     * FIND TRANSITION POINT BY ID IN RENDERING DATA
      */
     findTransitionPointById(pointId, allTransitionPoints, gameDataManager) {
-        // Pobierz dane punktu z GameDataManager
+        // Get point data from GameDataManager
         const gameDataPoint = gameDataManager.getTransitionPointById(pointId);
         if (!gameDataPoint) {
             return null;
         }
 
-        // Znajdź odpowiadający punkt w allTransitionPoints (ma pixelX/pixelY)
+        // Find corresponding point in allTransitionPoints (has pixelX/pixelY)
         return allTransitionPoints.find(point => {
             const chunkA = point.chunkA.replace('_', ',');
             const chunkB = point.chunkB.replace('_', ',');
@@ -379,23 +379,23 @@ export class CanvasRenderer {
     }
 
     /**
-     * RYSUJE STRZAŁKĘ NA KOŃCU LINII
+     * DRAWS ARROW AT END OF LINE
      */
     drawArrowHead(fromX, fromY, toX, toY) {
         const arrowLength = 12;
-        const arrowAngle = Math.PI / 6; // 30 stopni
+        const arrowAngle = Math.PI / 6; // 30 degrees
 
-        // Oblicz kąt linii
+        // Calculate line angle
         const angle = Math.atan2(toY - fromY, toX - fromX);
         
-        // Oblicz punkty strzałki
+        // Calculate arrow points
         const arrowX1 = toX - arrowLength * Math.cos(angle - arrowAngle);
         const arrowY1 = toY - arrowLength * Math.sin(angle - arrowAngle);
         
         const arrowX2 = toX - arrowLength * Math.cos(angle + arrowAngle);
         const arrowY2 = toY - arrowLength * Math.sin(angle + arrowAngle);
         
-        // Narysuj strzałkę
+        // Draw arrow
         this.ctx.beginPath();
         this.ctx.moveTo(toX, toY);
         this.ctx.lineTo(arrowX1, arrowY1);
@@ -405,48 +405,48 @@ export class CanvasRenderer {
     }
 
     /**
-     * RYSUJE WAGĘ POŁĄCZENIA NA ŚRODKU LINII
+     * DRAWS CONNECTION WEIGHT ON LINE
      */
     drawConnectionWeight(fromX, fromY, toX, toY, weight) {
-        // Oblicz środek linii
+        // Calculate line midpoint
         const midX = (fromX + toX) / 2;
         const midY = (fromY + toY) / 2;
         
-        // Zapisz obecny stan kontekstu
+        // Save current context state
         this.ctx.save();
         
-        // Ustaw style dla tekstu
+        // Set style for text
         this.ctx.font = '12px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         
-        // Tło dla tekstu (żeby był czytelny)
+        // Text background (to be visible)
         const text = weight.toString();
         const textMetrics = this.ctx.measureText(text);
         const padding = 4;
         const bgWidth = textMetrics.width + padding * 2;
         const bgHeight = 16;
         
-        // Narysuj tło
+        // Draw background
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         this.ctx.fillRect(midX - bgWidth/2, midY - bgHeight/2, bgWidth, bgHeight);
         
-        // Narysuj obramowanie
+        // Draw border
         this.ctx.strokeStyle = '#666';
         this.ctx.lineWidth = 1;
         this.ctx.setLineDash([]);
         this.ctx.strokeRect(midX - bgWidth/2, midY - bgHeight/2, bgWidth, bgHeight);
         
-        // Narysuj tekst
+        // Draw text
         this.ctx.fillStyle = '#333';
         this.ctx.fillText(text, midX, midY);
         
-        // Przywróć stan kontekstu
+        // Restore context state
         this.ctx.restore();
     }
 
     /**
-     * EKSPORTUJE CANVAS DO PNG
+     * EXPORTS CANVAS TO PNG
      */
     exportToPNG(presetName, chunkCols, chunkRows) {
         const link = document.createElement('a');
@@ -456,7 +456,7 @@ export class CanvasRenderer {
     }
 
     /**
-     * AKTUALIZUJE USTAWIENIA RENDERERA
+     * UPDATES RENDERER SETTINGS
      */
     updateSettings(newSettings) {
         this.settings = { ...this.settings, ...newSettings };
@@ -467,7 +467,7 @@ export class CanvasRenderer {
     }
 
     /**
-     * GETTER DLA CANVAS
+     * GETTER FOR CANVAS
      */
     getCanvas() {
         return this.canvas;
@@ -478,77 +478,77 @@ export class CanvasRenderer {
     }
 
     /**
-     * RENDERUJE ŚCIEŻKĘ PATHFINDING NA PODSTAWIE SEGMENTÓW
-     * @param {Array} pathSegments - Tablica segmentów [{chunk, position}, ...]
+     * RENDERS PATHFINDING PATH BASED ON SEGMENTS
+     * @param {Array} pathSegments - Array of segments [{chunk, position}, ...]
      */
     renderPathSegments(pathSegments) {
         if (!pathSegments || pathSegments.length < 2) {
-            return; // Potrzebujemy przynajmniej 2 punkty do narysowania linii
+            return; // Need at least 2 points to draw line
         }
 
-        // Ustaw style dla ścieżki - zielone przerywane linie
+        // Set style for path - green dashed lines
         this.ctx.save();
-        this.ctx.strokeStyle = '#00ff00'; // Zielony kolor
+        this.ctx.strokeStyle = '#00ff00'; // Green color
         this.ctx.lineWidth = 4;
-        this.ctx.setLineDash([10, 5]); // Przerywana linia
+        this.ctx.setLineDash([10, 5]); // Dashed line
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
 
-        // Rysuj linie między kolejnymi segmentami
+        // Draw lines between consecutive segments
         this.ctx.beginPath();
         
         for (let i = 0; i < pathSegments.length; i++) {
             const segment = pathSegments[i];
             
-            // Konwertuj pozycję świata na pozycję pixel na canvasie
+            // Convert world position to pixel position on canvas
             const pixelPos = this.worldToPixel(segment.position);
             
             if (i === 0) {
-                // Pierwszy punkt - rozpocznij ścieżkę
+                // First point - start path
                 this.ctx.moveTo(pixelPos.x, pixelPos.y);
             } else {
-                // Kolejne punkty - rysuj linie
+                // Subsequent points - draw lines
                 this.ctx.lineTo(pixelPos.x, pixelPos.y);
             }
         }
         
         this.ctx.stroke();
         
-        // Dodaj kwadraciki na węzłach ścieżki dla lepszej widoczności
+        // Add squares at path nodes for better visibility
         pathSegments.forEach((segment, index) => {
             const pixelPos = this.worldToPixel(segment.position);
             
-            // Rozmiar kwadracika - mniejszy niż kafelek
+            // Square size - smaller than tile
             const squareSize = Math.max(8, this.settings.tileSize * 0.6);
             const halfSize = squareSize / 2;
             
-            // Ustaw różne kolory dla start/end vs punkty pośrednie
+            // Set different colors for start/end vs intermediate points
             let fillColor, strokeColor;
             if (index === 0) {
-                // Punkt startowy - niebieski (żeby odróżnić od punktów przejścia)
+                // Start point - blue (to distinguish from transition points)
                 fillColor = '#4499ff';
                 strokeColor = '#ffffff';
             } else if (index === pathSegments.length - 1) {
-                // Punkt końcowy - ciemnozielony
+                // End point - dark green
                 fillColor = '#00aa00';
                 strokeColor = '#ffffff';
             } else {
-                // Punkty pośrednie (punkty przejścia) - zielony
+                // Intermediate points (transition points) - green
                 fillColor = '#00ff00';
                 strokeColor = '#ffffff';
             }
             
-            // Narysuj kwadracik
+            // Draw square
             this.ctx.fillStyle = fillColor;
             this.ctx.fillRect(pixelPos.x - halfSize, pixelPos.y - halfSize, squareSize, squareSize);
             
-            // Białe obramowanie dla lepszej widoczności
+            // White border for better visibility
             this.ctx.strokeStyle = strokeColor;
             this.ctx.lineWidth = 2;
             this.ctx.setLineDash([]);
             this.ctx.strokeRect(pixelPos.x - halfSize, pixelPos.y - halfSize, squareSize, squareSize);
             
-            // Przywróć styl linii
+            // Restore line style
             this.ctx.strokeStyle = '#00ff00';
             this.ctx.lineWidth = 4;
             this.ctx.setLineDash([10, 5]);
@@ -558,21 +558,21 @@ export class CanvasRenderer {
     }
 
     /**
-     * KONWERTUJE POZYCJĘ ŚWIATA NA POZYCJĘ PIXEL NA CANVASIE
-     * @param {Object} worldPos - Pozycja w świecie {x, y}
-     * @returns {Object} - Pozycja w pikselach {x, y}
+     * CONVERTS WORLD POSITION TO PIXEL POSITION ON CANVAS
+     * @param {Object} worldPos - World position {x, y}
+     * @returns {Object} - Pixel position {x, y}
      */
     worldToPixel(worldPos) {
-        // Oblicz w jakim chunku znajduje się pozycja
+        // Calculate in which chunk position is
         const chunkSize = this.settings.chunkSize * this.settings.tileSize;
         const chunkX = Math.floor(worldPos.x / chunkSize);
         const chunkY = Math.floor(worldPos.y / chunkSize);
         
-        // Oblicz pozycję lokalną w chunku
+        // Calculate local position in chunk
         const localX = worldPos.x % chunkSize;
         const localY = worldPos.y % chunkSize;
         
-        // Oblicz pozycję pixel na canvasie
+        // Calculate pixel position on canvas
         const pixelX = RENDER_CONSTANTS.CANVAS_PADDING + 
                       chunkX * (chunkSize + RENDER_CONSTANTS.GAP_SIZE) + 
                       localX;

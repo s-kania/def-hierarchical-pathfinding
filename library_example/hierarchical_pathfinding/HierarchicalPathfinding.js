@@ -1,6 +1,6 @@
 /**
- * Biblioteka Hierarchical Pathfinding dla JavaScript
- * Minimalna wersja z pre-computed grafem connections
+ * Hierarchical Pathfinding Library for JavaScript
+ * Minimal version with pre-computed connections graph
  */
 
 import { CoordUtils } from './src/utils/CoordUtils.js';
@@ -14,47 +14,47 @@ export class HierarchicalPathfinding {
     }
 
     /**
-     * Inicjalizuje system pathfinding
-     * @param {Object} config - Konfiguracja zawierająca:
-     *   - tileSize: rozmiar kafelka (w jednostkach świata)
-     *   - gridWidth/gridHeight: wymiary grida (w chunkach)
-     *   - chunkWidth/chunkHeight: wymiary chunka (w kafelkach)
-     *   - getChunkData: funkcja zwracająca dane chunka
-     *   - transitionPoints: tablica punktów przejścia między chunkami
+     * Initialize the pathfinding system
+     * @param {Object} config - Configuration containing:
+     *   - tileSize: tile size (in world units)
+     *   - gridWidth/gridHeight: grid dimensions (in chunks)
+     *   - chunkWidth/chunkHeight: chunk dimensions (in tiles)
+     *   - getChunkData: function returning chunk data
+     *   - transitionPoints: array of transition points between chunks
      */
     init(config) {
-        // Walidacja podstawowa
+        // Basic validation
         if (!config || !config.tileSize || 
             !config.gridWidth || !config.gridHeight || 
             !config.chunkWidth || !config.chunkHeight ||
             !config.getChunkData || !config.transitionPoints) {
-            throw new Error("Brakuje wymaganych parametrów konfiguracji");
+            throw new Error("Missing required configuration parameters");
         }
         
-        // Zapisz konfigurację
+        // Save configuration
         this.config = config;
         
-        // Budujemy graf połączeń między punktami przejścia
+        // Build connections graph between transition points
         this.transitionGraph = new TransitionGraph(config.transitionPoints, {
             gridWidth: config.gridWidth,
             gridHeight: config.gridHeight,
-            chunkSize: config.chunkWidth, // Używamy chunkWidth jako chunkSize dla kompatybilności
+            chunkSize: config.chunkWidth, // Use chunkWidth as chunkSize for compatibility
             tileSize: config.tileSize
         });
     }
 
     /**
-     * Główna funkcja - znajduje ścieżkę od startPos do endPos
-     * @param {Object} startPos - Pozycja startowa {x, y} w jednostkach świata
-     * @param {Object} endPos - Pozycja końcowa {x, y} w jednostkach świata
-     * @returns {Array|null} - Tablica segmentów [{chunk, position}] lub null
+     * Main function - finds path from startPos to endPos
+     * @param {Object} startPos - Start position {x, y} in world units
+     * @param {Object} endPos - End position {x, y} in world units
+     * @returns {Array|null} - Array of segments [{chunk, position}] or null
      */
     findPath(startPos, endPos) {
         if (!this.config) {
-            throw new Error("Pathfinder nie został zainicjalizowany");
+            throw new Error("Pathfinder has not been initialized");
         }
 
-        // Sprawdzamy czy pozycje mieszczą się w świecie
+        // Check if positions are within world bounds
         const worldWidth = this.config.gridWidth * this.config.chunkWidth * this.config.tileSize;
         const worldHeight = this.config.gridHeight * this.config.chunkHeight * this.config.tileSize;
         
@@ -65,50 +65,50 @@ export class HierarchicalPathfinding {
             return null;
         }
 
-        // Określamy w jakich chunkach są start i koniec
+        // Determine which chunks contain start and end
         const startChunk = CoordUtils.globalToChunkId(startPos, this.config.chunkWidth, this.config.tileSize);
         const endChunk = CoordUtils.globalToChunkId(endPos, this.config.chunkWidth, this.config.tileSize);
 
-        // Jeśli ten sam chunk - próbujemy najpierw A* lokalny
+        // If same chunk - try local A* first
         if (startChunk === endChunk) {
             const localPath = this.findLocalPath(startChunk, startPos, endPos);
-            // Jeśli ścieżka lokalna została znaleziona, zwracamy ją od razu
+            // If local path was found, return it immediately
             if (localPath) {
                 return localPath;
             }
-            // Jeśli nie, pozwalamy na kontynuację do wyszukiwania hierarchicznego.
-            // Może się zdarzyć, że punkty są w tym samym chunku, ale w oddzielnych,
-            // niepołączonych obszarach, więc trzeba wyjść na zewnątrz.
+            // If not, allow continuation to hierarchical search.
+            // It may happen that points are in the same chunk, but in separate,
+            // unconnected areas, so we need to go outside.
         }
 
-        // Różne chunki (lub ten sam chunk bez ścieżki lokalnej) - szukamy przez punkty przejścia
+        // Different chunks (or same chunk without local path) - search through transition points
         const startPoint = this.findNearestTransition(startPos, startChunk);
         const endPoint = this.findNearestTransition(endPos, endChunk);
 
         if (!startPoint || !endPoint) {
-            return null; // Brak dostępnych punktów przejścia
+            return null; // No available transition points
         }
         
         const transitionPath = this.transitionGraph.findPath(startPoint.id, endPoint.id);
 
         if (!transitionPath) {
-            return null; // Brak ścieżki między chunkami
+            return null; // No path between chunks
         }
 
-        // Budujemy finalne segmenty ścieżki
+        // Build final path segments
         const segments = this.buildPathSegments(startPos, endPos, transitionPath);
         
         return segments;
     }
 
     /**
-     * Znajduje najbliższy punkt przejścia w danym chunku
-     * @param {Object} pos - Pozycja dla której szukamy punktu
-     * @param {string} chunkId - ID chunka
-     * @returns {Object|null} - Najbliższy dostępny punkt przejścia
+     * Finds nearest transition point in a given chunk
+     * @param {Object} pos - Position for which we're looking for a point
+     * @param {string} chunkId - Chunk ID
+     * @returns {Object|null} - Nearest available transition point
      */
     findNearestTransition(pos, chunkId) {
-        // Pobieramy wszystkie punkty przejścia w tym chunku
+        // Get all transition points in this chunk
         const points = this.transitionGraph.getPointsInChunk(chunkId);
         
         if (points.length === 0) {
@@ -118,9 +118,9 @@ export class HierarchicalPathfinding {
         let nearest = null;
         let minDistance = Infinity;
 
-        // Szukamy najbliższego punktu do którego można dojść
+        // Find nearest point that can be reached
         for (const point of points) {
-            // Obliczamy globalną pozycję punktu przejścia
+            // Calculate global position of transition point
             const pointPos = CoordUtils.getTransitionGlobalPosition(
                 point, chunkId, this.config.chunkWidth, this.config.tileSize
             );
@@ -129,11 +129,11 @@ export class HierarchicalPathfinding {
                 continue;
             }
 
-            // Sprawdzamy czy można dojść do tego punktu lokalną ścieżką
+            // Check if we can reach this point with local path
             const localPath = this.findLocalPath(chunkId, pos, pointPos);
 
             if (localPath) {
-                // Obliczamy odległość euklidesową
+                // Calculate Euclidean distance
                 const dx = pointPos.x - pos.x;
                 const dy = pointPos.y - pos.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
@@ -149,28 +149,28 @@ export class HierarchicalPathfinding {
     }
 
     /**
-     * Znajduje lokalną ścieżkę w obrębie jednego chunka
-     * @param {string} chunkId - ID chunka
-     * @param {Object} startPos - Pozycja startowa (globalna)
-     * @param {Object} endPos - Pozycja końcowa (globalna)
-     * @returns {Array|null} - Segment ścieżki lub null
+     * Finds local path within a single chunk
+     * @param {string} chunkId - Chunk ID
+     * @param {Object} startPos - Start position (global)
+     * @param {Object} endPos - End position (global)
+     * @returns {Array|null} - Path segment or null
      */
     findLocalPath(chunkId, startPos, endPos) {
-        // Pobieramy dane chunka (2D tablica)
+        // Get chunk data (2D array)
         const chunkData = this.config.getChunkData(chunkId);
         if (!chunkData) {
             return null;
         }
 
-        // Konwertujemy pozycje globalne na lokalne w chunku
+        // Convert global positions to local positions in chunk
         const localStart = CoordUtils.globalToLocal(startPos, chunkId, this.config.chunkWidth, this.config.tileSize);
         const localEnd = CoordUtils.globalToLocal(endPos, chunkId, this.config.chunkWidth, this.config.tileSize);
 
-        // Szukamy ścieżki lokalnym A*
+        // Find path with local A*
         const localPath = LocalPathfinder.findPath(chunkData, localStart, localEnd);
 
         if (localPath) {
-            // Zwracamy jako pojedynczy segment
+            // Return as single segment
             return [{
                 chunk: chunkId,
                 position: endPos
@@ -181,10 +181,10 @@ export class HierarchicalPathfinding {
     }
 
     /**
-     * Znajduje chunk dla połączenia między dwoma punktami przejścia
-     * @param {Object} fromPoint - Punkt startowy
-     * @param {Object} toPoint - Punkt docelowy  
-     * @returns {string|null} - ID chunka lub null jeśli brak połączenia
+     * Finds chunk for connection between two transition points
+     * @param {Object} fromPoint - Start point
+     * @param {Object} toPoint - Target point  
+     * @returns {string|null} - Chunk ID or null if no connection
      */
     findConnectionChunk(fromPoint, toPoint) {
         const connection = fromPoint.connections.find(conn => conn.id === toPoint.id);
@@ -192,20 +192,20 @@ export class HierarchicalPathfinding {
     }
 
     /**
-     * Zwraca czyste punkty przejścia z optymalizacją redundantnych węzłów
-     * @param {Object} startPos - Pozycja startowa 
-     * @param {Object} endPos - Pozycja końcowa  
-     * @param {Array} transitionPath - Lista ID punktów przejścia
-     * @returns {Array} - Lista punktów przejścia
+     * Returns clean transition points with redundant node optimization
+     * @param {Object} startPos - Start position 
+     * @param {Object} endPos - End position  
+     * @param {Array} transitionPath - List of transition point IDs
+     * @returns {Array} - List of transition points
      */
     buildPathSegments(startPos, endPos, transitionPath) {
         const segments = [];
         
-        // Określamy chunk startowy i końcowy
+        // Determine start and end chunks
         const startChunk = CoordUtils.globalToChunkId(startPos, this.config.chunkWidth, this.config.tileSize);
         const endChunk = CoordUtils.globalToChunkId(endPos, this.config.chunkWidth, this.config.tileSize);
         
-        // Jeśli nie ma punktów przejścia (bezpośrednia ścieżka)
+        // If no transition points (direct path)
         if (transitionPath.length === 0) {
             segments.push({
                 chunk: startChunk,
@@ -214,23 +214,23 @@ export class HierarchicalPathfinding {
             return segments;
         }
         
-        // Tworzymy kopię ścieżki do optymalizacji
+        // Create copy of path for optimization
         let effectivePath = [...transitionPath];
         
-        // 🔥 WERYFIKACJA PIERWSZEGO WĘZŁA
+        // 🔥 FIRST NODE VERIFICATION
         if (effectivePath.length >= 2) {
             const firstPoint = this.transitionGraph.getPoint(effectivePath[0]);
             const secondPoint = this.transitionGraph.getPoint(effectivePath[1]);
             
-            // Sprawdź, czy drugi punkt jest dostępny z chunka startowego
-            // ORAZ czy istnieje bezpośrednie połączenie z pierwszego do drugiego punktu w tym chunku.
+            // Check if second point is accessible from start chunk
+            // AND if there's a direct connection from first to second point in this chunk.
             const connectionChunk = this.findConnectionChunk(firstPoint, secondPoint);
             if (secondPoint.chunks.includes(startChunk) && connectionChunk === startChunk) {
-                effectivePath.shift(); // Usuń pierwszy, zbędny węzeł
+                effectivePath.shift(); // Remove first, redundant node
             }
         }
         
-        // Dodaj segment startowy (od startPos do pierwszego punktu przejścia)
+        // Add start segment (from startPos to first transition point)
         if (effectivePath.length > 0) {
             const firstPoint = this.transitionGraph.getPoint(effectivePath[0]);
             const firstPointPos = CoordUtils.getTransitionGlobalPosition(
@@ -247,12 +247,12 @@ export class HierarchicalPathfinding {
             }
         }
         
-        // Buduj segmenty między punktami przejścia
+        // Build segments between transition points
         for (let i = 0; i < effectivePath.length - 1; i++) {
             const currentPoint = this.transitionGraph.getPoint(effectivePath[i]);
             const nextPoint = this.transitionGraph.getPoint(effectivePath[i + 1]);
             
-            // Używamy funkcji pomocniczej do znalezienia chunka połączenia
+            // Use helper function to find connection chunk
             const connectionChunk = this.findConnectionChunk(currentPoint, nextPoint);
             
             if (!connectionChunk) {
@@ -273,7 +273,7 @@ export class HierarchicalPathfinding {
             });
         }
         
-        // Dodaj segment końcowy (od ostatniego punktu przejścia do endPos)
+        // Add end segment (from last transition point to endPos)
         if (effectivePath.length > 0) {
             segments.push({
                 chunk: endChunk,
@@ -281,12 +281,12 @@ export class HierarchicalPathfinding {
             });
         }
 
-        // 🔥 WERYFIKACJA PRZEDOSTATNIEGO SEGMENTU
+        // 🔥 PENULTIMATE SEGMENT VERIFICATION
         if (segments.length >= 2) {
             const penultimateSegment = segments[segments.length - 2];
             
             if (penultimateSegment.chunk === endChunk) {
-                segments.splice(segments.length - 2, 1); // Usuń przedostatni segment
+                segments.splice(segments.length - 2, 1); // Remove penultimate segment
             }
         }
         

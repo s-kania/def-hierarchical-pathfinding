@@ -1,124 +1,124 @@
-# Island Map Generator - Modułowa Aplikacja JavaScript
+# Island Map Generator - Modular JavaScript Application
 
-Generator map wysp z podziałem na chunki oraz systemu hierarchicznego pathfinding. Aplikacja została zrefaktorowana z jednego monolitycznego pliku na modułową architekturę.
+Island map generator with chunk division and hierarchical pathfinding system. The application has been refactored from a single monolithic file to a modular architecture.
 
-## 🏗️ Architektura Modułowa
+## 🏗️ Modular Architecture
 
-Aplikacja została podzielona na następujące moduły:
+The application has been divided into the following modules:
 
-### 📁 Struktura Katalogów
+### 📁 Directory Structure
 
 ```
 library_example/
 ├── js/
 │   ├── config/
-│   │   └── Settings.js           # Konfiguracja i presety
+│   │   └── Settings.js           # Configuration and presets
 │   ├── core/
-│   │   ├── MapGenerator.js       # Główny generator map
-│   │   └── ChunkManager.js       # Zarządzanie chunkami
+│   │   ├── MapGenerator.js       # Main map generator
+│   │   └── ChunkManager.js       # Chunk management
 │   ├── algorithms/
-│   │   └── CellularAutomata.js   # Algorytmy generowania
+│   │   └── CellularAutomata.js   # Generation algorithms
 │   ├── pathfinding/
-│   │   └── TransitionPointManager.js  # Punkty przejścia
+│   │   └── TransitionPointManager.js  # Transition points
 │   ├── rendering/
-│   │   └── CanvasRenderer.js     # Renderowanie na canvas
+│   │   └── CanvasRenderer.js     # Canvas rendering
 │   ├── ui/
-│   │   ├── UIController.js       # Kontrola interfejsu
-│   │   └── Inspector.js          # Panel inspektora
+│   │   ├── UIController.js       # Interface control
+│   │   └── Inspector.js          # Inspector panel
 │   ├── utils/
-│   │   └── MathUtils.js          # Funkcje pomocnicze
+│   │   └── MathUtils.js          # Helper functions
 │   ├── data/
-│   │   └── GameDataManager.js    # Zarządzanie danymi
-│   └── main.js                   # Główna aplikacja
+│   │   └── GameDataManager.js    # Data management
+│   └── main.js                   # Main application
 ├── index.html
 ├── style.css
 └── README.md
 ```
 
-## 🚀 Uruchomienie
+## 🚀 Getting Started
 
-### Wymagania
+### Requirements
 
-- **HTTP Server** - Pliki muszą być serwowane przez serwer HTTP (nie file://)
-- **Nowoczesna przeglądarka** z obsługą ES6 modules
+- **HTTP Server** - Files must be served via HTTP server (not file://)
+- **Modern browser** with ES6 modules support
 
 ### Setup
 
 ```bash
-# Uruchom serwer HTTP w katalogu projektu
+# Start HTTP server in project directory
 cd library_example && python3 -m http.server 8000
 
-# Jedna komenda, aby zabić wszystko na porcie 8000
+# Single command to kill everything on port 8000
 kill $(lsof -ti:8000)
 
-# Otwórz w przeglądarce
+# Open in browser
 # http://localhost:8000
 ```
 
-## 🎮 Funkcjonalności
+## 🎮 Features
 
-### 🗺️ Generowanie Map Wysp
-- **Presety wysp**: Archipelago, Continent, Scattered, Dense
-- **Cellular Automata**: Algorytmy smoothing z różnymi parametrami
-- **Chunki**: Podział mapy na manageable fragmenty
-- **Real-time preview**: Natychmiastowa aktualizacja po zmianie ustawień
+### 🗺️ Island Map Generation
+- **Island presets**: Archipelago, Continent, Scattered, Dense
+- **Cellular Automata**: Smoothing algorithms with various parameters
+- **Chunks**: Map division into manageable fragments
+- **Real-time preview**: Instant update after changing settings
 
-### 🧭 System Pathfinding
-- **Punkty przejścia**: Automatyczne wykrywanie przejść między chunkami
-- **Interaktywny inspector**: Kliknij punkt przejścia aby zobaczyć szczegóły
-- **Konfigurowalność**: Liczba i rozmiar punktów przejścia
+### 🧭 Pathfinding System
+- **Transition points**: Automatic detection of passages between chunks
+- **Interactive inspector**: Click transition point to see details
+- **Configurability**: Number and size of transition points
 
-### 🎨 Renderowanie
-- **Canvas rendering**: Wydajne renderowanie na HTML5 Canvas
-- **Responsywny design**: Skalowanie do różnych rozmiarów ekranu
-- **Export PNG**: Zapisz wygenerowaną mapę jako obraz
+### 🎨 Rendering
+- **Canvas rendering**: Efficient rendering on HTML5 Canvas
+- **Responsive design**: Scaling to different screen sizes
+- **Export PNG**: Save generated map as image
 
-## 🔧 Główne Komponenty
+## 🔧 Main Components
 
 ### **MapGenerator** (`js/core/MapGenerator.js`)
-Główny silnik generowania map:
+Main map generation engine:
 ```javascript
-// Generuje nową mapę
+// Generate new map
 const finalMap = mapGenerator.generateMap();
 
-// Aplikuje tylko smoothing (optymalizacja)
+// Apply only smoothing (optimization)
 const smoothedMap = mapGenerator.applySmoothingToExistingMap();
 ```
 
 ### **ChunkManager** (`js/core/ChunkManager.js`)
-Zarządzanie chunkami:
+Chunk management:
 ```javascript
-// Dzieli mapę na chunki
+// Divide map into chunks
 const chunks = chunkManager.splitMapIntoChunks(unifiedMap, width, height);
 
-// Renderuje pojedynczy chunk
+// Render single chunk
 chunkManager.renderChunk(ctx, chunk);
 ```
 
 ### **TransitionPointManager** (`js/pathfinding/TransitionPointManager.js`)
-System punktów przejścia:
+Transition point system:
 ```javascript
-// Generuje punkty przejścia
+// Generate transition points
 const points = transitionManager.generateTransitionPoints(chunks);
 
-// Znajduje punkt pod kursorem myszy
+// Find point under mouse cursor
 const point = transitionManager.getTransitionPointAt(mouseX, mouseY);
 ```
 
-## ⚙️ Konfiguracja i Ustawienia
+## ⚙️ Configuration and Settings
 
 ### **Settings** (`js/config/Settings.js`)
-Centralne miejsce konfiguracji:
+Central configuration place:
 ```javascript
-// Domyślne ustawienia chunków
+// Default chunk settings
 export const DEFAULT_SETTINGS = {
-    chunkCols: 5,        // Liczba chunków w poziomie
-    chunkRows: 3,        // Liczba chunków w pionie  
-    chunkSize: 6,        // Rozmiar chunka (6x6 tiles)
-    tileSize: 16         // Rozmiar tile w pikselach
+    chunkCols: 5,        // Number of chunks horizontally
+    chunkRows: 3,        // Number of chunks vertically  
+    chunkSize: 6,        // Chunk size (6x6 tiles)
+    tileSize: 16         // Tile size in pixels
 };
 
-// Presety wysp
+// Island presets
 export const ISLAND_PRESETS = {
     archipelago: { landDensity: 0.35, iterations: 4, /* ... */ },
     continent: { landDensity: 0.55, iterations: 3, /* ... */ },
@@ -126,23 +126,23 @@ export const ISLAND_PRESETS = {
 };
 ```
 
-### **Optymalizacje Wydajności**
+### **Performance Optimizations**
 
-#### **Rozróżnienie typów zmian**
-Aplikacja optymalizuje regenerację na podstawie typu zmiany:
+#### **Change type differentiation**
+The application optimizes regeneration based on change type:
 
-1. **Pełna regeneracja** (parametry geometryczne):
+1. **Full regeneration** (geometric parameters):
    - `chunkSize`, `chunkCols`, `chunkRows` 
    - `landDensity`, `islandSize`
 
-2. **Tylko smoothing** (parametry CA):
+2. **Smoothing only** (CA parameters):
    - `iterations`, `neighborThreshold`, `archipelagoMode`
 
-3. **Tylko render** (parametry wizualne):
+3. **Render only** (visual parameters):
    - `tileSize`, `transitionPointScale`, `showTransitionPoints`
 
 ```javascript
-// Przykład użycia
+// Usage example
 uiController.setCallbacks({
     onFullRegenerationNeeded: () => app.generateMap(),
     onSmoothingOnlyNeeded: () => app.applySmoothingToExistingMap(),
@@ -150,29 +150,29 @@ uiController.setCallbacks({
 });
 ```
 
-## 🔧 Rozwój i Rozszerzenia
+## 🔧 Development and Extensions
 
-### **Dodawanie Nowych Modułów**
+### **Adding New Modules**
 
-1. **Utwórz nowy plik modułu**:
+1. **Create new module file**:
 ```javascript
 // js/algorithms/NoiseGenerator.js
 export class NoiseGenerator {
     static generatePerlinNoise(width, height, scale) {
-        // implementacja
+        // implementation
     }
 }
 ```
 
-2. **Zaimportuj w głównej aplikacji**:
+2. **Import in main application**:
 ```javascript
 // js/main.js
 import { NoiseGenerator } from './algorithms/NoiseGenerator.js';
 ```
 
-3. **Podłącz do istniejącego flow**:
+3. **Connect to existing flow**:
 ```javascript
-// W MapGenerator.js
+// In MapGenerator.js
 import { NoiseGenerator } from '../algorithms/NoiseGenerator.js';
 
 generateBaseMap(width, height) {
@@ -180,30 +180,30 @@ generateBaseMap(width, height) {
 }
 ```
 
-### **Debugowanie**
+### **Debugging**
 
-#### **Console dostępu do instancji**
+#### **Console access to instances**
 ```javascript
-// W konsoli przeglądarki
-window.mapGenerator.chunks           // Aktualne chunki
-window.mapGenerator.settings         // Ustawienia
-window.mapGenerator.generateMap()    // Regeneruj mapę
+// In browser console
+window.mapGenerator.chunks           // Current chunks
+window.mapGenerator.settings         // Settings
+window.mapGenerator.generateMap()    // Regenerate map
 ```
 
-#### **Logi wydajności**
+#### **Performance logs**
 ```javascript
-// MapGenerator automatycznie loguje:
+// MapGenerator automatically logs:
 console.log(`🗺️ Generated unified map: ${width}x${height}`);
 console.log(`✓ Generated ${chunks.length} chunks from unified map`);
 ```
 
-## 🚀 Deployment
+## �� Deployment
 
-### **Optymalizacja Produkcyjna**
+### **Production Optimization**
 
-1. **Minifikacja modułów**:
+1. **Minification of modules**:
 ```bash
-# Użyj narzędzi jak Rollup lub Webpack
+# Use tools like Rollup or Webpack
 npm install rollup @rollup/plugin-terser
 ```
 
@@ -219,7 +219,7 @@ export default {
 };
 ```
 
-3. **Serwowanie statyczne**:
+3. **Static serving**:
 ```bash
 # Nginx config
 location /island-generator/ {
@@ -228,47 +228,47 @@ location /island-generator/ {
 }
 ```
 
-## 🔬 Testy i Walidacja
+## 🔬 Testing and Validation
 
-### **Testowanie Modułów**
+### **Module Testing**
 
 ```javascript
-// Przykład testu algorytmu Cellular Automata
+// Example test of Cellular Automata algorithm
 import { applyCellularAutomataUnified } from './js/algorithms/CellularAutomata.js';
 
-// Test case: 3x3 mapa z pojedynczym kafelkiem lądu
+// Test case: 3x3 map with single land tile
 const testMap = [0, 0, 0, 0, 1, 0, 0, 0, 0];
 const result = applyCellularAutomataUnified(testMap, 3, 3, 4, false);
 
-console.assert(result[4] === 0, 'Pojedynczy kafelek powinien zostać erodowany');
+console.assert(result[4] === 0, 'Single land tile should be eroded');
 ```
 
-### **Walidacja Danych**
+### **Data Validation**
 
 ```javascript
-// ChunkManager zawiera walidację
+// ChunkManager contains validation
 const isValid = chunkManager.validateChunk(chunk);
 if (!isValid) {
     console.error('❌ Invalid chunk detected:', chunk);
 }
 ```
 
-## 📊 Metryki i Analityka
+## 📊 Metrics and Analytics
 
-### **Monitoring Wydajności**
+### **Performance Monitoring**
 ```javascript
-// Pomiar czasu generowania map
+// Map generation time measurement
 console.time('Map Generation');
 mapGenerator.generateMap();
 console.timeEnd('Map Generation');
 
-// Śledzenie użycia pamięci
+// Memory usage tracking
 console.log(`Memory usage: ${performance.memory?.usedJSHeapSize / 1024 / 1024} MB`);
 ```
 
-### **Statystyki Generacji**
+### **Generation Statistics**
 ```javascript
-// Dostępne z UI
+// Available from UI
 const stats = {
     totalChunks: settings.chunkCols * settings.chunkRows,
     totalTiles: totalChunks * settings.chunkSize ** 2,
@@ -277,56 +277,56 @@ const stats = {
 };
 ```
 
-## 🛠️ Techniczne Szczegóły
+## 🛠️ Technical Details
 
 ### **ES6 Modules**
-- **Import/Export syntax**: Wszystkie moduły używają standardowej składni ES6
-- **Tree-shaking**: Możliwość optymalizacji bundlerów
-- **Static analysis**: Lepsze wsparcie IDE i narzędzi
+- **Import/Export syntax**: All modules use standard ES6 syntax
+- **Tree-shaking**: Ability to optimize bundlers
+- **Static analysis**: Better IDE and tool support
 
 ### **Separation of Concerns**
-- **Config**: Wszystkie stałe w `Settings.js`
-- **Algorithms**: Logika biznesowa oddzielona od UI
-- **Rendering**: Canvas operations w dedykowanym module
-- **UI**: Event handling i DOM manipulation
+- **Config**: All constants in `Settings.js`
+- **Algorithms**: Business logic separate from UI
+- **Rendering**: Canvas operations in dedicated module
+- **UI**: Event handling and DOM manipulation
 
 ### **Performance Optimizations**
-- **Differential updates**: Różne typy regeneracji
-- **Canvas optimizations**: Minimalizacja redraw operations
-- **Memory management**: Proper cleanup i garbage collection
+- **Differential updates**: Different regeneration types
+- **Canvas optimizations**: Minimal redraw operations
+- **Memory management**: Proper cleanup and garbage collection
 
-## 📈 Przyszłe Rozszerzenia
+## 📈 Future Extensions
 
-### **Planowane Funkcjonalności**
-- **Save/Load maps**: Serialize/deserialize stanu aplikacji
-- **Custom brushes**: Edycja ręczna map
-- **Multi-layer rendering**: Różne rodzaje terrain
-- **Advanced pathfinding**: A* i hierarchiczne pathfinding
-- **WebWorkers**: Background processing dla dużych map
+### **Planned Features**
+- **Save/Load maps**: Serialize/deserialize application state
+- **Custom brushes**: Manual map editing
+- **Multi-layer rendering**: Different terrain types
+- **Advanced pathfinding**: A* and hierarchical pathfinding
+- **WebWorkers**: Background processing for large maps
 
-### **Potencjalne Integracje**
+### **Potential Integrations**
 - **Three.js**: 3D rendering map
 - **WebGL**: Hardware-accelerated rendering
 - **Service Workers**: Offline functionality
-- **IndexedDB**: Persystencja danych lokalnie
+- **IndexedDB**: Local data persistence
 
 ---
 
-## 🔧 Integracja z Lua (Fengari)
+## 🔧 Integration with Lua (Fengari)
 
-Projekt zawiera również wsparcie dla integracji z Lua używając biblioteki Fengari, pozwalając na uruchamianie algorytmów Lua w przeglądarce.
+The project also supports integration with Lua using the Fengari library, allowing Lua algorithms to be run in the browser.
 
 ### **Setup Lua Integration**
 
 ```html
-<!-- Dodaj Fengari do HTML -->
+<!-- Add Fengari to HTML -->
 <script src="fengari-web.js"></script>
 
-<!-- Załaduj skrypt Lua -->
+<!-- Load Lua script -->
 <script src="island_generator.lua" type="application/lua"></script>
 ```
 
-### **Przykład Modułu Lua**
+### **Example Lua Module**
 
 ```lua
 -- island_generator.lua
@@ -335,12 +335,12 @@ local js = require "js"
 local IslandGenerator = {}
 
 function IslandGenerator.generateIslandMap(width, height, density)
-    -- Konwertuj argumenty JavaScript na typy Lua
+    -- Convert JavaScript arguments to Lua types
     local luaWidth = tonumber(width) or 30
     local luaHeight = tonumber(height) or 18
     local luaDensity = tonumber(density) or 0.35
     
-    -- Stwórz prawdziwą tablicę JavaScript
+    -- Create a true JavaScript array
     local jsArray = js.new(js.global.Array)
     
     for i = 0, luaWidth * luaHeight - 1 do
@@ -356,13 +356,13 @@ function IslandGenerator.applyCellularAutomata(mapData, width, height, iteration
     local luaHeight = tonumber(height) or 18
     local luaIterations = tonumber(iterations) or 3
     
-    -- Konwertuj JavaScript array na Lua table
+    -- Convert JavaScript array to Lua table
     local luaMap = {}
     for i = 0, mapData.length - 1 do
         luaMap[i + 1] = mapData[i]
     end
     
-    -- Aplikuj cellular automata
+    -- Apply cellular automata
     for iter = 1, luaIterations do
         local newMap = {}
         for i = 1, #luaMap do
@@ -372,7 +372,7 @@ function IslandGenerator.applyCellularAutomata(mapData, width, height, iteration
         luaMap = newMap
     end
     
-    -- Konwertuj z powrotem na JavaScript array
+    -- Convert back to JavaScript array
     local result = js.new(js.global.Array)
     for i = 1, #luaMap do
         result:push(luaMap[i])
@@ -382,7 +382,7 @@ function IslandGenerator.applyCellularAutomata(mapData, width, height, iteration
 end
 
 function countNeighbors(map, index, width, height)
-    -- Implementacja liczenia sąsiadów
+    -- Implementation of counting neighbors
     local count = 0
     local x = ((index - 1) % width)
     local y = math.floor((index - 1) / width)
@@ -404,7 +404,7 @@ function countNeighbors(map, index, width, height)
     return count
 end
 
--- Eksportuj do JavaScript
+-- Export to JavaScript
 js.global.LuaIslandGenerator = js.new(js.global.Object)
 js.global.LuaIslandGenerator.generateIslandMap = IslandGenerator.generateIslandMap
 js.global.LuaIslandGenerator.applyCellularAutomata = IslandGenerator.applyCellularAutomata
@@ -413,10 +413,10 @@ js.global.LuaIslandGenerator.ready = true
 print("Lua Island Generator loaded successfully!")
 ```
 
-### **Integracja JavaScript-Lua**
+### **JavaScript-Lua Integration**
 
 ```javascript
-// Użycie generatora Lua jako alternatywy
+// Use Lua generator as alternative
 function generateMapWithLua(width, height, density) {
     if (window.LuaIslandGenerator && window.LuaIslandGenerator.ready) {
         try {
@@ -431,15 +431,15 @@ function generateMapWithLua(width, height, density) {
         }
     }
     
-    // Fallback do JavaScript implementation
+    // Fallback to JavaScript implementation
     console.log('⚙️ Using JavaScript fallback...');
     return mapGenerator.generateBaseMap(width, height);
 }
 
-// Rozszerzenie MapGenerator o obsługę Lua
+// Extend MapGenerator with Lua support
 class HybridMapGenerator extends MapGenerator {
     generateBaseMap(width, height) {
-        // Spróbuj użyć Lua jeśli dostępne
+        // Try using Lua if available
         const luaResult = generateMapWithLua(width, height, this.islandSettings.landDensity / 100);
         
         if (luaResult) {
@@ -447,23 +447,23 @@ class HybridMapGenerator extends MapGenerator {
             return luaResult;
         }
         
-        // Fallback do standardowej implementacji
+        // Fallback to standard implementation
         return super.generateBaseMap(width, height);
     }
 }
 ```
 
-### **Najlepsze Praktyki Lua-JavaScript**
+### **Best Lua-JavaScript Practices**
 
-#### **Konwersja Typów**
+#### **Type Conversion**
 ```lua
--- ❌ BŁĄD: JavaScript argumenty nie są liczbami Lua
+-- ❌ ERROR: JavaScript arguments are not Lua numbers
 function badFunction(size)
     for i = 0, size - 1 do  -- ERROR!
     end
 end
 
--- ✅ POPRAWNIE: Zawsze konwertuj argumenty
+-- ✅ CORRECT: Always convert arguments
 function goodFunction(size)
     local luaSize = tonumber(size) or 0
     for i = 0, luaSize - 1 do  -- OK!
@@ -471,48 +471,48 @@ function goodFunction(size)
 end
 ```
 
-#### **Tworzenie JavaScript Arrays**
+#### **Creating JavaScript Arrays**
 ```lua
--- ❌ BŁĄD: Lua table nie jest JavaScript array
+-- ❌ ERROR: Lua table is not a JavaScript array
 function badFunction()
     local result = {}
     result[0] = 1
-    return result  -- JavaScript dostaje wrapped object
+    return result  -- JavaScript receives wrapped object
 end
 
--- ✅ POPRAWNIE: Utwórz prawdziwą JavaScript array
+-- ✅ CORRECT: Create a true JavaScript array
 function goodFunction()
     local jsArray = js.new(js.global.Array)
     jsArray:push(1)
-    return jsArray  -- JavaScript dostaje prawdziwą array
+    return jsArray  -- JavaScript receives true array
 end
 ```
 
-#### **Eksport Funkcji**
+#### **Exporting Functions**
 ```lua
--- ❌ BŁĄD: Eksport całej tabeli może nie działać
+-- ❌ ERROR: Exporting entire table may not work
 js.global.MyModule = MyModule
 
--- ✅ POPRAWNIE: Eksportuj funkcje indywidualnie
+-- ✅ CORRECT: Export functions individually
 js.global.MyModule = js.new(js.global.Object)
 js.global.MyModule.myFunction = MyModule.myFunction
 js.global.MyModule.ready = true
 ```
 
-### **Debugowanie Lua-JavaScript**
+### **Lua-JavaScript Debugging**
 
-#### **Strona Lua (użyj `print()`)**
+#### **Lua Side (use `print()`)**
 ```lua
 function MyModule.debugFunction(arg)
     print("Function called with:", arg)
     print("Argument type:", type(arg))
     local converted = tonumber(arg)
     print("Converted to number:", converted)
-    -- ... reszta funkcji
+    -- ... rest of function
 end
 ```
 
-#### **Strona JavaScript (użyj `console.log()`)**
+#### **JavaScript Side (use `console.log()`)**
 ```javascript
 try {
     console.log('Calling Lua function with:', inputValue);
@@ -528,28 +528,28 @@ try {
 }
 ```
 
-### **Tabela Konwersji Typów**
+### **Type Conversion Table**
 
-| JavaScript → Lua | Funkcja Lua | Przykład |
-|------------------|-------------|----------|
+| JavaScript → Lua | Lua Function | Example |
+|------------------|-------------|---------|
 | Number | `tonumber(jsValue)` | `tonumber(5) → 5` |
 | String | `tostring(jsValue)` | `tostring("hello") → "hello"` |
 | Boolean | `jsValue and true or false` | `true and true or false → true` |
 
-| Lua → JavaScript | Kod Lua | Rezultat |
-|------------------|---------|----------|
-| Array | `js.new(js.global.Array)` + `push()` | Prawdziwa JS Array |
-| Object | `js.new(js.global.Object)` + properties | Prawdziwy JS Object |
+| Lua → JavaScript | Lua Code | Result |
+|------------------|---------|--------|
+| Array | `js.new(js.global.Array)` + `push()` | True JS Array |
+| Object | `js.new(js.global.Object)` + properties | True JS Object |
 | String | Direct return | JS String |
 | Number | Direct return | JS Number |
 
 ---
 
-## 📄 Licencja
+## 📄 License
 
-Ten projekt jest dostępny na licencji MIT. Zobacz plik LICENSE.md dla szczegółów.
+This project is available under the MIT license. See LICENSE.md for details.
 
-## 🤝 Wkład w Projekt
+## 🤝 Contribution to Project
 
 1. Fork the project
 2. Create feature branch (`git checkout -b feature/AmazingFeature`)

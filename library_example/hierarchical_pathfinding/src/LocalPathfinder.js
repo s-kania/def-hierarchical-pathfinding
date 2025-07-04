@@ -1,104 +1,104 @@
 /**
- * Lokalny pathfinding w obrębie pojedynczego chunka używając A*
- * Znajduje ścieżki na kafelkach wody (0) omijając ląd (1)
+ * Local pathfinding within a single chunk using A*
+ * Finds paths on water tiles (0) avoiding land (1)
  */
 
 export class LocalPathfinder {
     /**
-     * Sprawdź czy pozycja jest dostępna (woda)
-     * @param {Array} chunkData - 2D tablica kafelków
-     * @param {Object} pos - Pozycja {x, y}
+     * Check if position is walkable (water)
+     * @param {Array} chunkData - 2D array of tiles
+     * @param {Object} pos - Position {x, y}
      * @returns {boolean}
      */
     static isWalkable(chunkData, pos) {
-        // Sprawdzamy granice
+        // Check boundaries
         if (pos.x < 0 || pos.y < 0 || 
             pos.y >= chunkData.length || 
             pos.x >= chunkData[0].length) {
             return false;
         }
         
-        // 0 = woda (dostępne), 1 = ląd (niedostępne)
+        // 0 = water (walkable), 1 = land (not walkable)
         return chunkData[pos.y][pos.x] === 0;
     }
 
     /**
-     * Znajdź ścieżkę używając A*
-     * @param {Array} chunkData - 2D tablica kafelków (0=woda, 1=ląd)
+     * Find path using A*
+     * @param {Array} chunkData - 2D array of tiles (0=water, 1=land)
      * @param {Object} startPos - Start {x, y}
-     * @param {Object} endPos - Koniec {x, y}
-     * @returns {Array|null} - Tablica pozycji lub null
+     * @param {Object} endPos - End {x, y}
+     * @returns {Array|null} - Array of positions or null
      */
     static findPath(chunkData, startPos, endPos) {
-        // Sprawdzamy czy start i koniec są dostępne
+        // Check if start and end are walkable
         if (!this.isWalkable(chunkData, startPos) || 
             !this.isWalkable(chunkData, endPos)) {
             return null;
         }
 
-        // Ta sama pozycja
+        // Same position
         if (startPos.x === endPos.x && startPos.y === endPos.y) {
             return [startPos];
         }
 
-        // Struktury dla A*
+        // Structures for A*
         const openList = [];
         const closedSet = new Set();
         const cameFrom = {};
         const gScore = {};
         const fScore = {};
 
-        // Helper do kluczy
+        // Helper for keys
         const key = (pos) => `${pos.x},${pos.y}`;
 
-        // Inicjalizacja startu
+        // Initialize start
         const startKey = key(startPos);
         gScore[startKey] = 0;
         fScore[startKey] = this.heuristic(startPos, endPos);
         openList.push({ pos: startPos, f: fScore[startKey] });
 
-        // Główna pętla A*
+        // Main A* loop
         while (openList.length > 0) {
-            // Znajdź węzeł z najniższym f-score
+            // Find node with lowest f-score
             openList.sort((a, b) => a.f - b.f);
             const current = openList.shift();
             const currentKey = key(current.pos);
 
-            // Znaleźliśmy cel!
+            // Found the goal!
             if (current.pos.x === endPos.x && current.pos.y === endPos.y) {
                 return this.reconstructPath(cameFrom, endPos);
             }
 
             closedSet.add(currentKey);
 
-            // Sprawdzamy sąsiadów (4 kierunki)
+            // Check neighbors (4 directions)
             const neighbors = [
-                { x: current.pos.x, y: current.pos.y - 1 }, // Góra
-                { x: current.pos.x, y: current.pos.y + 1 }, // Dół
-                { x: current.pos.x - 1, y: current.pos.y }, // Lewo
-                { x: current.pos.x + 1, y: current.pos.y }   // Prawo
+                { x: current.pos.x, y: current.pos.y - 1 }, // Up
+                { x: current.pos.x, y: current.pos.y + 1 }, // Down
+                { x: current.pos.x - 1, y: current.pos.y }, // Left
+                { x: current.pos.x + 1, y: current.pos.y }   // Right
             ];
 
             for (const neighbor of neighbors) {
-                // Pomijamy niedostępne
+                // Skip unwalkable
                 if (!this.isWalkable(chunkData, neighbor)) continue;
 
                 const neighborKey = key(neighbor);
                 
-                // Pomijamy już odwiedzone
+                // Skip already visited
                 if (closedSet.has(neighborKey)) continue;
 
-                // Obliczamy koszt
+                // Calculate cost
                 const tentativeG = gScore[currentKey] + 1;
 
-                // Sprawdzamy czy to lepsza ścieżka
+                // Check if this is a better path
                 if (!(neighborKey in gScore) || tentativeG < gScore[neighborKey]) {
-                    // Zapisujemy ścieżkę
+                    // Save path
                     cameFrom[neighborKey] = current.pos;
                     gScore[neighborKey] = tentativeG;
                     fScore[neighborKey] = tentativeG + this.heuristic(neighbor, endPos);
 
-                    // Dodajemy do open list jeśli nie ma
+                    // Add to open list if not already there
                     if (!openList.some(n => n.pos.x === neighbor.x && n.pos.y === neighbor.y)) {
                         openList.push({ pos: neighbor, f: fScore[neighborKey] });
                     }
@@ -106,25 +106,25 @@ export class LocalPathfinder {
             }
         }
 
-        // Nie znaleziono ścieżki
+        // No path found
         return null;
     }
 
     /**
-     * Heurystyka - odległość Manhattan
-     * @param {Object} a - Pozycja {x, y}
-     * @param {Object} b - Pozycja {x, y}
-     * @returns {number} - Odległość
+     * Heuristic - Manhattan distance
+     * @param {Object} a - Position {x, y}
+     * @param {Object} b - Position {x, y}
+     * @returns {number} - Distance
      */
     static heuristic(a, b) {
         return Math.abs(b.x - a.x) + Math.abs(b.y - a.y);
     }
 
     /**
-     * Odtwórz ścieżkę z mapy poprzedników
-     * @param {Object} cameFrom - Mapa poprzedników
-     * @param {Object} endPos - Pozycja końcowa
-     * @returns {Array} - Ścieżka pozycji
+     * Reconstruct path from predecessors map
+     * @param {Object} cameFrom - Predecessors map
+     * @param {Object} endPos - End position
+     * @returns {Array} - Path of positions
      */
     static reconstructPath(cameFrom, endPos) {
         const path = [];

@@ -1,5 +1,5 @@
 /**
- * INSPECTOR PUNKTÓW PRZEJŚCIA - PANEL SZCZEGÓŁÓW
+ * TRANSITION POINTS INSPECTOR - DETAILS PANEL
  */
 
 export class Inspector {
@@ -9,47 +9,47 @@ export class Inspector {
         this.selectedPoint = null;
         this.hoveredPoint = null;
         
-        // Konfiguruj listenery przycisków
+        // Configure button listeners
         this.setupDebugButton();
     }
 
     /**
-     * POKAZUJE INSPECTOR Z DANYMI PUNKTU PRZEJŚCIA
+     * SHOWS INSPECTOR WITH TRANSITION POINT DATA
      */
     showInspector(point, currentGameDataManager = null) {
         if (!this.inspectorPanel) return;
         
-        // Użyj aktualnego gameDataManager jeśli został przekazany, inaczej użyj zapisanego
+        // Use current gameDataManager if passed, otherwise use saved one
         const gameDataManager = currentGameDataManager || this.gameDataManager;
         
-        // Wygeneruj unikalne ID dla punktu używając aktualnego GameDataManager jeśli dostępny
+        // Generate unique ID for point using current GameDataManager if available
         let pointId;
         let chunksDisplay;
         
         if (gameDataManager) {
-            // Użyj lepszego systemu ID z aktualnego GameDataManager
+            // Use better ID system from current GameDataManager
             const gdPoint = this.findGameDataPoint(point, gameDataManager);
             if (gdPoint) {
                 pointId = gdPoint.id;
                 chunksDisplay = `${gdPoint.chunks[0]} ↔ ${gdPoint.chunks[1]}`;
             } else {
-                // Fallback na stary format
+                // Fallback to old format
                 pointId = `${point.chunkA}-${point.chunkB}-${point.direction}`;
                 chunksDisplay = `${point.chunkA} ↔ ${point.chunkB}`;
             }
         } else {
-            // Stary format jako fallback
+            // Old format as fallback
             pointId = `${point.chunkA}-${point.chunkB}-${point.direction}`;
             chunksDisplay = `${point.chunkA} ↔ ${point.chunkB}`;
         }
         
-        // Zaktualizuj zawartość inspectora
+        // Update inspector content
         this.updateInspectorContent(pointId, point, chunksDisplay, gameDataManager);
         
-        // Pokaż info punktu, ukryj placeholder
+        // Show point info, hide placeholder
         this.showPointInfo();
         
-        // Aktualizuj style gdy pokazujemy aktywny punkt
+        // Update styles when showing active point
         const isShowingSelectedPoint = this.selectedPoint && 
             this.selectedPoint.chunkA === point.chunkA && 
             this.selectedPoint.chunkB === point.chunkB && 
@@ -60,7 +60,7 @@ export class Inspector {
     }
 
     /**
-     * ZNAJDUJE ODPOWIEDNI PUNKT W GAMEDATA MANAGER
+     * FINDS CORRESPONDING POINT IN GAMEDATA MANAGER
      */
     findGameDataPoint(point, gameDataManager = null) {
         const gdm = gameDataManager || this.gameDataManager;
@@ -68,22 +68,22 @@ export class Inspector {
             return null;
         }
         
-        // Szukaj punktu przejścia w GameDataManager który odpowiada naszemu punktowi
+        // Search for transition point in GameDataManager that corresponds to our point
         return gdm.transitionPoints.find(gdPoint => {
-            // Sprawdź czy chunk'i się zgadzają (w dowolnej kolejności)
+            // Check if chunks match (in any order)
             const [gdChunkA, gdChunkB] = gdPoint.chunks;
             const pointMatches = (gdChunkA === point.chunkA && gdChunkB === point.chunkB) ||
                                 (gdChunkA === point.chunkB && gdChunkB === point.chunkA);
             
             if (!pointMatches) return false;
             
-            // Sprawdź pozycję na podstawie kierunku
+            // Check position based on direction
             if (point.direction === 'horizontal') {
-                // Dla punktów poziomych pozycja to Y względem chunka
+                // For horizontal points, position is Y relative to chunk
                 const localY = point.y % gdm.chunkHeight;
                 return gdPoint.position === localY;
             } else if (point.direction === 'vertical') {
-                // Dla punktów pionowych pozycja to X względem chunka  
+                // For vertical points, position is X relative to chunk  
                 const localX = point.x % gdm.chunkWidth;
                 return gdPoint.position === localX;
             }
@@ -93,24 +93,24 @@ export class Inspector {
     }
 
     /**
-     * UKRYWA INSPECTOR (POKAZUJE PLACEHOLDER)
+     * HIDES INSPECTOR (SHOWS PLACEHOLDER)
      */
     hideInspector() {
         if (!this.inspectorPanel) return;
         
-        // Jeśli jest zaznaczony punkt, pokaż jego dane zamiast ukrywać inspektor
+        // If there's a selected point, show its data instead of hiding inspector
         if (this.selectedPoint) {
             this.showInspector(this.selectedPoint);
             return;
         }
         
-        // Ukryj info punktu, pokaż placeholder
+        // Hide point info, show placeholder
         this.showPlaceholder();
         this.updateInspectorStyles(false);
     }
 
     /**
-     * AKTUALIZUJE ZAWARTOŚĆ INSPECTORA
+     * UPDATES INSPECTOR CONTENT
      */
     updateInspectorContent(pointId, point, chunksDisplay, gameDataManager = null) {
         const elements = this.getInspectorElements();
@@ -118,40 +118,40 @@ export class Inspector {
         if (elements.detailId) elements.detailId.textContent = pointId;
         if (elements.detailChunks) elements.detailChunks.textContent = chunksDisplay;
         if (elements.detailPosition) elements.detailPosition.textContent = `(${point.x}, ${point.y})`;
-        if (elements.detailDirection) elements.detailDirection.textContent = point.direction === 'horizontal' ? 'Poziomo' : 'Pionowo';
-        if (elements.detailSegmentLength) elements.detailSegmentLength.textContent = `${point.segmentLength} kafelków`;
+        if (elements.detailDirection) elements.detailDirection.textContent = point.direction === 'horizontal' ? 'Horizontal' : 'Vertical';
+        if (elements.detailSegmentLength) elements.detailSegmentLength.textContent = `${point.segmentLength} tiles`;
         
-        // Dodaj informacje z GameDataManager jeśli dostępne
+        // Add information from GameDataManager if available
         if (gameDataManager) {
             const gdPoint = this.findGameDataPoint(point, gameDataManager);
             if (gdPoint && elements.detailConnections) {
-                elements.detailConnections.textContent = `${gdPoint.connections.length} połączeń`;
+                elements.detailConnections.textContent = `${gdPoint.connections.length} connections`;
             } else if (elements.detailConnections) {
-                elements.detailConnections.textContent = 'Brak danych';
+                elements.detailConnections.textContent = 'No data';
             }
             
-            // Ustaw stan przycisku debug
+            // Set debug button state
             if (elements.debugConnectionsBtn) {
                 elements.debugConnectionsBtn.disabled = !gdPoint;
                 elements.debugConnectionsBtn.title = gdPoint ? 
-                    'Wyświetl szczegóły połączeń w konsoli' : 
-                    'Punkt nie znaleziony w GameDataManager';
+                    'Display connection details in console' : 
+                    'Point not found in GameDataManager';
             }
         } else {
             if (elements.detailConnections) {
-                elements.detailConnections.textContent = 'GameDataManager niedostępny';
+                elements.detailConnections.textContent = 'GameDataManager unavailable';
             }
             
-            // Wyłącz przycisk debug jeśli GameDataManager niedostępny
+            // Disable debug button if GameDataManager unavailable
             if (elements.debugConnectionsBtn) {
                 elements.debugConnectionsBtn.disabled = true;
-                elements.debugConnectionsBtn.title = 'GameDataManager niedostępny';
+                elements.debugConnectionsBtn.title = 'GameDataManager unavailable';
             }
         }
     }
 
     /**
-     * POBIERA ELEMENTY DOM INSPECTORA
+     * GETS INSPECTOR DOM ELEMENTS
      */
     getInspectorElements() {
         return {
@@ -169,7 +169,7 @@ export class Inspector {
     }
 
     /**
-     * POKAZUJE INFO PUNKTU
+     * SHOWS POINT INFO
      */
     showPointInfo() {
         const elements = this.getInspectorElements();
@@ -179,7 +179,7 @@ export class Inspector {
     }
 
     /**
-     * POKAZUJE PLACEHOLDER
+     * SHOWS PLACEHOLDER
      */
     showPlaceholder() {
         const elements = this.getInspectorElements();
@@ -192,12 +192,12 @@ export class Inspector {
     }
 
     /**
-     * AKTUALIZUJE STYLE INSPECTORA
+     * UPDATES INSPECTOR STYLES
      */
     updateInspectorStyles(isShowingSelectedPoint) {
         const elements = this.getInspectorElements();
         
-        // Style dla elementów danych punktu
+        // Styles for point data elements
         if (elements.pointInfo) {
             if (isShowingSelectedPoint) {
                 elements.pointInfo.classList.add('has-selection');
@@ -206,7 +206,7 @@ export class Inspector {
             }
         }
         
-        // Style dla nagłówka inspektora (tylko napis)
+        // Styles for inspector header (only text)
         if (elements.inspectorCard) {
             if (isShowingSelectedPoint) {
                 elements.inspectorCard.classList.add('has-selection');
@@ -217,7 +217,7 @@ export class Inspector {
     }
 
     /**
-     * USTAWIA ZAZNACZONY PUNKT
+     * SETS SELECTED POINT
      */
     setSelectedPoint(point) {
         this.selectedPoint = point;
@@ -227,14 +227,14 @@ export class Inspector {
     }
 
     /**
-     * USTAWIA NAJECHANY PUNKT
+     * SETS HOVERED POINT
      */
     setHoveredPoint(point) {
         this.hoveredPoint = point;
     }
 
     /**
-     * CZYŚCI ZAZNACZENIE
+     * CLEARS SELECTION
      */
     clearSelection() {
         this.selectedPoint = null;
@@ -243,7 +243,7 @@ export class Inspector {
     }
 
     /**
-     * GETTERY
+     * GETTERS
      */
     getSelectedPoint() {
         return this.selectedPoint;
@@ -254,7 +254,7 @@ export class Inspector {
     }
 
     /**
-     * SPRAWDZA CZY PUNKT JEST ZAZNACZONY
+     * CHECKS IF POINT IS SELECTED
      */
     isPointSelected(point) {
         return this.selectedPoint && 
@@ -265,14 +265,14 @@ export class Inspector {
     }
 
     /**
-     * USTAWIA REFERENCJĘ DO GAMEDATA MANAGER
+     * SETS REFERENCE TO GAMEDATA MANAGER
      */
     setGameDataManager(gameDataManager) {
         this.gameDataManager = gameDataManager;
     }
 
     /**
-     * KONFIGURUJE PRZYCISK DEBUG POŁĄCZEŃ
+     * CONFIGURES DEBUG CONNECTION BUTTON
      */
     setupDebugButton() {
         const debugBtn = document.getElementById('debugConnectionsBtn');
@@ -284,26 +284,26 @@ export class Inspector {
     }
 
     /**
-     * OBSŁUGUJE KLIKNIĘCIE PRZYCISKU DEBUG POŁĄCZEŃ
+     * HANDLES DEBUG CONNECTION BUTTON CLICK
      */
     onDebugConnections() {
         if (!this.selectedPoint) {
-            console.warn('🔍 Debug Połączeń: Brak zaznaczonego punktu przejścia');
+            console.warn('🔍 Debug Connections: No selected transition point');
             return;
         }
 
         if (!this.gameDataManager) {
-            console.warn('🔍 Debug Połączeń: GameDataManager niedostępny');
+            console.warn('🔍 Debug Connections: GameDataManager unavailable');
             return;
         }
 
-        // Znajdź odpowiedni punkt w GameDataManager
+        // Find corresponding point in GameDataManager
         const gdPoint = this.findGameDataPoint(this.selectedPoint, this.gameDataManager);
         if (gdPoint) {
     
             this.gameDataManager.printPointConnections(gdPoint.id);
         } else {
-            console.warn('🔍 Debug Połączeń: Nie znaleziono punktu w GameDataManager');
+            console.warn('🔍 Debug Connections: Point not found in GameDataManager');
     
         }
     }

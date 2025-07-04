@@ -1,5 +1,5 @@
 /**
- * GŁÓWNY GENERATOR MAP - CENTRALNA LOGIKA GENEROWANIA
+ * MAIN MAP GENERATOR - CENTRAL GENERATION LOGIC
  */
 
 import { ISLAND_PRESETS, getIslandSizeMultiplier } from '../config/Settings.js';
@@ -17,17 +17,17 @@ export class MapGenerator {
         this.baseMap = null;
         this.mapDimensions = { width: 0, height: 0 };
 
-        // Inicjalizacja seeda i generatora losowego
+        // Initialize seed and random generator
         this.seed = settings.seed != null ? settings.seed : Date.now();
         this.random = createSeededRandom(this.seed);
     }
 
     /**
-     * USTAWIA NOWY SEED I AKTUALIZUJE PRNG
+     * SETS NEW SEED AND UPDATES PRNG
      */
     setSeed(newSeed) {
         this.seed = newSeed;
-        // Zaktualizuj w settings dla spójności
+        // Update in settings for consistency
         if (this.settings) {
             this.settings.seed = newSeed;
         }
@@ -35,31 +35,31 @@ export class MapGenerator {
     }
 
     /**
-     * GŁÓWNA METODA GENEROWANIA MAPY
+     * MAIN MAP GENERATION METHOD
      * 
      * FLOW: 
-     * 1. Oblicza rozmiar całej mapy (chunkCols * chunkSize x chunkRows * chunkSize)
-     * 2. Generuje bazową mapę -> this.baseMap (Array[width*height])
-     * 3. Aplikuje smoothing -> finalMap
+     * 1. Calculate total map size (chunkCols * chunkSize x chunkRows * chunkSize)
+     * 2. Generate base map -> this.baseMap (Array[width*height])
+     * 3. Apply smoothing -> finalMap
      * 
-     * WYNIK: this.baseMap, this.mapDimensions są zaktualizowane
+     * RESULT: this.baseMap, this.mapDimensions are updated
      */
     generateMap() {
-        // Oblicz rozmiar całej mapy w tiles
+        // Calculate total map size in tiles
         const totalWidth = this.settings.chunkCols * this.settings.chunkSize;
         const totalHeight = this.settings.chunkRows * this.settings.chunkSize;
         this.mapDimensions = { width: totalWidth, height: totalHeight };
         
-        // Upewnij się, że generator losowy jest ustawiony na aktualny seed
+        // Make sure random generator is set to current seed
         if (!this.random) {
             this.random = createSeededRandom(this.seed);
         }
         
-        // KROK 1: Generuj bazową mapę (random noise + island size adjustment)
-        // REZULTAT: this.baseMap = [0,1,0,1,1,0...] (width*height elementów)
+        // STEP 1: Generate base map (random noise + island size adjustment)
+        // RESULT: this.baseMap = [0,1,0,1,1,0...] (width*height elements)
         this.baseMap = this.generateBaseMap(totalWidth, totalHeight);
         
-        // KROK 2: Aplikuj smoothing (cellular automata + effects)
+        // STEP 2: Apply smoothing (cellular automata + effects)
         // INPUT: this.baseMap, OUTPUT: finalMap
         const finalMap = this.applySmoothing(this.baseMap, totalWidth, totalHeight);
         
@@ -67,9 +67,9 @@ export class MapGenerator {
     }
 
     /**
-     * APLIKUJE SMOOTHING DO ISTNIEJĄCEJ MAPY (bez regeneracji this.baseMap)
+     * APPLIES SMOOTHING TO EXISTING MAP (without regenerating this.baseMap)
      * 
-     * Używane gdy zmieniają się tylko parametry smoothing:
+     * Used when only smoothing parameters change:
      * - iterations, neighborThreshold, archipelagoMode
      */
     applySmoothingToExistingMap() {
@@ -78,15 +78,15 @@ export class MapGenerator {
             return this.generateMap();
         }
         
-        // KROK 1: Aplikuj smoothing do istniejącej this.baseMap
-        // INPUT: this.baseMap (niezmieniona), OUTPUT: finalMap
+        // STEP 1: Apply smoothing to existing this.baseMap
+        // INPUT: this.baseMap (unchanged), OUTPUT: finalMap
         const finalMap = this.applySmoothing(this.baseMap, this.mapDimensions.width, this.mapDimensions.height);
 
         return finalMap;
     }
 
     /**
-     * GENERUJE BAZOWĄ MAPĘ
+     * GENERATES BASE MAP
      */
     generateBaseMap(width, height) {
         if (this.islandSettings.preset !== 'custom') {
@@ -102,7 +102,7 @@ export class MapGenerator {
     }
 
     /**
-     * GENERUJE BAZOWĄ MAPĘ Z PRESETEM
+     * GENERATES BASE MAP WITH PRESET
      */
     generateBaseMapWithPreset(width, height, presetName) {
         const preset = ISLAND_PRESETS[presetName];
@@ -120,7 +120,7 @@ export class MapGenerator {
     }
 
     /**
-     * GENERUJE BAZOWĄ MAPĘ Z ZAAWANSOWANYMI PARAMETRAMI
+     * GENERATES BASE MAP WITH ADVANCED PARAMETERS
      */
     generateBaseMapAdvanced(width, height, landDensity, islandSize) {
         // Adjust land density based on island size
@@ -137,7 +137,7 @@ export class MapGenerator {
     }
 
     /**
-     * APLIKUJE SMOOTHING (CELLULAR AUTOMATA + EFFECTS)
+     * APPLIES SMOOTHING (CELLULAR AUTOMATA + EFFECTS)
      */
     applySmoothing(baseMap, width, height) {
         let tiles = cloneArray(baseMap); // Start with copy of base map
@@ -164,7 +164,7 @@ export class MapGenerator {
     }
 
     /**
-     * GETTERY DLA DANYCH MAPY
+     * GETTERS FOR MAP DATA
      */
     getBaseMap() {
         return this.baseMap;
@@ -175,7 +175,7 @@ export class MapGenerator {
     }
 
     /**
-     * AKTUALIZUJE USTAWIENIA
+     * UPDATES SETTINGS
      */
     updateSettings(newSettings) {
         this.settings = { ...this.settings, ...newSettings };

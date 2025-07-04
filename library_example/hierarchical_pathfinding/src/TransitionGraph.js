@@ -1,10 +1,10 @@
 /**
- * Graf punktów przejścia dla hierarchical pathfinding
- * Minimalna implementacja A* na grafie pre-computed connections
+ * Transition points graph for hierarchical pathfinding
+ * Minimal A* implementation on pre-computed connections graph
  */
 
 /**
- * Prosta implementacja Min Heap dla A*
+ * Simple Min Heap implementation for A*
  */
 class MinHeap {
     constructor() {
@@ -68,12 +68,12 @@ class MinHeap {
 
 export class TransitionGraph {
     constructor(transitionPoints, gridConfig = null) {
-        // Przechowujemy punkty i ich połączenia
+        // Store points and their connections
         this.points = new Map(); // id -> point
         this.graph = new Map();  // id -> connections
         this.gridConfig = gridConfig;
         
-        // Budujemy struktury danych
+        // Build data structures
         for (const point of transitionPoints) {
             this.points.set(point.id, point);
             this.graph.set(point.id, point.connections || []);
@@ -81,29 +81,29 @@ export class TransitionGraph {
     }
     
     /**
-     * Główna funkcja - znajdź ścieżkę między punktami używając A*
-     * @param {string} startId - ID punktu startowego
-     * @param {string} endId - ID punktu końcowego
-     * @returns {Array|null} - Tablica ID punktów lub null
+     * Main function - find path between points using A*
+     * @param {string} startId - Start point ID
+     * @param {string} endId - End point ID
+     * @returns {Array|null} - Array of point IDs or null
      */
     findPath(startId, endId) {
-        // Przypadek trywialny
+        // Trivial case
         if (startId === endId) {
             return [startId];
         }
         
-        // Sprawdzamy czy punkty istnieją
+        // Check if points exist
         if (!this.points.has(startId) || !this.points.has(endId)) {
             return null;
         }
         
-        // Implementacja A*
+        // A* implementation
         const openSet = new MinHeap();
         const closedSet = new Set();
         const cameFrom = new Map();
         const gScore = new Map();
         
-        // Inicjalizujemy start
+        // Initialize start
         gScore.set(startId, 0);
         openSet.push({ 
             id: startId, 
@@ -111,14 +111,14 @@ export class TransitionGraph {
         });
         
         let iterations = 0;
-        const maxIterations = 1000; // zabezpieczenie przed nieskończoną pętlą
+        const maxIterations = 1000; // protection against infinite loop
         
-        // Główna pętla A*
+        // Main A* loop
         while (!openSet.isEmpty() && iterations < maxIterations) {
             iterations++;
             const current = openSet.pop();
             
-            // Znaleźliśmy cel!
+            // Found the goal!
             if (current.id === endId) {
                 const path = this.reconstructPath(cameFrom, endId);
                 return path;
@@ -126,36 +126,36 @@ export class TransitionGraph {
             
             closedSet.add(current.id);
             
-            // Sprawdzamy wszystkie połączenia
+            // Check all connections
             const connections = this.graph.get(current.id) || [];
             
             for (const connection of connections) {
                 const neighbor = connection.id;
                 const weight = connection.weight || 1;
                 
-                // Pomijamy już odwiedzone
+                // Skip already visited
                 if (closedSet.has(neighbor)) {
                     continue;
                 }
                 
-                // Obliczamy nowy koszt
+                // Calculate new cost
                 const currentG = gScore.get(current.id) || 0;
                 const tentativeG = currentG + weight;
                 
-                // Sprawdzamy czy mamy lepszą ścieżkę
+                // Check if we have a better path
                 const existingG = gScore.get(neighbor);
                 if (existingG !== undefined && tentativeG >= existingG) {
                     continue;
                 }
                 
-                // Aktualizujemy ścieżkę
+                // Update path
                 cameFrom.set(neighbor, current.id);
                 gScore.set(neighbor, tentativeG);
                 
                 const heuristicValue = this.heuristic(neighbor, endId);
                 const fScore = tentativeG + heuristicValue;
                 
-                // Dodajemy do kolejki priorytetowej
+                // Add to priority queue
                 openSet.push({
                     id: neighbor,
                     f: fScore
@@ -163,14 +163,14 @@ export class TransitionGraph {
             }
         }
         
-        // Nie znaleźliśmy ścieżki
+        // No path found
         return null;
     }
     
     /**
-     * Pobierz punkty przejścia w danym chunku
-     * @param {string} chunkId - ID chunka
-     * @returns {Array} - Tablica punktów
+     * Get transition points in a given chunk
+     * @param {string} chunkId - Chunk ID
+     * @returns {Array} - Array of points
      */
     getPointsInChunk(chunkId) {
         const result = [];
@@ -183,19 +183,19 @@ export class TransitionGraph {
     }
     
     /**
-     * Pobierz punkt po ID
-     * @param {string} pointId - ID punktu
-     * @returns {Object|null} - Punkt lub null
+     * Get point by ID
+     * @param {string} pointId - Point ID
+     * @returns {Object|null} - Point or null
      */
     getPoint(pointId) {
         return this.points.get(pointId) || null;
     }
     
     /**
-     * Heurystyka dla A* - odległość Manhattan między chunkami
-     * @param {string} pointId1 - ID pierwszego punktu
-     * @param {string} pointId2 - ID drugiego punktu
-     * @returns {number} - Szacowana odległość
+     * Heuristic for A* - Manhattan distance between chunks
+     * @param {string} pointId1 - First point ID
+     * @param {string} pointId2 - Second point ID
+     * @returns {number} - Estimated distance
      */
     heuristic(pointId1, pointId2) {
         const point1 = this.points.get(pointId1);
@@ -205,14 +205,14 @@ export class TransitionGraph {
             return 0;
         }
         
-        // Używamy pierwszego chunka z każdego punktu
+        // Use first chunk from each point
         const chunk1 = this.parseChunkId(point1.chunks[0]);
         const chunk2 = this.parseChunkId(point2.chunks[0]);
         
-        // Odległość Manhattan w chunkach
+        // Manhattan distance in chunks
         const chunkDistance = Math.abs(chunk2.x - chunk1.x) + Math.abs(chunk2.y - chunk1.y);
         
-        // Skalujemy jeśli mamy konfigurację
+        // Scale if we have configuration
         if (this.gridConfig) {
             const scale = (this.gridConfig.chunkSize * this.gridConfig.tileSize) * 0.5;
             return chunkDistance * scale;
@@ -222,10 +222,10 @@ export class TransitionGraph {
     }
     
     /**
-     * Odtwórz ścieżkę z mapy poprzedników
-     * @param {Map} cameFrom - Mapa poprzedników
-     * @param {string} endId - ID końca
-     * @returns {Array} - Ścieżka ID punktów
+     * Reconstruct path from predecessors map
+     * @param {Map} cameFrom - Predecessors map
+     * @param {string} endId - End ID
+     * @returns {Array} - Path of point IDs
      */
     reconstructPath(cameFrom, endId) {
         const path = [endId];
@@ -240,8 +240,8 @@ export class TransitionGraph {
     }
     
     /**
-     * Parsuj ID chunka na współrzędne
-     * @param {string} chunkId - ID w formacie "x,y"
+     * Parse chunk ID to coordinates
+     * @param {string} chunkId - ID in format "x,y"
      * @returns {Object} - {x, y}
      */
     parseChunkId(chunkId) {

@@ -1,23 +1,23 @@
 /**
- * Uproszczone narzędzia współrzędnych dla hierarchical pathfinding
- * Zawiera tylko niezbędne funkcje zgodnie z zasadą KISS
+ * Simplified coordinate utilities for hierarchical pathfinding
+ * Contains only essential functions following KISS principle
  */
 
 export class CoordUtils {
     /**
-     * Konwertuj globalną pozycję na ID chunka
-     * @param {Object} globalPos - Pozycja globalna {x, y} lub obiekt z chunkX/chunkY
-     * @param {number} chunkSize - Rozmiar chunka w kafelkach
-     * @param {number} tileSize - Rozmiar kafelka w jednostkach świata
-     * @returns {string} - ID chunka "x,y"
+     * Convert global position to chunk ID
+     * @param {Object} globalPos - Global position {x, y} or object with chunkX/chunkY
+     * @param {number} chunkSize - Chunk size in tiles
+     * @param {number} tileSize - Tile size in world units
+     * @returns {string} - Chunk ID "x,y"
      */
     static globalToChunkId(globalPos, chunkSize, tileSize) {
-        // Sprawdź czy pozycja już ma obliczone współrzędne chunka
+        // Check if position already has calculated chunk coordinates
         if (globalPos.chunkX !== undefined && globalPos.chunkY !== undefined) {
             return `${globalPos.chunkX},${globalPos.chunkY}`;
         }
         
-        // Oblicz z pozycji globalnej
+        // Calculate from global position
         const chunkWorldSize = chunkSize * tileSize;
         const chunkX = Math.floor(globalPos.x / chunkWorldSize);
         const chunkY = Math.floor(globalPos.y / chunkWorldSize);
@@ -25,15 +25,15 @@ export class CoordUtils {
     }
     
     /**
-     * Konwertuj globalną pozycję na lokalną w obrębie chunka
-     * @param {Object} globalPos - Pozycja globalna {x, y} lub obiekt z localX/localY
-     * @param {string} chunkId - ID chunka
-     * @param {number} chunkSize - Rozmiar chunka w kafelkach
-     * @param {number} tileSize - Rozmiar kafelka w jednostkach świata
-     * @returns {Object} - Pozycja lokalna {x, y}
+     * Convert global position to local position within chunk
+     * @param {Object} globalPos - Global position {x, y} or object with localX/localY
+     * @param {string} chunkId - Chunk ID
+     * @param {number} chunkSize - Chunk size in tiles
+     * @param {number} tileSize - Tile size in world units
+     * @returns {Object} - Local position {x, y}
      */
     static globalToLocal(globalPos, chunkId, chunkSize, tileSize) {
-        // Sprawdź czy pozycja już ma obliczone współrzędne lokalne
+        // Check if position already has calculated local coordinates
         if (globalPos.localX !== undefined && globalPos.localY !== undefined) {
             const expectedChunkId = globalPos.chunkX !== undefined && globalPos.chunkY !== undefined 
                 ? `${globalPos.chunkX},${globalPos.chunkY}` 
@@ -44,7 +44,7 @@ export class CoordUtils {
             }
         }
         
-        // Oblicz pozycję lokalną
+        // Calculate local position
         const chunkCoords = globalPos.chunkX !== undefined && globalPos.chunkY !== undefined
             ? { x: globalPos.chunkX, y: globalPos.chunkY }
             : this.chunkIdToCoords(chunkId);
@@ -53,7 +53,7 @@ export class CoordUtils {
         const localX = Math.floor((globalPos.x - chunkCoords.x * chunkWorldSize) / tileSize);
         const localY = Math.floor((globalPos.y - chunkCoords.y * chunkWorldSize) / tileSize);
         
-        // Clamp do granic chunka
+        // Clamp to chunk boundaries
         return {
             x: Math.max(0, Math.min(chunkSize - 1, localX)),
             y: Math.max(0, Math.min(chunkSize - 1, localY))
@@ -61,12 +61,12 @@ export class CoordUtils {
     }
     
     /**
-     * Konwertuj lokalną pozycję na globalną
-     * @param {Object} localPos - Pozycja lokalna {x, y}
-     * @param {string} chunkId - ID chunka
-     * @param {number} chunkSize - Rozmiar chunka w kafelkach
-     * @param {number} tileSize - Rozmiar kafelka w jednostkach świata
-     * @returns {Object} - Pozycja globalna {x, y, z}
+     * Convert local position to global position
+     * @param {Object} localPos - Local position {x, y}
+     * @param {string} chunkId - Chunk ID
+     * @param {number} chunkSize - Chunk size in tiles
+     * @param {number} tileSize - Tile size in world units
+     * @returns {Object} - Global position {x, y, z}
      */
     static localToGlobal(localPos, chunkId, chunkSize, tileSize) {
         const chunkCoords = this.chunkIdToCoords(chunkId);
@@ -80,9 +80,9 @@ export class CoordUtils {
     }
     
     /**
-     * Konwertuj ID chunka na współrzędne
-     * @param {string} chunkId - ID chunka "x,y"
-     * @returns {Object} - Współrzędne chunka {x, y}
+     * Convert chunk ID to coordinates
+     * @param {string} chunkId - Chunk ID "x,y"
+     * @returns {Object} - Chunk coordinates {x, y}
      */
     static chunkIdToCoords(chunkId) {
         const [x, y] = chunkId.split(',').map(Number);
@@ -90,28 +90,28 @@ export class CoordUtils {
     }
     
     /**
-     * Konwertuj współrzędne chunka na ID
-     * @param {number} x - Współrzędna X chunka
-     * @param {number} y - Współrzędna Y chunka
-     * @returns {string} - ID chunka "x,y"
+     * Convert chunk coordinates to ID
+     * @param {number} x - Chunk X coordinate
+     * @param {number} y - Chunk Y coordinate
+     * @returns {string} - Chunk ID "x,y"
      */
     static coordsToChunkId(x, y) {
         return `${x},${y}`;
     }
     
     /**
-     * Oblicz pozycję punktu przejścia w chunku
-     * @param {Object} point - Punkt przejścia
-     * @param {string} chunkId - ID chunka
-     * @param {number} chunkSize - Rozmiar chunka
-     * @returns {Object|null} - Pozycja lokalna {x, y} lub null
+     * Calculate transition point position in chunk
+     * @param {Object} point - Transition point
+     * @param {string} chunkId - Chunk ID
+     * @param {number} chunkSize - Chunk size
+     * @returns {Object|null} - Local position {x, y} or null
      */
     static getTransitionLocalPosition(point, chunkId, chunkSize) {
         if (!point.chunks.includes(chunkId)) {
             return null;
         }
         
-        // Znajdź drugi chunk do określenia kierunku
+        // Find second chunk to determine direction
         const otherChunkId = point.chunks.find(id => id !== chunkId);
         if (!otherChunkId) {
             return null;
@@ -120,7 +120,7 @@ export class CoordUtils {
         const coords = this.chunkIdToCoords(chunkId);
         const otherCoords = this.chunkIdToCoords(otherChunkId);
         
-        // Określ pozycję na krawędzi chunka
+        // Determine position on chunk edge
         if (otherCoords.x > coords.x) {
             return { x: chunkSize - 1, y: point.position };
         } else if (otherCoords.x < coords.x) {
@@ -135,12 +135,12 @@ export class CoordUtils {
     }
     
     /**
-     * Oblicz globalną pozycję punktu przejścia
-     * @param {Object} point - Punkt przejścia
-     * @param {string} chunkId - ID chunka
-     * @param {number} chunkSize - Rozmiar chunka w kafelkach
-     * @param {number} tileSize - Rozmiar kafelka w jednostkach świata
-     * @returns {Object|null} - Pozycja globalna {x, y, z} lub null
+     * Calculate global position of transition point
+     * @param {Object} point - Transition point
+     * @param {string} chunkId - Chunk ID
+     * @param {number} chunkSize - Chunk size in tiles
+     * @param {number} tileSize - Tile size in world units
+     * @returns {Object|null} - Global position {x, y, z} or null
      */
     static getTransitionGlobalPosition(point, chunkId, chunkSize, tileSize) {
         const localPos = this.getTransitionLocalPosition(point, chunkId, chunkSize);

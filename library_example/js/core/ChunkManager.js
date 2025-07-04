@@ -1,5 +1,5 @@
 /**
- * MENEDŻER CHUNKÓW - PODZIAŁ MAPY I RENDEROWANIE
+ * CHUNK MANAGER - MAP DIVISION AND RENDERING
  */
 
 import { COLORS, RENDER_CONSTANTS } from '../config/Settings.js';
@@ -10,35 +10,35 @@ export class ChunkManager {
     }
 
     /**
-     * DZIELI WIELKĄ MAPĘ NA CHUNKI
+     * DIVIDES LARGE MAP INTO CHUNKS
      * 
-     * INPUT: unifiedMap - Array[totalWidth * totalHeight] z wartościami 0/1
-     * OUTPUT: Array chunków [{id, x, y, tiles}, ...] 
+     * INPUT: unifiedMap - Array[totalWidth * totalHeight] with values 0/1
+     * OUTPUT: Array of chunks [{id, x, y, tiles}, ...] 
      */
     splitMapIntoChunks(unifiedMap, totalWidth, totalHeight) {
         const chunks = [];
         const chunkSize = this.settings.chunkSize;
         
-        // Iteruj przez siatkę chunków (chunkRows x chunkCols)
+        // Iterate through chunk grid (chunkRows x chunkCols)
         for (let chunkY = 0; chunkY < this.settings.chunkRows; chunkY++) {
             for (let chunkX = 0; chunkX < this.settings.chunkCols; chunkX++) {
                 const chunk = {
-                    id: `${chunkX},${chunkY}`,     // ID chunka jako string
-                    x: chunkX,                     // Pozycja X w siatce chunków 
-                    y: chunkY,                     // Pozycja Y w siatce chunków
-                    tiles: []                      // Array[chunkSize²] dla tego chunka
+                    id: `${chunkX},${chunkY}`,     // Chunk ID as string
+                    x: chunkX,                     // X position in chunk grid
+                    y: chunkY,                     // Y position in chunk grid
+                    tiles: []                      // Array[chunkSize²] for this chunk
                 };
                 
-                // Wyciągnij tiles dla tego chunka z wielkiej mapy
+                // Extract tiles for this chunk from the large map
                 for (let localY = 0; localY < chunkSize; localY++) {
                     for (let localX = 0; localX < chunkSize; localX++) {
-                        // Przelicz współrzędne lokalne na globalne
+                        // Convert local coordinates to global
                         const globalX = chunkX * chunkSize + localX;
                         const globalY = chunkY * chunkSize + localY;
                         const globalIndex = globalY * totalWidth + globalX;
                         const localIndex = localY * chunkSize + localX;
                         
-                        // Skopiuj tile z wielkiej mapy do chunka
+                        // Copy tile from large map to chunk
                         chunk.tiles[localIndex] = unifiedMap[globalIndex];
                     }
                 }
@@ -47,11 +47,11 @@ export class ChunkManager {
             }
         }
         
-        return chunks; // Array chunków gotowy do this.chunks
+        return chunks; // Array of chunks ready for this.chunks
     }
 
     /**
-     * RENDERUJE POJEDYNCZY CHUNK
+     * RENDERS SINGLE CHUNK
      */
     renderChunk(ctx, chunk, gapSize = RENDER_CONSTANTS.GAP_SIZE) {
         const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
@@ -91,7 +91,7 @@ export class ChunkManager {
     }
 
     /**
-     * OBLICZA ROZMIARY CANVAS DLA CHUNKÓW
+     * CALCULATES CANVAS DIMENSIONS FOR CHUNKS
      */
     calculateCanvasSize(gapSize = RENDER_CONSTANTS.GAP_SIZE) {
         const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
@@ -106,7 +106,7 @@ export class ChunkManager {
     }
 
     /**
-     * OBLICZA POZYCJĘ CHUNKA W PIKSELACH
+     * CALCULATES CHUNK POSITION IN PIXELS
      */
     getChunkPixelPosition(chunkX, chunkY, gapSize = RENDER_CONSTANTS.GAP_SIZE) {
         const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
@@ -118,7 +118,7 @@ export class ChunkManager {
     }
 
     /**
-     * WALIDUJE CHUNK
+     * VALIDATES CHUNK
      */
     validateChunk(chunk) {
         if (!chunk || typeof chunk !== 'object') {
@@ -137,14 +137,14 @@ export class ChunkManager {
     }
 
     /**
-     * ZNAJDUJE CHUNK PO ID
+     * FINDS CHUNK BY ID
      */
     findChunkById(chunks, chunkId) {
         return chunks.find(chunk => chunk.id === chunkId);
     }
 
     /**
-     * ZNAJDUJE CHUNK PO WSPÓŁRZĘDNYCH SIATKI
+     * FINDS CHUNK BY GRID COORDINATES
      */
     findChunkByPosition(chunks, x, y) {
         return chunks.find(chunk => chunk.x === x && chunk.y === y);

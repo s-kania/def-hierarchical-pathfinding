@@ -1,31 +1,31 @@
 /**
- * KONFIGURACJA I PRESETY - CENTRALNE MIEJSCE USTAWIEŃ
+ * CONFIGURATION AND PRESETS - CENTRAL SETTINGS LOCATION
  */
 
 export const DEFAULT_SETTINGS = {
-    chunkCols: 8,        // Liczba chunków w poziomie
-    chunkRows: 6,        // Liczba chunków w pionie  
-    chunkSize: 11,        // Rozmiar chunka (6x6 tiles)
-    tileSize: 16,         // Rozmiar tile w pikselach
-    seed: null           // Seed generowania mapy (null = losowy)
+    chunkCols: 8,        // Number of chunks horizontally
+    chunkRows: 6,        // Number of chunks vertically  
+    chunkSize: 11,        // Chunk size (6x6 tiles)
+    tileSize: 16,         // Tile size in pixels
+    seed: null           // Map generation seed (null = random)
 };
 
 export const DEFAULT_ISLAND_SETTINGS = {
     preset: 'archipelago',      // Preset: archipelago/continent/scattered/dense
-    landDensity: 27,            // Gęstość lądu w % (wpływa na bazową mapę)
-    iterations: 4,              // Iteracje smoothing (cellular automata)
-    neighborThreshold: 4,       // Próg sąsiadów dla smoothing
-    archipelagoMode: true,      // Tryb archipelagu vs kontynent
-    islandSize: 'medium'        // Rozmiar wysp: small/medium/large
+    landDensity: 27,            // Land density in % (affects base map)
+    iterations: 4,              // Smoothing iterations (cellular automata)
+    neighborThreshold: 4,       // Neighbor threshold for smoothing
+    archipelagoMode: true,      // Archipelago vs continent mode
+    islandSize: 'medium'        // Island size: small/medium/large
 };
 
 export const DEFAULT_PATHFINDING_SETTINGS = {
-    maxTransitionPoints: 3,     // Maksymalna liczba punktów przejścia per granica
-    showTransitionPoints: true, // Pokazuj punkty przejścia na mapie
-    showConnectionWeights: true, // Pokazuj wagi połączeń na liniach
-    transitionPointScale: 1.0,  // Skala rozmiaru punktów przejścia
-    pathfindingPointScale: 2.0, // Skala rozmiaru krzyżyków pathfinding
-    showDebugLabels: false      // Pokazuj numery segmentów na ścieżce
+    maxTransitionPoints: 3,     // Maximum number of transition points per border
+    showTransitionPoints: true, // Show transition points on map
+    showConnectionWeights: true, // Show connection weights on lines
+    transitionPointScale: 1.0,  // Scale of transition point size
+    pathfindingPointScale: 2.0, // Scale of pathfinding cross size
+    showDebugLabels: false      // Show segment numbers on path
 };
 
 export const ISLAND_PRESETS = {
@@ -68,14 +68,14 @@ export const COLORS = {
 };
 
 export const RENDER_CONSTANTS = {
-    GAP_SIZE: 4,        // Przerwa między chunkami w pikselach
-    CANVAS_PADDING: 20, // Padding canvas
+    GAP_SIZE: 4,        // Gap between chunks in pixels
+    CANVAS_PADDING: 20, // Canvas padding
     MIN_POINT_RADIUS: 6,
     TILE_BORDER_MIN_SIZE: 16
 };
 
 /**
- * ZWRACA MNOŻNIK ROZMIARU WYSP
+ * RETURNS ISLAND SIZE MULTIPLIER
  */
 export function getIslandSizeMultiplier(islandSize) {
     switch (islandSize) {
@@ -87,7 +87,7 @@ export function getIslandSizeMultiplier(islandSize) {
 }
 
 /**
- * KAPITALIZUJE PIERWSZY ZNAK
+ * CAPITALIZES FIRST CHARACTER
  */
 export function capitalizeFirst(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);

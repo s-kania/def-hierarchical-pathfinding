@@ -1,5 +1,5 @@
 /**
- * ALGORYTMY CELLULAR AUTOMATA I EFEKTY WYSP
+ * CELLULAR AUTOMATA ALGORITHMS AND ISLAND EFFECTS
  */
 
 import { 
@@ -10,7 +10,7 @@ import {
 } from '../utils/MathUtils.js';
 
 /**
- * APLIKUJE CELLULAR AUTOMATA
+ * APPLIES CELLULAR AUTOMATA
  */
 export function applyCellularAutomataUnified(tiles, width, height, threshold, archipelagoMode) {
     const newTiles = cloneArray(tiles);
@@ -42,7 +42,7 @@ export function applyCellularAutomataUnified(tiles, width, height, threshold, ar
 }
 
 /**
- * APLIKUJE EFEKT ARCHIPELAGU
+ * APPLIES ARCHIPELAGO EFFECT
  */
 export function applyArchipelagoEffectUnified(tiles, width, height, islandSize) {
     // For archipelago mode, apply some erosion to create more separate islands
@@ -56,7 +56,7 @@ export function applyArchipelagoEffectUnified(tiles, width, height, islandSize) 
 }
 
 /**
- * APLIKUJE EFEKT KONTYNENTU
+ * APPLIES CONTINENT EFFECT
  */
 export function applyContinentEffectUnified(tiles, width, height, islandSize) {
     // For continent mode, apply dilation to create larger connected landmasses
@@ -69,7 +69,7 @@ export function applyContinentEffectUnified(tiles, width, height, islandSize) {
 }
 
 /**
- * APLIKUJE EROZJĘ (ZMNIEJSZA WYSPY)
+ * APPLIES EROSION (REDUCES ISLANDS)
  */
 export function applyErosionUnified(tiles, width, height, intensity) {
     let result = cloneArray(tiles);
@@ -96,7 +96,7 @@ export function applyErosionUnified(tiles, width, height, intensity) {
 }
 
 /**
- * APLIKUJE DYLACJĘ (ZWIĘKSZA WYSPY)
+ * APPLIES DILATION (EXPANDS ISLANDS)
  */
 export function applyDilationUnified(tiles, width, height, intensity) {
     let result = cloneArray(tiles);

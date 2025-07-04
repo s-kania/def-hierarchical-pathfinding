@@ -1,5 +1,5 @@
 /**
- * KONTROLER INTERFEJSU UŻYTKOWNIKA
+ * USER INTERFACE CONTROLLER
  */
 
 import { ISLAND_PRESETS, capitalizeFirst, RENDER_CONSTANTS } from '../config/Settings.js';
@@ -11,7 +11,7 @@ export class UIController {
         this.islandSettings = islandSettings;
         this.pathfindingSettings = pathfindingSettings;
         
-        // Callbacki dla zmian ustawień
+        // Callbacks for setting changes
         this.onFullRegenerationNeeded = null;
         this.onSmoothingOnlyNeeded = null;
         this.onRenderOnlyNeeded = null;
@@ -21,7 +21,7 @@ export class UIController {
     }
 
     /**
-     * KONFIGURUJE EVENT LISTENERS
+     * CONFIGURES EVENT LISTENERS
      */
     setupEventListeners() {
         this.setupChunkSettingsListeners();
@@ -31,10 +31,10 @@ export class UIController {
     }
 
     /**
-     * USTAWIENIA CHUNKÓW (WYMAGAJĄ PEŁNEJ REGENERACJI)
+     * CHUNK SETTINGS (REQUIRE FULL REGENERATION)
      */
     setupChunkSettingsListeners() {
-        // Rozmiar chunków
+        // Chunk size
         const chunkSizeSlider = document.getElementById('chunkSize');
         chunkSizeSlider?.addEventListener('input', (e) => {
             this.settings.chunkSize = parseInt(e.target.value);
@@ -42,7 +42,7 @@ export class UIController {
             this.triggerFullRegeneration();
         });
 
-        // Liczba chunków w poziomie
+        // Number of chunks horizontally
         const chunkColsSlider = document.getElementById('chunkCols');
         chunkColsSlider?.addEventListener('input', (e) => {
             this.settings.chunkCols = parseInt(e.target.value);
@@ -50,7 +50,7 @@ export class UIController {
             this.triggerFullRegeneration();
         });
 
-        // Liczba chunków w pionie
+        // Number of chunks vertically
         const chunkRowsSlider = document.getElementById('chunkRows');
         chunkRowsSlider?.addEventListener('input', (e) => {
             this.settings.chunkRows = parseInt(e.target.value);
@@ -58,7 +58,7 @@ export class UIController {
             this.triggerFullRegeneration();
         });
 
-        // Rozmiar tile - tylko aktualizacja renderowania
+        // Tile size - only render update
         const tileSizeSlider = document.getElementById('tileSize');
         tileSizeSlider?.addEventListener('input', (e) => {
             this.settings.tileSize = parseInt(e.target.value);
@@ -68,7 +68,7 @@ export class UIController {
     }
 
     /**
-     * USTAWIENIA WYSP
+     * ISLAND SETTINGS
      */
     setupIslandSettingsListeners() {
         // Preset
@@ -79,7 +79,7 @@ export class UIController {
             this.triggerFullRegeneration();
         });
 
-        // Gęstość lądu (wymaga pełnej regeneracji)
+        // Land density (requires full regeneration)
         const landDensitySlider = document.getElementById('landDensity');
         landDensitySlider?.addEventListener('input', (e) => {
             this.islandSettings.landDensity = parseInt(e.target.value);
@@ -88,7 +88,7 @@ export class UIController {
             this.triggerFullRegeneration();
         });
 
-        // Iteracje (tylko smoothing)
+        // Iterations (smoothing only)
         const iterationsSlider = document.getElementById('iterations');
         iterationsSlider?.addEventListener('input', (e) => {
             this.islandSettings.iterations = parseInt(e.target.value);
@@ -97,7 +97,7 @@ export class UIController {
             this.triggerSmoothingOnly();
         });
 
-        // Próg sąsiadów (tylko smoothing)
+        // Neighbor threshold (smoothing only)
         const neighborThresholdSlider = document.getElementById('neighborThreshold');
         neighborThresholdSlider?.addEventListener('input', (e) => {
             this.islandSettings.neighborThreshold = parseInt(e.target.value);
@@ -106,7 +106,7 @@ export class UIController {
             this.triggerSmoothingOnly();
         });
 
-        // Tryb archipelagu (tylko smoothing)
+        // Archipelago mode (smoothing only)
         const archipelagoModeCheckbox = document.getElementById('archipelagoMode');
         archipelagoModeCheckbox?.addEventListener('change', (e) => {
             this.islandSettings.archipelagoMode = e.target.checked;
@@ -114,7 +114,7 @@ export class UIController {
             this.triggerSmoothingOnly();
         });
 
-        // Rozmiar wysp (wymaga pełnej regeneracji)
+        // Island size (requires full regeneration)
         const islandSizeSelect = document.getElementById('islandSize');
         islandSizeSelect?.addEventListener('change', (e) => {
             this.islandSettings.islandSize = e.target.value;
@@ -125,10 +125,10 @@ export class UIController {
     }
 
     /**
-     * USTAWIENIA PATHFINDING
+     * PATHFINDING SETTINGS
      */
     setupPathfindingListeners() {
-        // Maksymalna liczba punktów przejścia
+        // Maximum number of transition points
         const maxTransitionPointsSlider = document.getElementById('maxTransitionPoints');
         maxTransitionPointsSlider?.addEventListener('input', (e) => {
             this.pathfindingSettings.maxTransitionPoints = parseInt(e.target.value);
@@ -136,7 +136,7 @@ export class UIController {
             this.triggerPathfindingUpdate();
         });
 
-        // Skala punktów przejścia
+        // Transition point scale
         const transitionPointScaleSlider = document.getElementById('transitionPointScale');
         transitionPointScaleSlider?.addEventListener('input', (e) => {
             this.pathfindingSettings.transitionPointScale = parseFloat(e.target.value);
@@ -144,7 +144,7 @@ export class UIController {
             this.triggerRenderOnly();
         });
 
-        // Skala krzyżyków pathfinding
+        // Pathfinding cross scale
         const pathfindingPointScaleSlider = document.getElementById('pathfindingPointScale');
         pathfindingPointScaleSlider?.addEventListener('input', (e) => {
             this.pathfindingSettings.pathfindingPointScale = parseFloat(e.target.value);
@@ -152,14 +152,14 @@ export class UIController {
             this.triggerRenderOnly();
         });
 
-        // Pokazuj/ukryj punkty przejścia
+        // Show/hide transition points
         const showTransitionPointsCheckbox = document.getElementById('showTransitionPoints');
         showTransitionPointsCheckbox?.addEventListener('change', (e) => {
             this.pathfindingSettings.showTransitionPoints = e.target.checked;
             this.triggerRenderOnly();
         });
 
-        // Pokazuj/ukryj wagi połączeń
+        // Show/hide connection weights
         const showConnectionWeightsCheckbox = document.getElementById('showConnectionWeights');
         showConnectionWeightsCheckbox?.addEventListener('change', (e) => {
             this.pathfindingSettings.showConnectionWeights = e.target.checked;
@@ -168,7 +168,7 @@ export class UIController {
     }
 
     /**
-     * PRZYCISKI
+     * BUTTONS
      */
     setupButtonListeners() {
         document.getElementById('regenerateBtn')?.addEventListener('click', () => {
@@ -185,14 +185,14 @@ export class UIController {
     }
 
     /**
-     * KONFIGURUJE INTERAKTYWNOŚĆ CANVAS
+     * CONFIGURES CANVAS INTERACTIVITY
      */
     setupCanvasInteractivity(canvas, inspector, transitionPointManager) {
-        // Obsługa ruchu myszy
+        // Mouse movement handling
         canvas.addEventListener('mousemove', (e) => {
             const { mouseX, mouseY } = getCanvasCoordinates(e, canvas);
             
-            // Aktualizuj pozycję myszy w UI
+            // Update mouse position in UI
             this.updateMousePosition(mouseX, mouseY);
             
             if (!this.pathfindingSettings.showTransitionPoints) {
@@ -218,7 +218,7 @@ export class UIController {
             }
         });
 
-        // Ukryj inspector gdy mysz opuści canvas
+        // Hide inspector when mouse leaves canvas
         canvas.addEventListener('mouseleave', () => {
             inspector.setHoveredPoint(null);
             canvas.classList.remove('pointer-cursor');
@@ -226,14 +226,14 @@ export class UIController {
                 inspector.hideInspector();
             }
             
-            // Wyczyść pozycję myszy
+            // Clear mouse position
             const mousePositionElement = document.getElementById('mousePosition');
             if (mousePositionElement) {
                 mousePositionElement.textContent = '-';
             }
         });
 
-        // Obsługa kliknięcia
+        // Click handling
         canvas.addEventListener('click', (e) => {
             if (!this.pathfindingSettings.showTransitionPoints) return;
 
@@ -243,7 +243,7 @@ export class UIController {
             if (clickedPoint) {
                 inspector.setSelectedPoint(clickedPoint);
         
-                this.triggerRenderOnly(); // Odśwież render aby pokazać aktywny punkt
+                this.triggerRenderOnly(); // Refresh render to show active point
             } else {
                 inspector.clearSelection();
                 this.triggerRenderOnly();
@@ -252,7 +252,7 @@ export class UIController {
     }
 
     /**
-     * AKTUALIZUJE WARTOŚCI PRESETU
+     * UPDATES PRESET VALUES
      */
     updatePresetValues() {
         if (this.islandSettings.preset === 'custom') return;
@@ -270,10 +270,10 @@ export class UIController {
     }
 
     /**
-     * AKTUALIZUJE UI NA PODSTAWIE AKTUALNYCH USTAWIEŃ
+     * UPDATES UI BASED ON CURRENT SETTINGS
      */
     updateUIFromSettings() {
-        // Aktualizuj suwaki
+        // Update sliders
         document.getElementById('landDensity').value = this.islandSettings.landDensity;
         document.getElementById('landDensityValue').textContent = `${this.islandSettings.landDensity}%`;
         document.getElementById('iterations').value = this.islandSettings.iterations;
@@ -286,7 +286,7 @@ export class UIController {
     }
 
     /**
-     * OZNACZA PRESET JAKO CUSTOM
+     * MARKS PRESET AS CUSTOM
      */
     markAsCustomPreset() {
         this.islandSettings.preset = 'custom';
@@ -294,13 +294,13 @@ export class UIController {
     }
 
     /**
-     * AKTUALIZUJE STATYSTYKI
+     * UPDATES STATISTICS
      */
     updateStats(chunks, transitionPoints) {
         const totalChunks = this.settings.chunkCols * this.settings.chunkRows;
         const totalTiles = totalChunks * this.settings.chunkSize * this.settings.chunkSize;
         
-        // Policz tiles z wyspami
+        // Count island tiles
         let islandTiles = 0;
         chunks.forEach(chunk => {
             chunk.tiles.forEach(tile => {
@@ -310,7 +310,7 @@ export class UIController {
         
         const islandPercentage = Math.round((islandTiles / totalTiles) * 100);
         
-        // Aktualizuj elementy DOM
+        // Update DOM elements
         document.getElementById('totalChunks').textContent = totalChunks;
         document.getElementById('totalTiles').textContent = totalTiles;
         document.getElementById('islandPercentage').textContent = `${islandPercentage}%`;
@@ -318,10 +318,10 @@ export class UIController {
     }
 
     /**
-     * RESETUJE USTAWIENIA
+     * RESETS SETTINGS
      */
     resetToDefaults() {
-        // Reset podstawowych ustawień
+        // Reset basic settings
         this.settings.chunkCols = 8;
         this.settings.chunkRows = 6;
         this.settings.chunkSize = 11;
@@ -344,38 +344,38 @@ export class UIController {
     }
 
     /**
-     * RESETUJE UI DO WARTOŚCI DOMYŚLNYCH
+     * RESETS UI TO DEFAULT VALUES
      */
     resetUI() {
-        // Reset sliderów podstawowych
+        // Reset basic sliders
         document.getElementById('chunkSize').value = 11;
         document.getElementById('chunkCols').value = 8;
         document.getElementById('chunkRows').value = 6;
         document.getElementById('tileSize').value = 16;
 
-        // Reset labelek podstawowych
+        // Reset basic labels
         document.getElementById('chunkSizeValue').textContent = '11x11';
         document.getElementById('chunkColsValue').textContent = '8';
         document.getElementById('chunkRowsValue').textContent = '6';
         document.getElementById('tileSizeValue').textContent = '16px';
 
-        // Reset kontrolek wysp
+        // Reset island controls
         document.getElementById('islandPreset').value = 'archipelago';
         this.updatePresetValues();
 
-        // Reset kontrolek pathfinding
+        // Reset pathfinding controls
         document.getElementById('maxTransitionPoints').value = 3;
         document.getElementById('transitionPointScale').value = 1.0;
         document.getElementById('pathfindingPointScale').value = 2.0;
         document.getElementById('showTransitionPoints').checked = true;
         document.getElementById('showConnectionWeights').checked = true;
 
-        // Reset labelek pathfinding
+        // Reset pathfinding labels
         document.getElementById('maxTransitionPointsValue').textContent = '3';
         document.getElementById('transitionPointScaleValue').textContent = '1.0x';
         document.getElementById('pathfindingPointScaleValue').textContent = '2.0x';
 
-        // Reset wyświetlania seeda
+        // Reset seed display
         const seedElement = document.getElementById('mapSeed');
         if (seedElement) {
             seedElement.textContent = '-';
@@ -383,7 +383,7 @@ export class UIController {
     }
 
     /**
-     * TRIGGERY DLA CALLBACKÓW
+     * TRIGGERS FOR CALLBACKS
      */
     triggerFullRegeneration() {
         if (this.onFullRegenerationNeeded) {
@@ -422,7 +422,7 @@ export class UIController {
     }
 
     /**
-     * SETTERY DLA CALLBACKÓW
+     * SETTERS FOR CALLBACKS
      */
     setCallbacks({
         onFullRegenerationNeeded,
@@ -441,18 +441,18 @@ export class UIController {
     }
 
     /**
-     * AKTUALIZUJE POZYCJĘ MYSZY W UI
+     * UPDATES MOUSE POSITION IN UI
      */
     updateMousePosition(mouseX, mouseY) {
-        // Uwzględnij CANVAS_PADDING - odejmij padding od pozycji myszy
+        // Account for CANVAS_PADDING - subtract padding from mouse position
         const adjustedMouseX = mouseX - RENDER_CONSTANTS.CANVAS_PADDING;
         const adjustedMouseY = mouseY - RENDER_CONSTANTS.CANVAS_PADDING;
         
-        // Sprawdź czy mysz jest w obszarze paddingu (poza chunkami)
+        // Check if mouse is in padding area (outside chunks)
         if (adjustedMouseX < 0 || adjustedMouseY < 0) {
             const mousePositionElement = document.getElementById('mousePosition');
             if (mousePositionElement) {
-                mousePositionElement.textContent = 'Poza obszarem mapy';
+                mousePositionElement.textContent = 'Outside map area';
             }
             return;
         }
@@ -460,41 +460,41 @@ export class UIController {
         const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
         const chunkWithGapSize = chunkPixelSize + RENDER_CONSTANTS.GAP_SIZE;
         
-        // Znajdź chunk na podstawie pozycji (uwzględniając gaps)
+        // Find chunk based on position (accounting for gaps)
         const chunkX = Math.floor(adjustedMouseX / chunkWithGapSize);
         const chunkY = Math.floor(adjustedMouseY / chunkWithGapSize);
         
-        // Sprawdź czy nie wykraczamy poza mapę
+        // Check if we're not going beyond the map
         if (chunkX >= this.settings.chunkCols || chunkY >= this.settings.chunkRows) {
             const mousePositionElement = document.getElementById('mousePosition');
             if (mousePositionElement) {
-                mousePositionElement.textContent = 'Poza obszarem mapy';
+                mousePositionElement.textContent = 'Outside map area';
             }
             return;
         }
         
-        // Oblicz pozycję lokalną w chunku
+        // Calculate local position in chunk
         const localPixelX = adjustedMouseX - (chunkX * chunkWithGapSize);
         const localPixelY = adjustedMouseY - (chunkY * chunkWithGapSize);
         
-        // Sprawdź czy nie jesteśmy w gap między chunkami
+        // Check if we're not in gap between chunks
         if (localPixelX >= chunkPixelSize || localPixelY >= chunkPixelSize) {
             const mousePositionElement = document.getElementById('mousePosition');
             if (mousePositionElement) {
-                mousePositionElement.textContent = 'Między chunkami';
+                mousePositionElement.textContent = 'Between chunks';
             }
             return;
         }
         
-        // Oblicz pozycję tile lokalną w chunku
+        // Calculate local tile position in chunk
         const localX = Math.floor(localPixelX / this.settings.tileSize);
         const localY = Math.floor(localPixelY / this.settings.tileSize);
         
-        // Oblicz globalną pozycję tile
+        // Calculate global tile position
         const tileX = chunkX * this.settings.chunkSize + localX;
         const tileY = chunkY * this.settings.chunkSize + localY;
         
-        // Oblicz środek tile'a w pikselach (względem oryginalnego canvas z paddingiem)
+        // Calculate tile center in pixels (relative to original canvas with padding)
         const globalX = tileX * this.settings.tileSize + this.settings.tileSize / 2 + RENDER_CONSTANTS.CANVAS_PADDING + chunkX * RENDER_CONSTANTS.GAP_SIZE;
         const globalY = tileY * this.settings.tileSize + this.settings.tileSize / 2 + RENDER_CONSTANTS.CANVAS_PADDING + chunkY * RENDER_CONSTANTS.GAP_SIZE;
         
@@ -504,12 +504,12 @@ export class UIController {
         if (mousePositionElement) {
             mousePositionElement.textContent = positionText;
         } else {
-            console.warn('Element mousePosition nie został znaleziony!');
+            console.warn('mousePosition element not found!');
         }
     }
 
     /**
-     * AKTUALIZUJE WYŚWIETLANIE SEEDA
+     * UPDATES SEED DISPLAY
      */
     updateSeed(seed) {
         const seedElement = document.getElementById('mapSeed');

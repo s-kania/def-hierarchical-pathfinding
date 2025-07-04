@@ -13,9 +13,9 @@
             <p>Configure and generate a chunk map with islands for your game</p>
         </header>
 
-        <!-- Główny kontener z mapą na środku -->
+        <!-- Main container with map in center -->
         <div class="main-content">
-            <!-- Mapa jako główny element -->
+            <!-- Map as main element -->
             <div class="map-container main-map">
                 <div class="map-info">
                     <div class="map-info-header">
@@ -52,7 +52,7 @@
                         </div>
                         <div class="map-actions">
                             <button class="btn btn--outline calculate-path-btn" id="calculatePath">
-                                🧭 Oblicz Ścieżkę
+                                🧭 Calculate Path
                             </button>
                             <button class="btn btn--primary settings-btn" id="settingsBtn">
                                 ⚙️ Settings
@@ -78,7 +78,7 @@
                 </div>
                 
                 <div class="modal-body">
-                    <!-- Tabs dla różnych sekcji ustawień -->
+                    <!-- Tabs for different settings sections -->
                     <div class="settings-tabs">
                         <button class="tab-btn active" data-tab="map-config">🗺️ Map Config</button>
                         <button class="tab-btn" data-tab="island-config">🏝️ Islands</button>
@@ -192,9 +192,9 @@
 
                         <!-- Pathfinding Tab -->
                         <div id="pathfinding" class="tab-pane">
-                            <!-- Ustawienia Pathfinding -->
+                            <!-- Pathfinding Settings -->
                             <div class="pathfinding-settings">
-                                <h3>⚙️ Ustawienia</h3>
+                                <h3>⚙️ Settings</h3>
                                 <div class="config-grid">
                                     <div class="form-group">
                                         <label class="form-label" for="maxTransitionPoints">
@@ -233,19 +233,19 @@
                                 </div>
                             </div>
 
-                            <!-- Punkty Startowy i Końcowy -->
+                            <!-- Start and End Points -->
                             <div class="pathfinding-info">
-                                <h3>📍 Punkty Start/Koniec</h3>
+                                <h3>📍 Start/End Points</h3>
                                 <div class="pathfinding-grid">
                                     <div class="pathfinding-section">
-                                        <h4>📍 Punkt Startowy</h4>
+                                        <h4>📍 Start Point</h4>
                                         <div class="point-details">
                                             <div class="point-info-item">
-                                                <span class="point-label">Pozycja:</span>
-                                                <span id="startPointPosition" class="point-value">Nie ustawiony</span>
+                                                <span class="point-label">Position:</span>
+                                                <span id="startPointPosition" class="point-value">Not set</span>
                                             </div>
                                             <div class="point-info-item">
-                                                <span class="point-label">Współrzędne:</span>
+                                                <span class="point-label">Coordinates:</span>
                                                 <span id="startPointCoords" class="point-value">-</span>
                                             </div>
                                             <div class="point-info-item">
@@ -256,14 +256,14 @@
                                     </div>
                                     
                                     <div class="pathfinding-section">
-                                        <h4>🎯 Punkt Końcowy</h4>
+                                        <h4>🎯 End Point</h4>
                                         <div class="point-details">
                                             <div class="point-info-item">
-                                                <span class="point-label">Pozycja:</span>
-                                                <span id="endPointPosition" class="point-value">Nie ustawiony</span>
+                                                <span class="point-label">Position:</span>
+                                                <span id="endPointPosition" class="point-value">Not set</span>
                                             </div>
                                             <div class="point-info-item">
-                                                <span class="point-label">Współrzędne:</span>
+                                                <span class="point-label">Coordinates:</span>
                                                 <span id="endPointCoords" class="point-value">-</span>
                                             </div>
                                             <div class="point-info-item">
@@ -274,7 +274,7 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Kontrolki i Statystyki -->
+                                <!-- Controls and Statistics -->
                                 <div class="pathfinding-controls">
                                     <button class="btn btn--info" id="printData">
                                         📊 Print Data
@@ -283,12 +283,12 @@
                                 
                                 <div class="pathfinding-stats">
                                     <div class="stat">
-                                        <span class="stat-label">Dystans liniowy:</span>
+                                        <span class="stat-label">Linear distance:</span>
                                         <span id="linearDistance" class="stat-value">-</span>
                                     </div>
                                     <div class="stat">
                                         <span class="stat-label">Status:</span>
-                                        <span id="pathfindingStatus" class="stat-value">Oczekuje punktów</span>
+                                        <span id="pathfindingStatus" class="stat-value">Waiting for points</span>
                                     </div>
                                 </div>
                             </div>
@@ -313,11 +313,11 @@
                                     </div>
                                     <div class="legend-item">
                                         <div class="legend-color pathfinding-start"></div>
-                                        <span>Punkt Startowy 📍</span>
+                                        <span>Start Point 📍</span>
                                     </div>
                                     <div class="legend-item">
                                         <div class="legend-color pathfinding-end"></div>
-                                        <span>Punkt Końcowy 🎯</span>
+                                        <span>End Point 🎯</span>
                                     </div>
                                 </div>
                                 <div class="preset-info">

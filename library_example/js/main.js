@@ -1,5 +1,5 @@
 /**
- * GŁÓWNA APLIKACJA - ŁĄCZY WSZYSTKIE MODUŁY
+ * MAIN APPLICATION - CONNECTS ALL MODULES
  */
 
 import { 
@@ -21,31 +21,31 @@ import { getCanvasCoordinates } from './utils/MathUtils.js';
 import { HierarchicalPathfinding } from '../hierarchical_pathfinding/HierarchicalPathfinding.js';
 
 /**
- * GŁÓWNA KLASA APLIKACJI
+ * MAIN APPLICATION CLASS
  */
 class ChunkMapGenerator {
     constructor() {
-        // Ustawienia
+        // Settings
         this.settings = { ...DEFAULT_SETTINGS };
 
-        // Obsługa seeda - spróbuj wczytać z localStorage
+        // Seed handling - try to load from localStorage
         const savedSeed = localStorage.getItem('mapSeed');
         this._useSavedSeedOnce = false;
         if (savedSeed) {
             this.settings.seed = parseInt(savedSeed, 10);
-            this._useSavedSeedOnce = true; // użyj zapisanego seeda tylko przy pierwszej generacji
+            this._useSavedSeedOnce = true; // use saved seed only for first generation
         }
         
         this.islandSettings = { ...DEFAULT_ISLAND_SETTINGS };
         this.pathfindingSettings = { ...DEFAULT_PATHFINDING_SETTINGS };
         
-        // Główne dane aplikacji
+        // Main application data
         this.chunks = [];
         this.baseMap = null;
         this.mapDimensions = { width: 0, height: 0 };
-        this.pathSegments = null; // Segmenty obliczonej ścieżki pathfinding
+        this.pathSegments = null; // Calculated pathfinding path segments
         
-        // Komponenty
+        // Components
         this.mapGenerator = null;
         this.chunkManager = null;
         this.transitionPointManager = null;
@@ -56,11 +56,11 @@ class ChunkMapGenerator {
         this.inspector = null;
         this.gameDataManager = null;
         
-        // Elementy DOM
+        // DOM elements
         this.canvas = null;
         this.inspectorPanel = null;
         
-        // Modal i zakładki
+        // Modal and tabs
         this.settingsModal = null;
         this.currentTab = 'map-config';
         
@@ -68,7 +68,7 @@ class ChunkMapGenerator {
     }
     
     init() {
-        // Inicjalizuj elementy DOM
+        // Initialize DOM elements
         this.canvas = document.getElementById('mapCanvas');
         this.inspectorPanel = document.getElementById('transitionPointDetails');
         this.settingsModal = document.getElementById('settingsModal');
@@ -78,33 +78,33 @@ class ChunkMapGenerator {
             return;
         }
         
-        // Inicjalizuj komponenty
+        // Initialize components
         this.initializeComponents();
         
-        // Skonfiguruj UI
+        // Configure UI
         this.setupUI();
         
-        // Skonfiguruj modal i zakładki
+        // Configure modal and tabs
         this.setupModalAndTabs();
         
-        // Wygeneruj początkową mapę
+        // Generate initial map
         this.generateMap();
         this.renderMap();
         this.updateStats();
         
-        // Inicjalizuj pathfinding UI
+        // Initialize pathfinding UI
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
         
-        // Udostępnij globalnie dla konsoli deweloperskiej
+        // Make available globally for developer console
         window.mapGenerator = this;
         window.app = this;
         window.gameDataManager = this.gameDataManager;
-        console.log('🎮 MapGenerator dostępny jako window.mapGenerator i window.app');
-        console.log('📊 GameDataManager dostępny jako window.gameDataManager');
+        console.log('🎮 MapGenerator available as window.mapGenerator and window.app');
+        console.log('📊 GameDataManager available as window.gameDataManager');
     }
     
     /**
-     * INICJALIZUJE WSZYSTKIE KOMPONENTY
+     * INITIALIZES ALL COMPONENTS
      */
     initializeComponents() {
         this.mapGenerator = new MapGenerator(this.settings, this.islandSettings);
@@ -121,16 +121,16 @@ class ChunkMapGenerator {
             this.settings.chunkCols, 
             this.settings.chunkRows,
             this.settings.chunkSize,  // chunkWidth
-            this.settings.chunkSize   // chunkHeight (dla kwadratowych chunków)
+            this.settings.chunkSize   // chunkHeight (for square chunks)
         );
         this.inspector = new Inspector(this.inspectorPanel, this.gameDataManager);
     }
     
     /**
-     * KONFIGURUJE INTERFEJS UŻYTKOWNIKA
+     * CONFIGURES USER INTERFACE
      */
     setupUI() {
-        // Ustaw callbacki dla UI controllera
+        // Set callbacks for UI controller
         this.uiController.setCallbacks({
             onFullRegenerationNeeded: () => this.onFullRegeneration(),
             onSmoothingOnlyNeeded: () => this.onSmoothingOnly(),
@@ -140,24 +140,24 @@ class ChunkMapGenerator {
             onReset: () => this.onReset()
         });
         
-        // Ustaw callbacki dla pathfinding UI
+        // Set callbacks for pathfinding UI
         this.pathfindingUIController.setCallbacks({
             onPrintData: () => this.onPrintGameData()
         });
         
-        // Skonfiguruj event listeners
+        // Configure event listeners
         this.uiController.setupEventListeners();
         this.pathfindingUIController.setupEventListeners();
         
-        // Skonfiguruj interaktywność canvas
+        // Configure canvas interactivity
         this.setupCanvasInteractivity();
     }
     
     /**
-     * KONFIGURUJE MODAL I ZAKŁADKI
+     * CONFIGURES MODAL AND TABS
      */
     setupModalAndTabs() {
-        // Przycisk Settings
+        // Settings button
         const settingsBtn = document.getElementById('settingsBtn');
         const closeModalBtn = document.getElementById('closeSettingsModal');
         
@@ -169,7 +169,7 @@ class ChunkMapGenerator {
             closeModalBtn.addEventListener('click', () => this.closeSettingsModal());
         }
         
-        // Zamknij modal po kliknięciu poza nim
+        // Close modal when clicking outside
         if (this.settingsModal) {
             this.settingsModal.addEventListener('click', (e) => {
                 if (e.target === this.settingsModal) {
@@ -178,7 +178,7 @@ class ChunkMapGenerator {
             });
         }
         
-        // Zakładki
+        // Tabs
         const tabButtons = document.querySelectorAll('.tab-btn');
         tabButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -187,42 +187,42 @@ class ChunkMapGenerator {
             });
         });
         
-        // Zamknij modal po naciśnięciu Escape
+        // Close modal on Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.settingsModal.classList.contains('show')) {
                 this.closeSettingsModal();
             }
         });
         
-        // Przycisk "Oblicz ścieżkę" w głównym layout
+        // "Calculate Path" button in main layout
         this.setupCalculatePathButton();
     }
     
     /**
-     * OTWIERA MODAL SETTINGS
+     * OPENS SETTINGS MODAL
      */
     openSettingsModal() {
         if (this.settingsModal) {
             this.settingsModal.classList.add('show');
-            document.body.style.overflow = 'hidden'; // Zablokuj scrollowanie strony
+            document.body.style.overflow = 'hidden'; // Block page scrolling
         }
     }
     
     /**
-     * ZAMYKA MODAL SETTINGS
+     * CLOSES SETTINGS MODAL
      */
     closeSettingsModal() {
         if (this.settingsModal) {
             this.settingsModal.classList.remove('show');
-            document.body.style.overflow = ''; // Przywróć scrollowanie strony
+            document.body.style.overflow = ''; // Restore page scrolling
         }
     }
     
     /**
-     * PRZEŁĄCZA ZAKŁADKĘ
+     * SWITCHES TAB
      */
     switchTab(tabName) {
-        // Usuń aktywną klasę ze wszystkich przycisków i paneli
+        // Remove active class from all buttons and panels
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.classList.remove('active');
         });
@@ -230,7 +230,7 @@ class ChunkMapGenerator {
             pane.classList.remove('active');
         });
         
-        // Dodaj aktywną klasę do wybranej zakładki
+        // Add active class to selected tab
         const activeTabBtn = document.querySelector(`[data-tab="${tabName}"]`);
         const activeTabPane = document.getElementById(tabName);
         
@@ -245,108 +245,108 @@ class ChunkMapGenerator {
     }
     
     /**
-     * GŁÓWNA METODA GENEROWANIA MAPY
+     * MAIN MAP GENERATION METHOD
      */
     generateMap() {
-        // Zarządzanie seedem: użyj zapisanego tylko raz, potem generuj nowy
+        // Seed management: use saved only once, then generate new
         if (this._useSavedSeedOnce) {
-            // Użyj seeda z localStorage tylko przy pierwszym generowaniu mapy
+            // Use seed from localStorage only for first map generation
             this.mapGenerator.setSeed(this.settings.seed);
             this._useSavedSeedOnce = false;
         } else {
-            // Wygeneruj nowy seed i zapisz go
+            // Generate new seed and save it
             const newSeed = Date.now();
             this.settings.seed = newSeed;
             localStorage.setItem('mapSeed', newSeed);
             this.mapGenerator.setSeed(newSeed);
         }
 
-        // Zaktualizuj wyświetlanie seeda w UI
+        // Update seed display in UI
         if (this.uiController && this.uiController.updateSeed) {
             this.uiController.updateSeed(this.settings.seed);
         }
 
-        // Aktualizuj ustawienia w komponentach
+        // Update settings in components
         this.updateComponentSettings();
         
-        // Wyczyść punkty pathfinding i ścieżkę gdy generujemy nową mapę
+        // Clear pathfinding points and path when generating new map
         this.pathfindingPointManager.clearPoints();
         this.pathSegments = null;
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
         
-        // Generuj mapę
+        // Generate map
         const finalMap = this.mapGenerator.generateMap();
         
-        // Podziel na chunki
+        // Split into chunks
         this.chunks = this.chunkManager.splitMapIntoChunks(
             finalMap, 
             this.mapGenerator.getMapDimensions().width, 
             this.mapGenerator.getMapDimensions().height
         );
         
-        // Generuj punkty przejścia
+        // Generate transition points
         this.transitionPointManager.generateTransitionPoints(this.chunks);
         this.transitionPointManager.calculateTransitionPointPixels(this.chunks);
         
-        // Aktualizuj GameDataManager z punktami przejścia
+        // Update GameDataManager with transition points
         this.updateGameDataManager();
         
-        // Automatycznie zbuduj graf połączeń
+        // Automatically build connection graph
         if (this.gameDataManager.transitionPoints.length > 0) {
             this.gameDataManager.buildConnections(this.chunks);
         }
         
-        // Automatycznie wygeneruj losowe punkty pathfinding
+        // Automatically generate random pathfinding points
         this.generateRandomPathfindingPoints();
         
-        // Aktualizuj UI po automatycznym generowaniu punktów
+        // Update UI after automatic point generation
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
         
-        // Zapisz referencje dla kompatybilności
+        // Save references for compatibility
         this.baseMap = this.mapGenerator.getBaseMap();
         this.mapDimensions = this.mapGenerator.getMapDimensions();
     }
     
     /**
-     * APLIKUJE TYLKO SMOOTHING (OPTYMALIZACJA)
+     * APPLIES ONLY SMOOTHING (OPTIMIZATION)
      */
     applySmoothingToExistingMap() {
-        // Aktualizuj ustawienia
+        // Update settings
         this.updateComponentSettings();
         
-        // Aplikuj smoothing
+        // Apply smoothing
         const finalMap = this.mapGenerator.applySmoothingToExistingMap();
         
-        // Podziel na chunki
+        // Split into chunks
         this.chunks = this.chunkManager.splitMapIntoChunks(
             finalMap,
             this.mapGenerator.getMapDimensions().width,
             this.mapGenerator.getMapDimensions().height
         );
         
-        // Sprawdź czy istniejące punkty pathfinding są nadal na oceanie
+        // Check if existing pathfinding points are still on ocean
         this.validatePathfindingPoints();
         
-        // Regeneruj punkty przejścia
+        // Regenerate transition points
         this.transitionPointManager.generateTransitionPoints(this.chunks);
         this.transitionPointManager.calculateTransitionPointPixels(this.chunks);
         
-        // Aktualizuj GameDataManager z punktami przejścia
+        // Update GameDataManager with transition points
         this.updateGameDataManager();
         
-        // Automatycznie zbuduj graf połączeń
+        // Automatically build connection graph
         if (this.gameDataManager.transitionPoints.length > 0) {
             this.gameDataManager.buildConnections(this.chunks);
         }
     }
     
     /**
-     * WALIDUJE PUNKTY PATHFINDING I USUWA NIEWAŻNE
+     * VALIDATES PATHFINDING POINTS AND REMOVES INVALID ONES
      */
     validatePathfindingPoints() {
         let pointsRemoved = false;
         
-        // Sprawdź punkt startowy
+        // Check start point
         if (this.pathfindingPointManager.getStartPoint()) {
             const startPoint = this.pathfindingPointManager.getStartPoint();
             const tilePos = this.pathfindingPointManager.pixelToTilePosition(startPoint.pixelX, startPoint.pixelY);
@@ -357,7 +357,7 @@ class ChunkMapGenerator {
             }
         }
         
-        // Sprawdź punkt końcowy
+        // Check end point
         if (this.pathfindingPointManager.getEndPoint()) {
             const endPoint = this.pathfindingPointManager.getEndPoint();
             const tilePos = this.pathfindingPointManager.pixelToTilePosition(endPoint.pixelX, endPoint.pixelY);
@@ -368,11 +368,11 @@ class ChunkMapGenerator {
             }
         }
         
-        // Zaktualizuj UI jeśli jakieś punkty zostały usunięte
+        // Update UI if any points were removed
         if (pointsRemoved) {
             this.pathfindingUIController.updateAll(this.pathfindingPointManager);
             
-            // Automatycznie wygeneruj nowe punkty jeśli wszystkie zostały usunięte
+            // Automatically generate new points if all were removed
             if (!this.pathfindingPointManager.getStartPoint() && !this.pathfindingPointManager.getEndPoint()) {
                 this.generateRandomPathfindingPoints();
             }
@@ -380,17 +380,17 @@ class ChunkMapGenerator {
     }
     
     /**
-     * RENDERUJE MAPĘ
+     * RENDERS MAP
      */
     renderMap() {
         const transitionPoints = this.transitionPointManager.getTransitionPoints();
         const selectedPoint = this.inspector.getSelectedPoint();
         const hoveredPoint = this.inspector.getHoveredPoint();
         
-        // Użyj hoveredPoint jeśli nie ma selectedPoint, lub selectedPoint jeśli jest
+        // Use hoveredPoint if no selectedPoint, or selectedPoint if exists
         const activePoint = selectedPoint || hoveredPoint;
         
-        // Przekaż selectedPoint i hoveredPoint do renderera
+        // Pass selectedPoint and hoveredPoint to renderer
         this.renderer.selectedPoint = selectedPoint;
         this.renderer.hoveredPoint = hoveredPoint;
         
@@ -406,7 +406,7 @@ class ChunkMapGenerator {
     }
     
     /**
-     * AKTUALIZUJE USTAWIENIA W KOMPONENTACH
+     * UPDATES SETTINGS IN COMPONENTS
      */
     updateComponentSettings() {
         this.mapGenerator.updateSettings(this.settings);
@@ -415,28 +415,28 @@ class ChunkMapGenerator {
         this.renderer.updateSettings(this.settings);
         this.renderer.updatePathfindingSettings(this.pathfindingSettings);
         
-        // Aktualizuj GameDataManager z nowymi wymiarami chunka
+        // Update GameDataManager with new chunk dimensions
         this.gameDataManager = new GameDataManager(
             this.settings.chunkCols, 
             this.settings.chunkRows,
             this.settings.chunkSize,  // chunkWidth
-            this.settings.chunkSize   // chunkHeight (dla kwadratowych chunków)
+            this.settings.chunkSize   // chunkHeight (for square chunks)
         );
     }
     
     /**
-     * AKTUALIZUJE STATYSTYKI
+     * UPDATES STATISTICS
      */
     updateStats() {
         const transitionPoints = this.transitionPointManager.getTransitionPoints();
         this.uiController.updateStats(this.chunks, transitionPoints);
         
-        // Aktualizuj Active Point ID
+        // Update Active Point ID
         this.updateActivePointId();
     }
     
     /**
-     * AKTUALIZUJE ACTIVE POINT ID W SEKCJI NAD MAPĄ
+     * UPDATES ACTIVE POINT ID IN SECTION ABOVE MAP
      */
     updateActivePointId() {
         const activePointIdElement = document.getElementById('activePointId');
@@ -444,11 +444,11 @@ class ChunkMapGenerator {
         
         const selectedPoint = this.inspector.getSelectedPoint();
         const hoveredPoint = this.inspector.getHoveredPoint();
-        // Priorytet dla hovered point, potem selected point
+        // Priority for hovered point, then selected point
         const activePoint = hoveredPoint || selectedPoint;
         
         if (activePoint) {
-            // Znajdź punkt w GameDataManager, aby uzyskać poprawne ID
+            // Find point in GameDataManager to get correct ID
             const gdPoint = this.findGameDataPoint(activePoint);
             const pointId = gdPoint ? gdPoint.id : `${activePoint.chunkA}-${activePoint.chunkB}-${activePoint.x}-${activePoint.y}`;
 
@@ -465,29 +465,29 @@ class ChunkMapGenerator {
     }
     
     /**
-     * ZNAJDUJE ODPOWIEDNI PUNKT W GAMEDATA MANAGER
+     * FINDS CORRESPONDING POINT IN GAMEDATA MANAGER
      */
     findGameDataPoint(point) {
         if (!this.gameDataManager || !this.gameDataManager.transitionPoints) {
             return null;
         }
 
-        // Szukaj punktu przejścia w GameDataManager który odpowiada naszemu punktowi
+        // Search for transition point in GameDataManager that corresponds to our point
         return this.gameDataManager.transitionPoints.find(gdPoint => {
-            // Sprawdź czy chunk'i się zgadzają (w dowolnej kolejności)
+            // Check if chunks match (in any order)
             const [gdChunkA, gdChunkB] = gdPoint.chunks;
             const pointMatches = (gdChunkA === point.chunkA && gdChunkB === point.chunkB) ||
                                 (gdChunkA === point.chunkB && gdChunkB === point.chunkA);
             
             if (!pointMatches) return false;
             
-            // Sprawdź pozycję na podstawie kierunku
+            // Check position based on direction
             if (point.direction === 'horizontal') {
-                // Dla punktów poziomych pozycja to Y względem chunka
+                // For horizontal points position is Y relative to chunk
                 const localY = point.y % this.gameDataManager.chunkHeight;
                 return gdPoint.position === localY;
             } else if (point.direction === 'vertical') {
-                // Dla punktów pionowych pozycja to X względem chunka  
+                // For vertical points position is X relative to chunk  
                 const localX = point.x % this.gameDataManager.chunkWidth;
                 return gdPoint.position === localX;
             }
@@ -497,7 +497,7 @@ class ChunkMapGenerator {
     }
     
     /**
-     * CALLBACKI UI
+     * UI CALLBACKS
      */
     onFullRegeneration() {
         this.generateMap();
@@ -533,66 +533,66 @@ class ChunkMapGenerator {
     }
     
     /**
-     * RESETUJE DO DOMYŚLNYCH USTAWIEŃ
+     * RESETS TO DEFAULT SETTINGS
      */
     onReset() {
-        // Reset punktów pathfinding i ścieżki
+        // Reset pathfinding points and path
         this.pathfindingPointManager.clearPoints();
         this.pathSegments = null;
         
-        // Reset ustawień UI
+        // Reset UI settings
         this.uiController.resetToDefaults();
         
-        // Regeneruj mapę (która automatycznie wygeneruje nowe punkty)
+        // Regenerate map (which will automatically generate new points)
         this.generateMap();
         this.renderMap();
         this.updateStats();
         
-        // Aktualizuj UI pathfinding po resecie
+        // Update pathfinding UI after reset
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
     }
 
     /**
-     * GENERUJE LOSOWE PUNKTY PATHFINDING
+     * GENERATES RANDOM PATHFINDING POINTS
      */
     /**
-     * AUTOMATYCZNIE GENERUJE LOSOWE PUNKTY PATHFINDING
+     * AUTOMATICALLY GENERATES RANDOM PATHFINDING POINTS
      */
     generateRandomPathfindingPoints() {
         const success = this.pathfindingPointManager.generateRandomPoints(this.chunks);
         
         if (!success) {
-            console.log('⚠️ Nie można wygenerować punktów - brak wystarczającej ilości oceanu');
+            console.log('⚠️ Cannot generate points - insufficient ocean');
         }
     }
 
     /**
-     * CZYŚCI PUNKTY PATHFINDING
+     * CLEARS PATHFINDING POINTS
      */
     onClearPathfindingPoints() {
         this.pathfindingPointManager.clearPoints();
-        this.pathSegments = null; // Wyczyść też obliczoną ścieżkę
-        this.pathfindingUIController.showSuccess('Wyczyszczono punkty');
+        this.pathSegments = null; // Also clear calculated path
+        this.pathfindingUIController.showSuccess('Cleared points');
         this.renderMap();
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
     }
 
     /**
-     * OBLICZA ŚCIEŻKĘ PATHFINDING
+     * CALCULATES PATHFINDING PATH
      */
     onCalculatePathfindingPath() {
         
         if (!this.pathfindingPointManager.hasPoints()) {
-            this.pathfindingUIController.showError('Brak punktów do obliczenia ścieżki');
+            this.pathfindingUIController.showError('No points to calculate path');
             return;
         }
 
-        // NOWA IMPLEMENTACJA - HierarchicalPathfinding
+        // NEW IMPLEMENTATION - HierarchicalPathfinding
         try {
-            // Tworzymy nową instancję HierarchicalPathfinding
+            // Create new HierarchicalPathfinding instance
             const pathfinder = new HierarchicalPathfinding();
             
-            // Konfiguracja z wymiarami chunka z ustawień
+            // Configuration with chunk dimensions from settings
             const config = {
                 tileSize: this.settings.tileSize,
                 gridWidth: this.gameDataManager.gridWidth,
@@ -603,15 +603,15 @@ class ChunkMapGenerator {
                 transitionPoints: this.gameDataManager.transitionPoints
             };
             
-            // Inicjalizuj pathfinder
+            // Initialize pathfinder
             pathfinder.init(config);
             
-            // Pobierz punkty start/end z PathfindingPointManager
+            // Get start/end points from PathfindingPointManager
             const startPoint = this.pathfindingPointManager.getStartPoint();
             const endPoint = this.pathfindingPointManager.getEndPoint();
             
-            // Konwertuj pozycje tile na pozycje świata (w jednostkach world)
-            // PathfindingPointManager przechowuje numery tile'ów, ale biblioteca oczekuje pozycji świata
+            // Convert tile positions to world positions (in world units)
+            // PathfindingPointManager stores tile numbers, but library expects world positions
             const startPos = {
                 x: startPoint.x * this.settings.tileSize + this.settings.tileSize / 2,
                 y: startPoint.y * this.settings.tileSize + this.settings.tileSize / 2,
@@ -626,12 +626,12 @@ class ChunkMapGenerator {
             
 
             
-            // Znajdź ścieżkę
+            // Find path
             const pathSegments = pathfinder.findPath(startPos, endPos);
             
             if (pathSegments) {
 
-                console.log('--- Obliczone segmenty ścieżki ---');
+                console.log('--- Calculated path segments ---');
                 const tableData = pathSegments.map(segment => ({
                     chunk: segment.chunk,
                     x: segment.position.x.toFixed(2),
@@ -640,54 +640,54 @@ class ChunkMapGenerator {
                 console.table(tableData);
                 console.log('------------------------------------');
                 
-                // Stwórz kompletną ścieżkę zaczynającą się od pozycji startowej
+                // Create complete path starting from start position
                 const completePath = [];
                 
-                // Dodaj pozycję startową jako pierwszy punkt
+                // Add start position as first point
                 completePath.push({
                     chunk: 'start',
                     position: startPos
                 });
                 
-                // Dodaj segmenty ścieżki z biblioteki
+                // Add path segments from library
                 completePath.push(...pathSegments);
                 
-                // Zapisz kompletną ścieżkę do renderowania
+                // Save complete path for rendering
                 this.pathSegments = completePath;
                 
-                // Rerenderuj mapę z narysowaną ścieżką
+                // Re-render map with drawn path
                 this.renderMap();
                 
-                this.pathfindingUIController.showSuccess(`Znaleziono ścieżkę z ${pathSegments.length} segmentami`);
+                this.pathfindingUIController.showSuccess(`Found path with ${pathSegments.length} segments`);
             } else {
-                // Wyczyść poprzednią ścieżkę
+                // Clear previous path
                 this.pathSegments = null;
                 this.renderMap();
-                this.pathfindingUIController.showError('Nie można znaleźć ścieżki między punktami');
+                this.pathfindingUIController.showError('Cannot find path between points');
             }
             
         } catch (error) {
-            console.error('❌ Błąd podczas obliczania ścieżki:', error);
-            this.pathfindingUIController.showError(`Błąd: ${error.message}`);
+            console.error('❌ Error calculating path:', error);
+            this.pathfindingUIController.showError(`Error: ${error.message}`);
         }
     }
 
     /**
-     * KONFIGURUJE INTERAKTYWNOŚĆ CANVAS Z OBSŁUGĄ PATHFINDING
+     * CONFIGURES CANVAS INTERACTIVITY WITH PATHFINDING SUPPORT
      */
     setupCanvasInteractivity() {
-        // Obsługa ruchu myszy
+        // Mouse movement handling
         this.canvas.addEventListener('mousemove', (e) => {
             const { mouseX, mouseY } = getCanvasCoordinates(e, this.canvas);
             
-            // Aktualizuj pozycję myszy w UI
+            // Update mouse position in UI
             this.uiController.updateMousePosition(mouseX, mouseY);
             
-            // Aktualizuj przeciąganie punktów pathfinding
+            // Update pathfinding point dragging
             if (this.pathfindingPointManager.isDraggingPoint()) {
                 const success = this.pathfindingPointManager.updateDragging(mouseX, mouseY);
                 if (success) {
-                    // Wyczyść obliczoną ścieżkę bo punkty się zmieniły
+                    // Clear calculated path because points changed
                     this.pathSegments = null;
                     this.renderMap();
                     this.pathfindingUIController.updateAll(this.pathfindingPointManager);
@@ -695,14 +695,14 @@ class ChunkMapGenerator {
                 return;
             }
             
-            // Sprawdź czy najeżdżamy na punkt pathfinding
+            // Check if hovering over pathfinding point
             const pathfindingPoint = this.pathfindingPointManager.getPointAt(mouseX, mouseY);
             if (pathfindingPoint) {
                 this.canvas.style.cursor = 'grab';
                 return;
             }
             
-            // Sprawdź punkty przejścia (istniejąca logika)
+            // Check transition points (existing logic)
             if (!this.pathfindingSettings.showTransitionPoints) {
                 this.inspector.hideInspector();
                 this.canvas.style.cursor = 'default';
@@ -712,7 +712,7 @@ class ChunkMapGenerator {
             const hoveredPoint = this.transitionPointManager.getTransitionPointAt(mouseX, mouseY);
             const currentHoveredPoint = this.inspector.getHoveredPoint();
             
-            // Sprawdź czy hover się zmienił (porównaj przez ID punktów)
+            // Check if hover changed (compare by point IDs)
             const getPointId = (point) => point ? `${point.chunkA}-${point.chunkB}-${point.x}-${point.y}` : null;
             const hoveredId = getPointId(hoveredPoint);
             const currentHoveredId = getPointId(currentHoveredPoint);
@@ -724,7 +724,7 @@ class ChunkMapGenerator {
                 this.inspector.showInspector(hoveredPoint, this.gameDataManager);
                 this.canvas.style.cursor = 'pointer';
                 
-                // Renderuj mapę tylko jeśli hover się zmienił
+                // Render map only if hover changed
                 if (hoverChanged) {
                     this.renderMap();
                     this.updateActivePointId();
@@ -740,7 +740,7 @@ class ChunkMapGenerator {
                     this.inspector.hideInspector();
                 }
                 
-                // Renderuj mapę tylko jeśli hover się zmienił
+                // Render map only if hover changed
                 if (hoverChanged) {
                     this.renderMap();
                     this.updateActivePointId();
@@ -748,11 +748,11 @@ class ChunkMapGenerator {
             }
         });
 
-        // Obsługa kliknięć myszy
+        // Mouse click handling
         this.canvas.addEventListener('mousedown', (e) => {
             const { mouseX, mouseY } = getCanvasCoordinates(e, this.canvas);
             
-            // Sprawdź czy kliknięto na punkt pathfinding
+            // Check if clicked on pathfinding point
             const pathfindingPoint = this.pathfindingPointManager.getPointAt(mouseX, mouseY);
             if (pathfindingPoint) {
                 this.pathfindingPointManager.startDragging(pathfindingPoint, mouseX, mouseY);
@@ -761,25 +761,25 @@ class ChunkMapGenerator {
                 return;
             }
             
-            // Sprawdź punkty przejścia (istniejąca logika)
+            // Check transition points (existing logic)
             if (this.pathfindingSettings.showTransitionPoints) {
                 const clickedPoint = this.transitionPointManager.getTransitionPointAt(mouseX, mouseY);
                 if (clickedPoint) {
                     this.inspector.setSelectedPoint(clickedPoint);
                     this.inspector.showInspector(clickedPoint, this.gameDataManager);
-                    // Renderuj mapę z liniami połączeń dla selectedPoint
+                    // Render map with connection lines for selectedPoint
                     this.renderMap();
                     this.updateActivePointId();
                 } else {
-                    // Kliknięto poza punktem przejścia - resetuj zaznaczenie
+                    // Clicked outside transition point - reset selection
                     this.inspector.setSelectedPoint(null);
                     this.inspector.hideInspector();
-                    // Renderuj mapę bez linii połączeń
+                    // Render map without connection lines
                     this.renderMap();
                     this.updateActivePointId();
                 }
             } else {
-                // Punkty przejścia są wyłączone - resetuj zaznaczenie
+                // Transition points are disabled - reset selection
                 this.inspector.setSelectedPoint(null);
                 this.inspector.hideInspector();
                 this.renderMap();
@@ -787,7 +787,7 @@ class ChunkMapGenerator {
             }
         });
 
-        // Obsługa puszczenia myszy
+        // Mouse release handling
         this.canvas.addEventListener('mouseup', () => {
             if (this.pathfindingPointManager.isDraggingPoint()) {
                 this.pathfindingPointManager.stopDragging();
@@ -796,56 +796,56 @@ class ChunkMapGenerator {
             }
         });
 
-        // Obsługa opuszczenia canvas
+        // Canvas leave handling
         this.canvas.addEventListener('mouseleave', () => {
             if (this.pathfindingPointManager.isDraggingPoint()) {
                 this.pathfindingPointManager.stopDragging();
                 this.pathfindingUIController.updateAll(this.pathfindingPointManager);
             }
             
-            // Wyczyść pozycję myszy
+            // Clear mouse position
             const mousePositionElement = document.getElementById('mousePosition');
             if (mousePositionElement) {
                 mousePositionElement.textContent = '-';
             }
             
-            // Resetuj hover (ale zachowaj selected)
+            // Reset hover (but keep selected)
             this.inspector.setHoveredPoint(null);
             this.canvas.classList.remove('pointer-cursor');
             this.canvas.style.cursor = 'default';
             
-            // Pokaż selectedPoint jeśli istnieje, inaczej ukryj inspector
+            // Show selectedPoint if exists, otherwise hide inspector
             if (this.inspector.getSelectedPoint()) {
                 this.inspector.showInspector(this.inspector.getSelectedPoint(), this.gameDataManager);
             } else {
                 this.inspector.hideInspector();
             }
             
-            // Renderuj mapę (może ukryć linie hover, ale zachować linie selected)
+            // Render map (may hide hover lines, but keep selected lines)
             this.renderMap();
             this.updateActivePointId();
         });
     }
     
     /**
-     * AKTUALIZUJE GAMEDATA MANAGER Z PUNKTAMI PRZEJŚCIA I BUDUJE GRAF
+     * UPDATES GAMEDATA MANAGER WITH TRANSITION POINTS AND BUILDS GRAPH
      */
     updateGameDataManager() {
         if (!this.gameDataManager || !this.transitionPointManager) {
             return;
         }
         
-        // Wyczyść poprzednie punkty przejścia
+        // Clear previous transition points
         this.gameDataManager.transitionPoints = [];
         
-        // Pobierz punkty przejścia z TransitionPointManager
+        // Get transition points from TransitionPointManager
         const transitionPoints = this.transitionPointManager.getTransitionPoints();
         
-        // Konwertuj do nowego formatu i dodaj do GameDataManager
+        // Convert to new format and add to GameDataManager
         transitionPoints.forEach(point => {
-            // Sprawdź czy punkt ma wymagane właściwości
+            // Check if point has required properties
             if (point.chunkA && point.chunkB && point.x !== undefined && point.y !== undefined) {
-                // Oblicz pozycję lokalną na podstawie kierunku
+                // Calculate local position based on direction
                 let position;
                 if (point.direction === 'vertical') {
                     position = point.x % this.settings.chunkSize;
@@ -853,42 +853,42 @@ class ChunkMapGenerator {
                     position = point.y % this.settings.chunkSize;
                 }
                 
-                // Dodaj punkt z ID i connections
+                // Add point with ID and connections
                 this.gameDataManager.addTransitionPoint(point.chunkA, point.chunkB, position);
             }
         });
         
-        // Zaktualizuj referencję gameDataManager w Inspector'ze
+        // Update gameDataManager reference in Inspector
         this.inspector.setGameDataManager(this.gameDataManager);
         
-        // Graf połączeń będzie budowany na żądanie przez przycisk "Zbuduj Graf Przejść"
+        // Connection graph will be built on demand by "Build Transition Graph" button
         // this.gameDataManager.buildConnections(this.chunks);
         
 
     }
     
     /**
-     * BUDUJE GRAF POŁĄCZEŃ MIĘDZY PUNKTAMI PRZEJŚCIA
+     * BUILDS CONNECTION GRAPH BETWEEN TRANSITION POINTS
      */
     onBuildTransitionGraph() {
-        // Upewnij się że mamy dane w GameDataManager
+        // Make sure we have data in GameDataManager
         if (!this.gameDataManager || this.gameDataManager.transitionPoints.length === 0) {
-            this.pathfindingUIController.showError('Brak punktów przejścia do zbudowania grafu');
+            this.pathfindingUIController.showError('No transition points to build graph');
             return;
         }
         
-        // Buduj graf połączeń
+        // Build connection graph
         this.gameDataManager.buildConnections(this.chunks);
         
-        // Zaktualizuj referencję gameDataManager w Inspector'ze po zbudowaniu połączeń
+        // Update gameDataManager reference in Inspector after building connections
         this.inspector.setGameDataManager(this.gameDataManager);
         
-        // Pokaż sukces
-        this.pathfindingUIController.showSuccess('Zbudowano graf połączeń');
+        // Show success
+        this.pathfindingUIController.showSuccess('Built connection graph');
     }
 
     /**
-     * DRUKUJE DANE GAME DATA MANAGER W KONSOLI
+     * PRINTS GAME DATA MANAGER DATA TO CONSOLE
      */
     onPrintGameData() {
         console.log('=== GAMEDATA MANAGER PRINT ===');
@@ -906,12 +906,12 @@ class ChunkMapGenerator {
         
         console.log('==============================');
         
-        // Pokazuje też sukces w UI
-        this.pathfindingUIController.showSuccess('Dane wydrukowane w konsoli');
+        // Also show success in UI
+        this.pathfindingUIController.showSuccess('Data printed to console');
     }
 
     /**
-     * KONFIGURUJE PRZYCISK "OBLICZ ŚCIEŻKĘ"
+     * CONFIGURES "CALCULATE PATH" BUTTON
      */
     setupCalculatePathButton() {
         const calculatePathBtn = document.getElementById('calculatePath');
@@ -923,7 +923,7 @@ class ChunkMapGenerator {
     }
 }
 
-// Inicjalizuj aplikację gdy DOM jest gotowy
+// Initialize application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     new ChunkMapGenerator();
 }); 

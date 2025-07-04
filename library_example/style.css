@@ -1116,7 +1116,7 @@ input[type="range"]::-moz-range-thumb:hover {
   transition: border-left-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Style dla aktywnego punktu przejścia */
+/* Style for active transition point */
 #selectedPointInfo.has-selection .info-item {
   border-left-color: #00ff00;
   box-shadow: 0 0 0 1px #00ff0033;

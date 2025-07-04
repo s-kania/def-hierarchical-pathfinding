@@ -1,5 +1,5 @@
 /**
- * MENEDŻER PUNKTÓW PRZEJŚCIA MIĘDZY CHUNKAMI
+ * TRANSITION POINT MANAGER BETWEEN CHUNKS
  */
 
 import { RENDER_CONSTANTS } from '../config/Settings.js';
@@ -12,7 +12,7 @@ export class TransitionPointManager {
     }
 
     /**
-     * GENERUJE PUNKTY PRZEJŚCIA MIĘDZY CHUNKAMI
+     * GENERATES TRANSITION POINTS BETWEEN CHUNKS
      */
     generateTransitionPoints(chunks) {
         this.transitionPoints = [];
@@ -20,13 +20,13 @@ export class TransitionPointManager {
         const chunkSize = this.settings.chunkSize;
         const maxPoints = this.pathfindingSettings.maxTransitionPoints;
         
-        // Sprawdź wszystkie pary sąsiadujących chunków
+        // Check all pairs of adjacent chunks
         for (let chunkY = 0; chunkY < this.settings.chunkRows; chunkY++) {
             for (let chunkX = 0; chunkX < this.settings.chunkCols; chunkX++) {
                 const currentChunk = chunks.find(c => c.x === chunkX && c.y === chunkY);
                 if (!currentChunk) continue;
                 
-                // Sprawdź granicę z chunkiem po prawej (horizontal)
+                // Check border with chunk on the right (horizontal)
                 if (chunkX < this.settings.chunkCols - 1) {
                     const rightChunk = chunks.find(c => c.x === chunkX + 1 && c.y === chunkY);
                     if (rightChunk) {
@@ -37,7 +37,7 @@ export class TransitionPointManager {
                     }
                 }
                 
-                // Sprawdź granicę z chunkiem poniżej (vertical)
+                // Check border with chunk below (vertical)
                 if (chunkY < this.settings.chunkRows - 1) {
                     const bottomChunk = chunks.find(c => c.x === chunkX && c.y === chunkY + 1);
                     if (bottomChunk) {
@@ -54,59 +54,59 @@ export class TransitionPointManager {
     }
 
     /**
-     * ZNAJDUJE PUNKTY PRZEJŚCIA NA GRANICY MIĘDZY DWOMA CHUNKAMI
+     * FINDS TRANSITION POINTS ON BORDER BETWEEN TWO CHUNKS
      */
     findTransitionPointsOnBorder(chunkA, chunkB, direction, maxPoints) {
         const chunkSize = this.settings.chunkSize;
         const points = [];
         
-        // Przygotuj tablicę do sprawdzania możliwości przejścia
+        // Prepare array for checking passability
         const canPass = [];
         
         if (direction === 'horizontal') {
-            // Granica pionowa - sprawdzaj rzędy (Y)
+            // Vertical border - check rows (Y)
             for (let y = 0; y < chunkSize; y++) {
-                // Prawy brzeg chunkA (x = chunkSize-1)
+                // Right edge of chunkA (x = chunkSize-1)
                 const tileA = chunkA.tiles[y * chunkSize + (chunkSize - 1)];
-                // Lewy brzeg chunkB (x = 0)
+                // Left edge of chunkB (x = 0)
                 const tileB = chunkB.tiles[y * chunkSize + 0];
                 
-                // Można przejść tylko jeśli oba kafelki to oceany (0)
+                // Can pass only if both tiles are ocean (0)
                 canPass[y] = (tileA === 0 && tileB === 0);
             }
         } else if (direction === 'vertical') {
-            // Granica pozioma - sprawdzaj kolumny (X)
+            // Horizontal border - check columns (X)
             for (let x = 0; x < chunkSize; x++) {
-                // Dolny brzeg chunkA (y = chunkSize-1)
+                // Bottom edge of chunkA (y = chunkSize-1)
                 const tileA = chunkA.tiles[(chunkSize - 1) * chunkSize + x];
-                // Górny brzeg chunkB (y = 0)
+                // Top edge of chunkB (y = 0)
                 const tileB = chunkB.tiles[0 * chunkSize + x];
                 
-                // Można przejść tylko jeśli oba kafelki to oceany (0)
+                // Can pass only if both tiles are ocean (0)
                 canPass[x] = (tileA === 0 && tileB === 0);
             }
         }
         
-        // Znajdź ciągłe segmenty przejścia
+        // Find continuous passable segments
         const segments = this.findPassableSegments(canPass);
         
-        // Ogranicz liczbę segmentów do maxPoints
+        // Limit number of segments to maxPoints
         const selectedSegments = this.selectBestSegments(segments, maxPoints);
         
-        // Utwórz punkty przejścia na środku każdego segmentu
+        // Create transition points at the center of each segment
         selectedSegments.forEach(segment => {
             const midPoint = Math.floor((segment.start + segment.end) / 2);
             
             let globalX, globalY;
             
             if (direction === 'horizontal') {
-                // Punkt na granicy między chunkami (na końcu chunk A)
-                globalX = chunkA.x * chunkSize + chunkSize; // Granica po prawej stronie chunkA
+                // Point on border between chunks (at the end of chunk A)
+                globalX = chunkA.x * chunkSize + chunkSize; // Border on the right side of chunkA
                 globalY = chunkA.y * chunkSize + midPoint;
             } else if (direction === 'vertical') {
-                // Punkt na granicy między chunkami (na końcu chunk A)
+                // Point on border between chunks (at the end of chunk A)
                 globalX = chunkA.x * chunkSize + midPoint;
-                globalY = chunkA.y * chunkSize + chunkSize; // Granica poniżej chunkA
+                globalY = chunkA.y * chunkSize + chunkSize; // Border below chunkA
             }
             
             points.push({
@@ -123,7 +123,7 @@ export class TransitionPointManager {
     }
 
     /**
-     * ZNAJDUJE CIĄGŁE SEGMENTY GDZ MOŻNA PRZEJŚĆ
+     * FINDS CONTINUOUS SEGMENTS WHERE PASSAGE IS POSSIBLE
      */
     findPassableSegments(canPass) {
         const segments = [];
@@ -131,16 +131,16 @@ export class TransitionPointManager {
         
         for (let i = 0; i < canPass.length; i++) {
             if (canPass[i] && currentStart === null) {
-                // Początek nowego segmentu
+                // Start of new segment
                 currentStart = i;
             } else if (!canPass[i] && currentStart !== null) {
-                // Koniec bieżącego segmentu
+                // End of current segment
                 segments.push({ start: currentStart, end: i - 1 });
                 currentStart = null;
             }
         }
         
-        // Jeśli segment trwa do końca
+        // If segment continues to the end
         if (currentStart !== null) {
             segments.push({ start: currentStart, end: canPass.length - 1 });
         }
@@ -149,22 +149,22 @@ export class TransitionPointManager {
     }
 
     /**
-     * WYBIERA NAJLEPSZE SEGMENTY (NAJDŁUŻSZE)
+     * SELECTS BEST SEGMENTS (LONGEST)
      */
     selectBestSegments(segments, maxCount) {
-        // Sortuj segmenty według długości (najdłuższe pierwsze)
+        // Sort segments by length (longest first)
         const sortedSegments = segments.sort((a, b) => {
             const lengthA = a.end - a.start + 1;
             const lengthB = b.end - b.start + 1;
             return lengthB - lengthA;
         });
         
-        // Wybierz maksymalnie maxCount najdłuższych segmentów
+        // Select maximum maxCount longest segments
         return sortedSegments.slice(0, maxCount);
     }
 
     /**
-     * OBLICZA WSPÓŁRZĘDNE PIKSELI DLA PUNKTÓW PRZEJŚCIA
+     * CALCULATES PIXEL COORDINATES FOR TRANSITION POINTS
      */
     calculateTransitionPointPixels(chunks, gapSize = RENDER_CONSTANTS.GAP_SIZE) {
         const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
@@ -178,31 +178,31 @@ export class TransitionPointManager {
             let pixelX, pixelY;
 
             if (point.direction === 'horizontal') {
-                // Dla punktów poziomych - pozycja na prawej granicy chunk A
+                // For horizontal points - position on right border of chunk A
                 const chunkStartX = RENDER_CONSTANTS.CANVAS_PADDING + chunkAData.x * (chunkPixelSize + gapSize);
                 const chunkStartY = RENDER_CONSTANTS.CANVAS_PADDING + chunkAData.y * (chunkPixelSize + gapSize);
                 
-                // Pozycja X - na granicy między chunkami (na końcu chunk A)
+                // Position X - on border between chunks (at the end of chunk A)
                 pixelX = chunkStartX + chunkPixelSize;
                 
-                // Pozycja Y - relatywna do chunk A, konwertowana na pozycję lokalną w chunku
+                // Position Y - relative to chunk A, converted to local position in chunk
                 const localYInChunk = point.y % this.settings.chunkSize;
                 pixelY = chunkStartY + localYInChunk * this.settings.tileSize + this.settings.tileSize / 2;
                 
             } else if (point.direction === 'vertical') {
-                // Dla punktów pionowych - pozycja na dolnej granicy chunk A
+                // For vertical points - position on bottom border of chunk A
                 const chunkStartX = RENDER_CONSTANTS.CANVAS_PADDING + chunkAData.x * (chunkPixelSize + gapSize);
                 const chunkStartY = RENDER_CONSTANTS.CANVAS_PADDING + chunkAData.y * (chunkPixelSize + gapSize);
                 
-                // Pozycja X - relatywna do chunk A, konwertowana na pozycję lokalną w chunku
+                // Position X - relative to chunk A, converted to local position in chunk
                 const localXInChunk = point.x % this.settings.chunkSize;
                 pixelX = chunkStartX + localXInChunk * this.settings.tileSize + this.settings.tileSize / 2;
                 
-                // Pozycja Y - na granicy między chunkami (na końcu chunk A)
+                // Position Y - on border between chunks (at the end of chunk A)
                 pixelY = chunkStartY + chunkPixelSize;
             }
 
-            // Zapisz obliczone współrzędne w obiekcie punktu
+            // Save calculated coordinates in point object
             point.pixelX = pixelX;
             point.pixelY = pixelY;
         });
@@ -211,30 +211,30 @@ export class TransitionPointManager {
     }
 
     /**
-     * ZNAJDUJE PUNKT PRZEJŚCIA POD WSPÓŁRZĘDNYMI MYSZY
+     * FINDS TRANSITION POINT UNDER MOUSE COORDINATES
      */
     getTransitionPointAt(mouseX, mouseY) {
         const baseRadius = Math.max(8, this.settings.tileSize / 2);
         const pointRadius = baseRadius * this.pathfindingSettings.transitionPointScale;
         
-        // Stała tolerancja - prostsza i bardziej przewidywalna
+        // Constant tolerance - simpler and more predictable
         const tolerance = Math.max(20, pointRadius * 1.5);
         
-        // Znajdź najbliższy punkt przejścia
+        // Find closest transition point
         let closestPoint = null;
         let closestDistance = Infinity;
         
         for (const point of this.transitionPoints) {
-            // Użyj pre-obliczonych współrzędnych pikseli
+            // Use pre-calculated pixel coordinates
             if (typeof point.pixelX !== 'number' || typeof point.pixelY !== 'number') {
                 console.warn(`⚠️ Point missing pixel coordinates:`, point);
                 continue;
             }
 
-            // Oblicz odległość od myszy do punktu
+            // Calculate distance from mouse to point
             const distance = Math.sqrt((mouseX - point.pixelX) ** 2 + (mouseY - point.pixelY) ** 2);
             
-            // Sprawdź czy punkt jest w tolerancji i czy jest bliższy od poprzedniego
+            // Check if point is within tolerance and closer than previous
             if (distance <= tolerance && distance < closestDistance) {
                 closestPoint = point;
                 closestDistance = distance;
@@ -245,14 +245,14 @@ export class TransitionPointManager {
     }
 
     /**
-     * GETTER DLA PUNKTÓW PRZEJŚCIA
+     * GETTER FOR TRANSITION POINTS
      */
     getTransitionPoints() {
         return this.transitionPoints;
     }
 
     /**
-     * CZYŚCI PUNKTY PRZEJŚCIA
+     * CLEARS TRANSITION POINTS
      */
     clearTransitionPoints() {
         this.transitionPoints = [];
