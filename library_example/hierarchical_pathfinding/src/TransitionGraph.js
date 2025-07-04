@@ -87,29 +87,15 @@ export class TransitionGraph {
      * @returns {Array|null} - Tablica ID punktów lub null
      */
     findPath(startId, endId) {
-        console.log('🗺️ === TRANSITION GRAPH A* DEBUG ===');
-        console.log('🎯 Szukanie ścieżki od:', startId, '→ do:', endId);
-        
         // Przypadek trywialny
         if (startId === endId) {
-            console.log('✅ Ten sam punkt - zwracam [' + startId + ']');
             return [startId];
         }
         
         // Sprawdzamy czy punkty istnieją
         if (!this.points.has(startId) || !this.points.has(endId)) {
-            console.log('❌ Punkty nie istnieją w grafie');
-            console.log('   Start exists:', this.points.has(startId));
-            console.log('   End exists:', this.points.has(endId));
             return null;
         }
-        
-        console.log('📊 Graf info:');
-        console.log('   Punkty w grafie:', this.points.size);
-        console.log('   Start punkt:', this.points.get(startId));
-        console.log('   End punkt:', this.points.get(endId));
-        console.log('   Start connections:', this.graph.get(startId));
-        console.log('   End connections:', this.graph.get(endId));
         
         // Implementacja A*
         const openSet = new MinHeap();
@@ -124,8 +110,6 @@ export class TransitionGraph {
             f: this.heuristic(startId, endId) 
         });
         
-        console.log('🚀 Rozpoczynanie A* z heurystyką:', this.heuristic(startId, endId));
-        
         let iterations = 0;
         const maxIterations = 1000; // zabezpieczenie przed nieskończoną pętlą
         
@@ -137,8 +121,6 @@ export class TransitionGraph {
             // Znaleźliśmy cel!
             if (current.id === endId) {
                 const path = this.reconstructPath(cameFrom, endId);
-                console.log('🎉 Znaleziono ścieżkę po', iterations, 'iteracjach:', path);
-                console.log('🗺️ === KONIEC TRANSITION GRAPH DEBUG ===');
                 return path;
             }
             
@@ -181,13 +163,7 @@ export class TransitionGraph {
             }
         }
         
-        if (iterations >= maxIterations) {
-            console.log('⚠️ Osiągnięto maksymalną liczbę iteracji:', maxIterations);
-        }
-        
         // Nie znaleźliśmy ścieżki
-        console.log('❌ Nie znaleziono ścieżki po', iterations, 'iteracjach');
-        console.log('🗺️ === KONIEC TRANSITION GRAPH DEBUG ===');
         return null;
     }
     

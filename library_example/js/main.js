@@ -140,7 +140,7 @@ class ChunkMapGenerator {
      * GŁÓWNA METODA GENEROWANIA MAPY
      */
     generateMap() {
-        console.log('🗺️ Generating unified map...');
+
         
         // Aktualizuj ustawienia w komponentach
         this.updateComponentSettings();
@@ -170,7 +170,6 @@ class ChunkMapGenerator {
         // Automatycznie zbuduj graf połączeń
         if (this.gameDataManager.transitionPoints.length > 0) {
             this.gameDataManager.buildConnections(this.chunks);
-            console.log('✓ Automatycznie zbudowano graf połączeń');
         }
         
         // Automatycznie wygeneruj losowe punkty pathfinding
@@ -182,16 +181,12 @@ class ChunkMapGenerator {
         // Zapisz referencje dla kompatybilności
         this.baseMap = this.mapGenerator.getBaseMap();
         this.mapDimensions = this.mapGenerator.getMapDimensions();
-        
-        console.log(`✓ Generated ${this.chunks.length} chunks from unified map`);
     }
     
     /**
      * APLIKUJE TYLKO SMOOTHING (OPTYMALIZACJA)
      */
     applySmoothingToExistingMap() {
-        console.log('🔄 Applying smoothing to existing map...');
-        
         // Aktualizuj ustawienia
         this.updateComponentSettings();
         
@@ -218,10 +213,7 @@ class ChunkMapGenerator {
         // Automatycznie zbuduj graf połączeń
         if (this.gameDataManager.transitionPoints.length > 0) {
             this.gameDataManager.buildConnections(this.chunks);
-            console.log('✓ Automatycznie zbudowano graf połączeń po smoothing');
         }
-        
-        console.log(`✓ Applied smoothing to existing map`);
     }
     
     /**
@@ -236,7 +228,6 @@ class ChunkMapGenerator {
             const tilePos = this.pathfindingPointManager.pixelToTilePosition(startPoint.pixelX, startPoint.pixelY);
             
             if (!tilePos || !this.pathfindingPointManager.isTileOcean(tilePos)) {
-                console.log('⚠️ Punkt startowy nie jest już na oceanie - usuwam');
                 this.pathfindingPointManager.startPoint = null;
                 pointsRemoved = true;
             }
@@ -248,7 +239,6 @@ class ChunkMapGenerator {
             const tilePos = this.pathfindingPointManager.pixelToTilePosition(endPoint.pixelX, endPoint.pixelY);
             
             if (!tilePos || !this.pathfindingPointManager.isTileOcean(tilePos)) {
-                console.log('⚠️ Punkt końcowy nie jest już na oceanie - usuwam');
                 this.pathfindingPointManager.endPoint = null;
                 pointsRemoved = true;
             }
@@ -260,7 +250,6 @@ class ChunkMapGenerator {
             
             // Automatycznie wygeneruj nowe punkty jeśli wszystkie zostały usunięte
             if (!this.pathfindingPointManager.getStartPoint() && !this.pathfindingPointManager.getEndPoint()) {
-                console.log('🎲 Wszystkie punkty zostały usunięte - generuję nowe...');
                 this.generateRandomPathfindingPoints();
             }
         }
@@ -359,8 +348,6 @@ class ChunkMapGenerator {
      * RESETUJE DO DOMYŚLNYCH USTAWIEŃ
      */
     onReset() {
-        console.log('🔄 Resetting to defaults...');
-        
         // Reset punktów pathfinding i ścieżki
         this.pathfindingPointManager.clearPoints();
         this.pathSegments = null;
@@ -384,12 +371,9 @@ class ChunkMapGenerator {
      * AUTOMATYCZNIE GENERUJE LOSOWE PUNKTY PATHFINDING
      */
     generateRandomPathfindingPoints() {
-        console.log('🎲 Automatyczne generowanie losowych punktów pathfinding...');
         const success = this.pathfindingPointManager.generateRandomPoints(this.chunks);
         
-        if (success) {
-            console.log('✓ Automatycznie wygenerowano losowe punkty pathfinding');
-        } else {
+        if (!success) {
             console.log('⚠️ Nie można wygenerować punktów - brak wystarczającej ilości oceanu');
         }
     }
@@ -398,7 +382,6 @@ class ChunkMapGenerator {
      * CZYŚCI PUNKTY PATHFINDING
      */
     onClearPathfindingPoints() {
-        console.log('🗑️ Czyszczenie punktów pathfinding...');
         this.pathfindingPointManager.clearPoints();
         this.pathSegments = null; // Wyczyść też obliczoną ścieżkę
         this.pathfindingUIController.showSuccess('Wyczyszczono punkty');
@@ -410,7 +393,6 @@ class ChunkMapGenerator {
      * OBLICZA ŚCIEŻKĘ PATHFINDING
      */
     onCalculatePathfindingPath() {
-        console.log('🧭 Obliczanie ścieżki pathfinding...');
         
         if (!this.pathfindingPointManager.hasPoints()) {
             this.pathfindingUIController.showError('Brak punktów do obliczenia ścieżki');
@@ -454,24 +436,12 @@ class ChunkMapGenerator {
                 z: 0
             };
             
-            console.log('🚀 Szukanie ścieżki:');
-            console.log('   Start tile:', startPoint.x, startPoint.y, '→ world pos:', startPos.x, startPos.y);
-            console.log('   End tile:', endPoint.x, endPoint.y, '→ world pos:', endPos.x, endPos.y);
+
             
             // Znajdź ścieżkę
             const pathSegments = pathfinder.findPath(startPos, endPos);
             
             if (pathSegments) {
-                console.log('✅ Znaleziono ścieżkę!');
-                console.log('📊 Segmenty ruchu:', pathSegments);
-                
-                // Wyświetl segmenty w czytelnym formacie
-                pathSegments.forEach((segment, index) => {
-                    console.log(`Segment ${index + 1}:`, {
-                        chunk: segment.chunk,
-                        pozycja: segment.position
-                    });
-                });
                 
                 // Stwórz kompletną ścieżkę zaczynającą się od pozycji startowej
                 const completePath = [];
@@ -493,7 +463,6 @@ class ChunkMapGenerator {
                 
                 this.pathfindingUIController.showSuccess(`Znaleziono ścieżkę z ${pathSegments.length} segmentami`);
             } else {
-                console.log('❌ Nie znaleziono ścieżki');
                 // Wyczyść poprzednią ścieżkę
                 this.pathSegments = null;
                 this.renderMap();
@@ -692,7 +661,7 @@ class ChunkMapGenerator {
         // Graf połączeń będzie budowany na żądanie przez przycisk "Zbuduj Graf Przejść"
         // this.gameDataManager.buildConnections(this.chunks);
         
-        console.log(`✓ GameDataManager updated with ${this.gameDataManager.transitionPoints.length} transition points`);
+
     }
     
     /**

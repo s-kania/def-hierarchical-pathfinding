@@ -300,11 +300,11 @@ export class Inspector {
         // Znajdź odpowiedni punkt w GameDataManager
         const gdPoint = this.findGameDataPoint(this.selectedPoint, this.gameDataManager);
         if (gdPoint) {
-            console.log('🔍 Debug Połączeń: Wywołuję printPointConnections dla punktu:', gdPoint.id);
+    
             this.gameDataManager.printPointConnections(gdPoint.id);
         } else {
             console.warn('🔍 Debug Połączeń: Nie znaleziono punktu w GameDataManager');
-            console.log('Zaznaczony punkt:', this.selectedPoint);
+    
         }
     }
 } 

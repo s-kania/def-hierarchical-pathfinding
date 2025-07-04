@@ -34,8 +34,6 @@ export class HierarchicalPathfinding {
         // Zapisz konfigurację
         this.config = config;
         
-        console.log(`✓ HierarchicalPathfinding: chunk ${config.chunkWidth}x${config.chunkHeight}, grid ${config.gridWidth}x${config.gridHeight}`);
-        
         // Budujemy graf połączeń między punktami przejścia
         this.transitionGraph = new TransitionGraph(config.transitionPoints, {
             gridWidth: config.gridWidth,
@@ -56,10 +54,6 @@ export class HierarchicalPathfinding {
             throw new Error("Pathfinder nie został zainicjalizowany");
         }
 
-        console.log('🔍 === HIERARCHICAL PATHFINDING DEBUG ===');
-        console.log('📍 Start:', startPos);
-        console.log('📍 End:', endPos);
-
         // Sprawdzamy czy pozycje mieszczą się w świecie
         const worldWidth = this.config.gridWidth * this.config.chunkWidth * this.config.tileSize;
         const worldHeight = this.config.gridHeight * this.config.chunkHeight * this.config.tileSize;
@@ -68,7 +62,6 @@ export class HierarchicalPathfinding {
             startPos.y < 0 || startPos.y >= worldHeight ||
             endPos.x < 0 || endPos.x >= worldWidth ||
             endPos.y < 0 || endPos.y >= worldHeight) {
-            console.log('❌ Pozycje poza granicami świata');
             return null;
         }
 
@@ -76,48 +69,27 @@ export class HierarchicalPathfinding {
         const startChunk = CoordUtils.globalToChunkId(startPos, this.config.chunkWidth, this.config.tileSize);
         const endChunk = CoordUtils.globalToChunkId(endPos, this.config.chunkWidth, this.config.tileSize);
 
-        console.log('🗂️ Start chunk:', startChunk);
-        console.log('🗂️ End chunk:', endChunk);
-
         // Jeśli ten sam chunk - zwykły A* lokalny
         if (startChunk === endChunk) {
-            console.log('✅ Ten sam chunk - lokalny pathfinding');
             return this.findLocalPath(startChunk, startPos, endPos);
         }
-
-        console.log('🔀 Różne chunki - szukanie przez punkty przejścia');
 
         // Różne chunki - szukamy przez punkty przejścia
         const startPoint = this.findNearestTransition(startPos, startChunk);
         const endPoint = this.findNearestTransition(endPos, endChunk);
 
-        console.log('🎯 Najbliższy punkt startowy:', startPoint);
-        console.log('🎯 Najbliższy punkt końcowy:', endPoint);
-
         if (!startPoint || !endPoint) {
-            console.log('❌ Brak dostępnych punktów przejścia');
             return null; // Brak dostępnych punktów przejścia
         }
-
-        // Znajdujemy ścieżkę między punktami przejścia (A* na grafie)
-        console.log('🗺️ Szukanie ścieżki między punktami przejścia...');
-        console.log('   Od:', startPoint.id, '→ Do:', endPoint.id);
         
         const transitionPath = this.transitionGraph.findPath(startPoint.id, endPoint.id);
 
-        console.log('🛤️ Znaleziona ścieżka punktów przejścia:', transitionPath);
-
         if (!transitionPath) {
-            console.log('❌ Brak ścieżki między chunkami');
             return null; // Brak ścieżki między chunkami
         }
 
         // Budujemy finalne segmenty ścieżki
-        console.log('🔨 Budowanie segmentów ścieżki...');
         const segments = this.buildPathSegments(startPos, endPos, transitionPath);
-        
-        console.log('📊 Finalne segmenty:', segments);
-        console.log('🔍 === KONIEC DEBUG ===');
         
         return segments;
     }
@@ -129,24 +101,15 @@ export class HierarchicalPathfinding {
      * @returns {Object|null} - Najbliższy dostępny punkt przejścia
      */
     findNearestTransition(pos, chunkId) {
-        console.log(`🔍 Szukanie punktów przejścia dla pozycji ${pos.x},${pos.y} w chunku ${chunkId}`);
-        
         // Pobieramy wszystkie punkty przejścia w tym chunku
         const points = this.transitionGraph.getPointsInChunk(chunkId);
         
-        console.log(`📋 Dostępne punkty przejścia w chunku ${chunkId}:`, points.length);
-        points.forEach((point, index) => {
-            console.log(`   ${index + 1}. ID: ${point.id}, chunks: [${point.chunks.join(', ')}], position: ${point.position}`);
-        });
-        
         if (points.length === 0) {
-            console.log(`❌ Brak punktów przejścia w chunku ${chunkId}`);
             return null;
         }
 
         let nearest = null;
         let minDistance = Infinity;
-        let evaluationResults = [];
 
         // Szukamy najbliższego punktu do którego można dojść
         for (const point of points) {
@@ -156,16 +119,8 @@ export class HierarchicalPathfinding {
             );
 
             if (!pointPos) {
-                evaluationResults.push({
-                    pointId: point.id,
-                    status: 'BŁĄD - nie można obliczyć pozycji globalnej',
-                    distance: null,
-                    accessible: false
-                });
                 continue;
             }
-
-            console.log(`   🎯 Sprawdzanie punktu ${point.id} na pozycji ${pointPos.x},${pointPos.y}`);
 
             // Sprawdzamy czy można dojść do tego punktu lokalną ścieżką
             const localPath = this.findLocalPath(chunkId, pos, pointPos);
@@ -176,39 +131,11 @@ export class HierarchicalPathfinding {
                 const dy = pointPos.y - pos.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 
-                evaluationResults.push({
-                    pointId: point.id,
-                    status: 'DOSTĘPNY',
-                    distance: distance.toFixed(2),
-                    accessible: true,
-                    globalPos: pointPos
-                });
-                
                 if (distance < minDistance) {
                     minDistance = distance;
                     nearest = point;
                 }
-            } else {
-                evaluationResults.push({
-                    pointId: point.id,
-                    status: 'NIEDOSTĘPNY - brak lokalnej ścieżki',
-                    distance: null,
-                    accessible: false,
-                    globalPos: pointPos
-                });
             }
-        }
-
-        console.log('📊 Wyniki oceny punktów przejścia:');
-        evaluationResults.forEach(result => {
-            const status = result.accessible ? '✅' : '❌';
-            console.log(`   ${status} ${result.pointId}: ${result.status}${result.distance ? ` (dystans: ${result.distance})` : ''}`);
-        });
-
-        if (nearest) {
-            console.log(`🎯 Wybrany najbliższy punkt: ${nearest.id} (dystans: ${minDistance.toFixed(2)})`);
-        } else {
-            console.log(`❌ Nie znaleziono dostępnego punktu przejścia w chunku ${chunkId}`);
         }
 
         return nearest;
@@ -282,7 +209,6 @@ export class HierarchicalPathfinding {
         
         // Tworzymy kopię ścieżki do optymalizacji
         let effectivePath = [...transitionPath];
-        console.log('effectivePath', effectivePath);
         
         // 🔥 WERYFIKACJA PIERWSZEGO WĘZŁA
         if (effectivePath.length >= 2) {
@@ -291,7 +217,6 @@ export class HierarchicalPathfinding {
             
             // Sprawdź czy drugi punkt jest dostępny z chunk'a startowego
             if (secondPoint.chunks.includes(startChunk)) {
-                console.log('✂️ Optymalizacja: usuwam pierwszy węzeł (redundantny)');
                 effectivePath.shift(); // Usuń pierwszy
             }
         }

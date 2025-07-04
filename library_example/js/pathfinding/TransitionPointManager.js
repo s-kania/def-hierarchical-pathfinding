@@ -15,7 +15,6 @@ export class TransitionPointManager {
      * GENERUJE PUNKTY PRZEJŚCIA MIĘDZY CHUNKAMI
      */
     generateTransitionPoints(chunks) {
-        console.log('🧭 Generating transition points between chunks...');
         this.transitionPoints = [];
         
         const chunkSize = this.settings.chunkSize;
@@ -51,7 +50,6 @@ export class TransitionPointManager {
             }
         }
         
-        console.log(`✓ Generated ${this.transitionPoints.length} transition points`);
         return this.transitionPoints;
     }
 
@@ -209,10 +207,7 @@ export class TransitionPointManager {
             point.pixelY = pixelY;
         });
         
-        // Pojedynczy log podsumowujący dla większych map
-        if (this.settings.chunkSize > 8) {
-            console.log(`📍 Calculated pixel positions for ${this.transitionPoints.length} transition points`);
-        }
+
     }
 
     /**

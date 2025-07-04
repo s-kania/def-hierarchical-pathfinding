@@ -242,7 +242,7 @@ export class UIController {
 
             if (clickedPoint) {
                 inspector.setSelectedPoint(clickedPoint);
-                console.log('🧭 Kliknięto punkt przejścia:', clickedPoint);
+        
                 this.triggerRenderOnly(); // Odśwież render aby pokazać aktywny punkt
             } else {
                 inspector.clearSelection();

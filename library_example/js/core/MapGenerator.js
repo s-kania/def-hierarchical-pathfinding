@@ -29,14 +29,10 @@ export class MapGenerator {
      * WYNIK: this.baseMap, this.mapDimensions są zaktualizowane
      */
     generateMap() {
-        console.log('🗺️ Generating unified map...');
-        
         // Oblicz rozmiar całej mapy w tiles
         const totalWidth = this.settings.chunkCols * this.settings.chunkSize;
         const totalHeight = this.settings.chunkRows * this.settings.chunkSize;
         this.mapDimensions = { width: totalWidth, height: totalHeight };
-        
-        console.log(`Map size: ${totalWidth}x${totalHeight} tiles (${this.settings.chunkCols}x${this.settings.chunkRows} chunks of ${this.settings.chunkSize}x${this.settings.chunkSize})`);
         
         // KROK 1: Generuj bazową mapę (random noise + island size adjustment)
         // REZULTAT: this.baseMap = [0,1,0,1,1,0...] (width*height elementów)
@@ -46,7 +42,6 @@ export class MapGenerator {
         // INPUT: this.baseMap, OUTPUT: finalMap
         const finalMap = this.applySmoothing(this.baseMap, totalWidth, totalHeight);
         
-        console.log(`✓ Generated unified map: ${totalWidth}x${totalHeight}`);
         return finalMap;
     }
 
@@ -62,13 +57,10 @@ export class MapGenerator {
             return this.generateMap();
         }
         
-        console.log('Applying smoothing to existing map...');
-        
         // KROK 1: Aplikuj smoothing do istniejącej this.baseMap
         // INPUT: this.baseMap (niezmieniona), OUTPUT: finalMap
         const finalMap = this.applySmoothing(this.baseMap, this.mapDimensions.width, this.mapDimensions.height);
 
-        console.log(`✓ Applied smoothing to existing ${this.mapDimensions.width}x${this.mapDimensions.height} map`);
         return finalMap;
     }
 
@@ -76,8 +68,6 @@ export class MapGenerator {
      * GENERUJE BAZOWĄ MAPĘ
      */
     generateBaseMap(width, height) {
-        console.log('✓ JavaScript Island Generator - generating base map');
-        
         if (this.islandSettings.preset !== 'custom') {
             return this.generateBaseMapWithPreset(width, height, this.islandSettings.preset);
         } else {
@@ -116,8 +106,6 @@ export class MapGenerator {
         const sizeMultiplier = getIslandSizeMultiplier(islandSize);
         const adjustedLandDensity = Math.min(1.0, landDensity * sizeMultiplier);
         
-        console.log(`Generating base map with land density: ${Math.round(adjustedLandDensity * 100)}%`);
-        
         // Initial random generation based on adjusted land density
         const tiles = [];
         for (let i = 0; i < width * height; i++) {
@@ -133,11 +121,8 @@ export class MapGenerator {
     applySmoothing(baseMap, width, height) {
         let tiles = cloneArray(baseMap); // Start with copy of base map
         
-        console.log(`Applying smoothing: ${this.islandSettings.iterations} iterations, threshold: ${this.islandSettings.neighborThreshold}, archipelago: ${this.islandSettings.archipelagoMode}`);
-        
         // Apply cellular automata for specified iterations
         for (let iteration = 0; iteration < this.islandSettings.iterations; iteration++) {
-            console.log(`Applying cellular automata iteration ${iteration + 1}/${this.islandSettings.iterations}...`);
             tiles = applyCellularAutomataUnified(
                 tiles, 
                 width, 
@@ -149,10 +134,8 @@ export class MapGenerator {
         
         // Post-processing based on island size and archipelago mode
         if (this.islandSettings.archipelagoMode) {
-            console.log('Applying archipelago effects...');
             tiles = applyArchipelagoEffectUnified(tiles, width, height, this.islandSettings.islandSize);
         } else {
-            console.log('Applying continent effects...');
             tiles = applyContinentEffectUnified(tiles, width, height, this.islandSettings.islandSize);
         }
         

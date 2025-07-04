@@ -34,8 +34,6 @@ export class GameDataManager {
          * }
          */
         this.chunks = {};
-        
-        console.log(`✓ GameDataManager: zainicjalizowano z chunks ${chunkWidth}x${chunkHeight}, grid ${gridWidth}x${gridHeight}`);
     }
     
     /**
@@ -605,35 +603,6 @@ export class GameDataManager {
      * DRUKUJE STATYSTYKI GRAFU
      */
     printGraphStats() {
-        console.log('=== GRAF PUNKTÓW PRZEJŚCIA ===');
-        console.log(`📊 Łączna liczba punktów: ${this.transitionPoints.length}`);
-        
-        let totalConnections = 0;
-        let totalWeight = 0;
-        this.transitionPoints.forEach(point => {
-            totalConnections += point.connections.length;
-            point.connections.forEach(conn => {
-                totalWeight += (typeof conn === 'object' && conn.weight) ? conn.weight : 1;
-            });
-        });
-        
-        console.log(`🔗 Łączna liczba połączeń: ${totalConnections / 2}`); // Dziel przez 2 bo dwukierunkowe
-        console.log(`⚖️  Łączna waga połączeń: ${totalWeight / 2}`); // Dziel przez 2 bo dwukierunkowe
-        console.log(`📈 Średnia połączeń na punkt: ${(totalConnections / this.transitionPoints.length).toFixed(2)}`);
-        console.log(`📏 Średnia waga połączenia: ${((totalWeight / 2) / (totalConnections / 2)).toFixed(2)}`);
-        
-        console.log('\n🔍 Punkty i ich połączenia (ID:waga):');
-        this.transitionPoints.forEach(point => {
-            const connectionsStr = point.connections.map(conn => {
-                if (typeof conn === 'object' && conn.weight !== undefined) {
-                    return `${conn.id}:${conn.weight}`;
-                } else {
-                    return typeof conn === 'string' ? `${conn}:1` : `${conn.id}:1`;
-                }
-            }).join(', ');
-            console.log(`${point.id}: [${connectionsStr}]`);
-        });
-        
-        console.log('===============================');
+        // Funkcja zachowana dla kompatybilności, ale bez logowania
     }
 } 

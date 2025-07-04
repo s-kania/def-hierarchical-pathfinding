@@ -68,7 +68,6 @@ export class PathfindingPointManager {
             type: 'end'
         };
         
-        console.log('✓ Wygenerowano losowe punkty pathfinding');
         return true;
     }
 
@@ -222,7 +221,7 @@ export class PathfindingPointManager {
                 // Jeśli końcowa pozycja nie jest na oceanie, przywróć punkt do ostatniej ważnej pozycji
                 // (współrzędne tile pozostały niezmienione w updateDragging)
                 this.updatePointPixelFromTileCoords(this.draggedPoint);
-                console.log('⚠️ Punkt przywrócony do ostatniej ważnej pozycji oceanu');
+
             } else {
                 // Jeśli pozycja jest ważna, zaktualizuj współrzędne tile
                 this.draggedPoint.x = tilePos.x;
