@@ -416,10 +416,14 @@ class ChunkMapGenerator {
         
         const selectedPoint = this.inspector.getSelectedPoint();
         const hoveredPoint = this.inspector.getHoveredPoint();
-        const activePoint = selectedPoint || hoveredPoint;
+        // Priorytet dla hovered point, potem selected point
+        const activePoint = hoveredPoint || selectedPoint;
         
         if (activePoint) {
-            const pointId = `${activePoint.chunkA}-${activePoint.chunkB}-${activePoint.x}-${activePoint.y}`;
+            // Znajdź punkt w GameDataManager, aby uzyskać poprawne ID
+            const gdPoint = this.findGameDataPoint(activePoint);
+            const pointId = gdPoint ? gdPoint.id : `${activePoint.chunkA}-${activePoint.chunkB}-${activePoint.x}-${activePoint.y}`;
+
             activePointIdElement.textContent = pointId;
             // Enable Print button
             const printBtn = document.getElementById('debugConnectionsBtn');
@@ -430,6 +434,38 @@ class ChunkMapGenerator {
             const printBtn = document.getElementById('debugConnectionsBtn');
             if (printBtn) printBtn.disabled = true;
         }
+    }
+    
+    /**
+     * ZNAJDUJE ODPOWIEDNI PUNKT W GAMEDATA MANAGER
+     */
+    findGameDataPoint(point) {
+        if (!this.gameDataManager || !this.gameDataManager.transitionPoints) {
+            return null;
+        }
+
+        // Szukaj punktu przejścia w GameDataManager który odpowiada naszemu punktowi
+        return this.gameDataManager.transitionPoints.find(gdPoint => {
+            // Sprawdź czy chunk'i się zgadzają (w dowolnej kolejności)
+            const [gdChunkA, gdChunkB] = gdPoint.chunks;
+            const pointMatches = (gdChunkA === point.chunkA && gdChunkB === point.chunkB) ||
+                                (gdChunkA === point.chunkB && gdChunkB === point.chunkA);
+            
+            if (!pointMatches) return false;
+            
+            // Sprawdź pozycję na podstawie kierunku
+            if (point.direction === 'horizontal') {
+                // Dla punktów poziomych pozycja to Y względem chunka
+                const localY = point.y % this.gameDataManager.chunkHeight;
+                return gdPoint.position === localY;
+            } else if (point.direction === 'vertical') {
+                // Dla punktów pionowych pozycja to X względem chunka  
+                const localX = point.x % this.gameDataManager.chunkWidth;
+                return gdPoint.position === localX;
+            }
+            
+            return false;
+        });
     }
     
     /**
