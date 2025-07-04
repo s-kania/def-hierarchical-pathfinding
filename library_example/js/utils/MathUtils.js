@@ -113,4 +113,21 @@ export function calculateDistance(x1, y1, x2, y2) {
  */
 export function cloneArray(array) {
     return [...array];
+}
+
+/**
+ * TWORZY FUNKCJĘ LOSOWĄ O ZADANYM SEEDZIE (Mulberry32)
+ * Zwraca funkcję generującą liczby z zakresu [0,1).
+ */
+export function createSeededRandom(seed) {
+    // Konwersja na 32-bitowy unsigned int
+    let a = (seed >>> 0) || 0;
+    return function () {
+        // Mulberry32 PRNG
+        a |= 0;
+        a = (a + 0x6D2B79F5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
 } 

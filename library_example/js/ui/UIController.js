@@ -374,6 +374,12 @@ export class UIController {
         document.getElementById('maxTransitionPointsValue').textContent = '3';
         document.getElementById('transitionPointScaleValue').textContent = '1.0x';
         document.getElementById('pathfindingPointScaleValue').textContent = '2.0x';
+
+        // Reset wyświetlania seeda
+        const seedElement = document.getElementById('mapSeed');
+        if (seedElement) {
+            seedElement.textContent = '-';
+        }
     }
 
     /**
@@ -499,6 +505,16 @@ export class UIController {
             mousePositionElement.textContent = positionText;
         } else {
             console.warn('Element mousePosition nie został znaleziony!');
+        }
+    }
+
+    /**
+     * AKTUALIZUJE WYŚWIETLANIE SEEDA
+     */
+    updateSeed(seed) {
+        const seedElement = document.getElementById('mapSeed');
+        if (seedElement) {
+            seedElement.textContent = seed != null ? seed : '-';
         }
     }
 } 

@@ -8,7 +8,7 @@ import {
     applyArchipelagoEffectUnified, 
     applyContinentEffectUnified 
 } from '../algorithms/CellularAutomata.js';
-import { cloneArray } from '../utils/MathUtils.js';
+import { cloneArray, createSeededRandom } from '../utils/MathUtils.js';
 
 export class MapGenerator {
     constructor(settings, islandSettings) {
@@ -16,6 +16,22 @@ export class MapGenerator {
         this.islandSettings = islandSettings;
         this.baseMap = null;
         this.mapDimensions = { width: 0, height: 0 };
+
+        // Inicjalizacja seeda i generatora losowego
+        this.seed = settings.seed != null ? settings.seed : Date.now();
+        this.random = createSeededRandom(this.seed);
+    }
+
+    /**
+     * USTAWIA NOWY SEED I AKTUALIZUJE PRNG
+     */
+    setSeed(newSeed) {
+        this.seed = newSeed;
+        // Zaktualizuj w settings dla spójności
+        if (this.settings) {
+            this.settings.seed = newSeed;
+        }
+        this.random = createSeededRandom(this.seed);
     }
 
     /**
@@ -33,6 +49,11 @@ export class MapGenerator {
         const totalWidth = this.settings.chunkCols * this.settings.chunkSize;
         const totalHeight = this.settings.chunkRows * this.settings.chunkSize;
         this.mapDimensions = { width: totalWidth, height: totalHeight };
+        
+        // Upewnij się, że generator losowy jest ustawiony na aktualny seed
+        if (!this.random) {
+            this.random = createSeededRandom(this.seed);
+        }
         
         // KROK 1: Generuj bazową mapę (random noise + island size adjustment)
         // REZULTAT: this.baseMap = [0,1,0,1,1,0...] (width*height elementów)
@@ -109,7 +130,7 @@ export class MapGenerator {
         // Initial random generation based on adjusted land density
         const tiles = [];
         for (let i = 0; i < width * height; i++) {
-            tiles[i] = Math.random() < adjustedLandDensity ? 1 : 0;
+            tiles[i] = this.random() < adjustedLandDensity ? 1 : 0;
         }
         
         return tiles;

@@ -27,6 +27,15 @@ class ChunkMapGenerator {
     constructor() {
         // Ustawienia
         this.settings = { ...DEFAULT_SETTINGS };
+
+        // Obsługa seeda - spróbuj wczytać z localStorage
+        const savedSeed = localStorage.getItem('mapSeed');
+        this._useSavedSeedOnce = false;
+        if (savedSeed) {
+            this.settings.seed = parseInt(savedSeed, 10);
+            this._useSavedSeedOnce = true; // użyj zapisanego seeda tylko przy pierwszej generacji
+        }
+        
         this.islandSettings = { ...DEFAULT_ISLAND_SETTINGS };
         this.pathfindingSettings = { ...DEFAULT_PATHFINDING_SETTINGS };
         
@@ -99,6 +108,9 @@ class ChunkMapGenerator {
      */
     initializeComponents() {
         this.mapGenerator = new MapGenerator(this.settings, this.islandSettings);
+        if (this.settings.seed != null) {
+            this.mapGenerator.setSeed(this.settings.seed);
+        }
         this.chunkManager = new ChunkManager(this.settings);
         this.transitionPointManager = new TransitionPointManager(this.settings, this.pathfindingSettings);
         this.pathfindingPointManager = new PathfindingPointManager(this.settings);
@@ -236,8 +248,24 @@ class ChunkMapGenerator {
      * GŁÓWNA METODA GENEROWANIA MAPY
      */
     generateMap() {
+        // Zarządzanie seedem: użyj zapisanego tylko raz, potem generuj nowy
+        if (this._useSavedSeedOnce) {
+            // Użyj seeda z localStorage tylko przy pierwszym generowaniu mapy
+            this.mapGenerator.setSeed(this.settings.seed);
+            this._useSavedSeedOnce = false;
+        } else {
+            // Wygeneruj nowy seed i zapisz go
+            const newSeed = Date.now();
+            this.settings.seed = newSeed;
+            localStorage.setItem('mapSeed', newSeed);
+            this.mapGenerator.setSeed(newSeed);
+        }
 
-        
+        // Zaktualizuj wyświetlanie seeda w UI
+        if (this.uiController && this.uiController.updateSeed) {
+            this.uiController.updateSeed(this.settings.seed);
+        }
+
         // Aktualizuj ustawienia w komponentach
         this.updateComponentSettings();
         

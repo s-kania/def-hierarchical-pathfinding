@@ -6,7 +6,8 @@ export const DEFAULT_SETTINGS = {
     chunkCols: 8,        // Liczba chunków w poziomie
     chunkRows: 6,        // Liczba chunków w pionie  
     chunkSize: 11,        // Rozmiar chunka (6x6 tiles)
-    tileSize: 16         // Rozmiar tile w pikselach
+    tileSize: 16,         // Rozmiar tile w pikselach
+    seed: null           // Seed generowania mapy (null = losowy)
 };
 
 export const DEFAULT_ISLAND_SETTINGS = {
