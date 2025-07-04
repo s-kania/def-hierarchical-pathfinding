@@ -602,6 +602,15 @@ class ChunkMapGenerator {
             const pathSegments = pathfinder.findPath(startPos, endPos);
             
             if (pathSegments) {
+
+                console.log('--- Obliczone segmenty ścieżki ---');
+                const tableData = pathSegments.map(segment => ({
+                    chunk: segment.chunk,
+                    x: segment.position.x.toFixed(2),
+                    y: segment.position.y.toFixed(2)
+                }));
+                console.table(tableData);
+                console.log('------------------------------------');
                 
                 // Stwórz kompletną ścieżkę zaczynającą się od pozycji startowej
                 const completePath = [];
