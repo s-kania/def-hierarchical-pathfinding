@@ -172,7 +172,7 @@ export class PathfindingPointManager {
     }
 
     /**
-     * KONTYNUUJE PRZECIĄGANIE
+     * KONTYNUUJE PRZECIĄGANIE Z SNAPPING DO KAFELKÓW
      */
     updateDragging(mouseX, mouseY) {
         if (!this.isDragging || !this.draggedPoint) return false;
@@ -184,9 +184,12 @@ export class PathfindingPointManager {
         const tilePos = this.pixelToTilePosition(newPixelX, newPixelY);
         
         if (tilePos && this.isTileOcean(tilePos)) {
-            // Zaktualizuj pozycję punktu
-            this.draggedPoint.pixelX = newPixelX;
-            this.draggedPoint.pixelY = newPixelY;
+            // SNAPPING DO KAFELKA - zawsze snapuj do środka kafelka
+            const snappedPixelPos = this.snapToTileCenter(tilePos);
+            
+            // Zaktualizuj pozycję punktu na snapped pozycję
+            this.draggedPoint.pixelX = snappedPixelPos.x;
+            this.draggedPoint.pixelY = snappedPixelPos.y;
             this.draggedPoint.x = tilePos.x;
             this.draggedPoint.y = tilePos.y;
             this.draggedPoint.chunkX = tilePos.chunkX;
@@ -210,7 +213,28 @@ export class PathfindingPointManager {
     }
 
     /**
-     * KOŃCZY PRZECIĄGANIE
+     * SNAPPUJE POZYCJĘ DO ŚRODKA KAFELKA
+     */
+    snapToTileCenter(tilePos) {
+        if (!tilePos || !this.chunks) return { x: 0, y: 0 };
+        
+        const chunkPixelSize = this.settings.chunkSize * this.settings.tileSize;
+        const chunk = this.chunks.find(c => c.x === tilePos.chunkX && c.y === tilePos.chunkY);
+        
+        if (!chunk) return { x: 0, y: 0 };
+        
+        const chunkPixelX = RENDER_CONSTANTS.CANVAS_PADDING + chunk.x * (chunkPixelSize + RENDER_CONSTANTS.GAP_SIZE);
+        const chunkPixelY = RENDER_CONSTANTS.CANVAS_PADDING + chunk.y * (chunkPixelSize + RENDER_CONSTANTS.GAP_SIZE);
+        
+        // Oblicz pozycję środka kafelka w pikselach
+        const tileCenterX = chunkPixelX + tilePos.localX * this.settings.tileSize + this.settings.tileSize / 2;
+        const tileCenterY = chunkPixelY + tilePos.localY * this.settings.tileSize + this.settings.tileSize / 2;
+        
+        return { x: tileCenterX, y: tileCenterY };
+    }
+
+    /**
+     * KOŃCZY PRZECIĄGANIE Z SNAPPING DO KAFELKÓW
      */
     stopDragging() {
         if (this.isDragging && this.draggedPoint) {
@@ -223,13 +247,18 @@ export class PathfindingPointManager {
                 this.updatePointPixelFromTileCoords(this.draggedPoint);
 
             } else {
-                // Jeśli pozycja jest ważna, zaktualizuj współrzędne tile
+                // Jeśli pozycja jest ważna, zaktualizuj współrzędne tile i snapuj do środka kafelka
                 this.draggedPoint.x = tilePos.x;
                 this.draggedPoint.y = tilePos.y;
                 this.draggedPoint.chunkX = tilePos.chunkX;
                 this.draggedPoint.chunkY = tilePos.chunkY;
                 this.draggedPoint.localX = tilePos.localX;
                 this.draggedPoint.localY = tilePos.localY;
+                
+                // Snapuj do środka kafelka
+                const snappedPixelPos = this.snapToTileCenter(tilePos);
+                this.draggedPoint.pixelX = snappedPixelPos.x;
+                this.draggedPoint.pixelY = snappedPixelPos.y;
             }
         }
         
