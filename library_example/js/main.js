@@ -122,7 +122,6 @@ class ChunkMapGenerator {
         
         // Ustaw callbacki dla pathfinding UI
         this.pathfindingUIController.setCallbacks({
-            onGenerateRandomPoints: () => this.onGenerateRandomPathfindingPoints(),
             onClearPoints: () => this.onClearPathfindingPoints(),
             onCalculatePath: () => this.onCalculatePathfindingPath(),
             onBuildTransitionGraph: () => this.onBuildTransitionGraph(),
@@ -173,6 +172,12 @@ class ChunkMapGenerator {
             this.gameDataManager.buildConnections(this.chunks);
             console.log('✓ Automatycznie zbudowano graf połączeń');
         }
+        
+        // Automatycznie wygeneruj losowe punkty pathfinding
+        this.generateRandomPathfindingPoints();
+        
+        // Aktualizuj UI po automatycznym generowaniu punktów
+        this.pathfindingUIController.updateAll(this.pathfindingPointManager);
         
         // Zapisz referencje dla kompatybilności
         this.baseMap = this.mapGenerator.getBaseMap();
@@ -252,6 +257,12 @@ class ChunkMapGenerator {
         // Zaktualizuj UI jeśli jakieś punkty zostały usunięte
         if (pointsRemoved) {
             this.pathfindingUIController.updateAll(this.pathfindingPointManager);
+            
+            // Automatycznie wygeneruj nowe punkty jeśli wszystkie zostały usunięte
+            if (!this.pathfindingPointManager.getStartPoint() && !this.pathfindingPointManager.getEndPoint()) {
+                console.log('🎲 Wszystkie punkty zostały usunięte - generuję nowe...');
+                this.generateRandomPathfindingPoints();
+            }
         }
     }
     
@@ -357,7 +368,7 @@ class ChunkMapGenerator {
         // Reset ustawień UI
         this.uiController.resetToDefaults();
         
-        // Regeneruj mapę
+        // Regeneruj mapę (która automatycznie wygeneruje nowe punkty)
         this.generateMap();
         this.renderMap();
         this.updateStats();
@@ -369,18 +380,18 @@ class ChunkMapGenerator {
     /**
      * GENERUJE LOSOWE PUNKTY PATHFINDING
      */
-    onGenerateRandomPathfindingPoints() {
-        console.log('🎲 Generowanie losowych punktów pathfinding...');
+    /**
+     * AUTOMATYCZNIE GENERUJE LOSOWE PUNKTY PATHFINDING
+     */
+    generateRandomPathfindingPoints() {
+        console.log('🎲 Automatyczne generowanie losowych punktów pathfinding...');
         const success = this.pathfindingPointManager.generateRandomPoints(this.chunks);
         
         if (success) {
-            this.pathfindingUIController.showSuccess('Wygenerowano losowe punkty');
+            console.log('✓ Automatycznie wygenerowano losowe punkty pathfinding');
         } else {
-            this.pathfindingUIController.showError('Nie można wygenerować punktów - brak wystarczającej ilości oceanu');
+            console.log('⚠️ Nie można wygenerować punktów - brak wystarczającej ilości oceanu');
         }
-        
-        this.renderMap();
-        this.pathfindingUIController.updateAll(this.pathfindingPointManager);
     }
 
     /**

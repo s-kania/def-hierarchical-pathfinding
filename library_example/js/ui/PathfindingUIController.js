@@ -17,14 +17,12 @@ export class PathfindingUIController {
         this.pathfindingStatus = document.getElementById('pathfindingStatus');
         
         // Przyciski
-        this.generateRandomPointsBtn = document.getElementById('generateRandomPoints');
         this.clearPathfindingPointsBtn = document.getElementById('clearPathfindingPoints');
         this.calculatePathBtn = document.getElementById('calculatePath');
         this.buildTransitionGraphBtn = document.getElementById('buildTransitionGraph');
         this.printDataBtn = document.getElementById('printData');
         
         // Callbacki
-        this.onGenerateRandomPoints = null;
         this.onClearPoints = null;
         this.onCalculatePath = null;
         this.onBuildTransitionGraph = null;
@@ -35,12 +33,6 @@ export class PathfindingUIController {
      * INICJALIZUJE EVENT LISTENERS
      */
     setupEventListeners() {
-        this.generateRandomPointsBtn?.addEventListener('click', () => {
-            if (this.onGenerateRandomPoints) {
-                this.onGenerateRandomPoints();
-            }
-        });
-
         this.clearPathfindingPointsBtn?.addEventListener('click', () => {
             if (this.onClearPoints) {
                 this.onClearPoints();
@@ -166,8 +158,7 @@ export class PathfindingUIController {
     /**
      * USTAWIA CALLBACKI
      */
-    setCallbacks({ onGenerateRandomPoints, onClearPoints, onCalculatePath, onBuildTransitionGraph, onPrintData }) {
-        this.onGenerateRandomPoints = onGenerateRandomPoints;
+    setCallbacks({ onClearPoints, onCalculatePath, onBuildTransitionGraph, onPrintData }) {
         this.onClearPoints = onClearPoints;
         this.onCalculatePath = onCalculatePath;
         this.onBuildTransitionGraph = onBuildTransitionGraph;
