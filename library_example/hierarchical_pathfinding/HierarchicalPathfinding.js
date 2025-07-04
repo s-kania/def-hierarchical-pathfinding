@@ -296,18 +296,6 @@ export class HierarchicalPathfinding {
             }
         }
         
-        // 🔥 WERYFIKACJA OSTATNIEGO WĘZŁA  
-        // if (effectivePath.length >= 2) {
-        //     const lastPoint = this.transitionGraph.getPoint(effectivePath[effectivePath.length - 1]);
-        //     const secondLastPoint = this.transitionGraph.getPoint(effectivePath[effectivePath.length - 2]);
-            
-        //     // Sprawdź czy przedostatni prowadzi do końcowego chunk'a
-        //     if (secondLastPoint.chunks.includes(endChunk)) {
-        //         console.log('✂️ Optymalizacja: usuwam ostatni węzeł (redundantny)');
-        //         effectivePath.pop(); // Usuń ostatni
-        //     }
-        // }
-        
         // Dodaj segment startowy (od startPos do pierwszego punktu przejścia)
         if (effectivePath.length > 0) {
             const firstPoint = this.transitionGraph.getPoint(effectivePath[0]);
@@ -355,6 +343,15 @@ export class HierarchicalPathfinding {
                 chunk: endChunk,
                 position: endPos
             });
+        }
+
+        // 🔥 WERYFIKACJA PRZEDOSTATNIEGO SEGMENTU
+        if (segments.length >= 2) {
+            const penultimateSegment = segments[segments.length - 2];
+            
+            if (penultimateSegment.chunk === endChunk) {
+                segments.splice(segments.length - 2, 1); // Usuń przedostatni segment
+            }
         }
         
         return segments;
