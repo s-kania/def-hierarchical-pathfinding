@@ -69,12 +69,19 @@ export class HierarchicalPathfinding {
         const startChunk = CoordUtils.globalToChunkId(startPos, this.config.chunkWidth, this.config.tileSize);
         const endChunk = CoordUtils.globalToChunkId(endPos, this.config.chunkWidth, this.config.tileSize);
 
-        // Jeśli ten sam chunk - zwykły A* lokalny
+        // Jeśli ten sam chunk - próbujemy najpierw A* lokalny
         if (startChunk === endChunk) {
-            return this.findLocalPath(startChunk, startPos, endPos);
+            const localPath = this.findLocalPath(startChunk, startPos, endPos);
+            // Jeśli ścieżka lokalna została znaleziona, zwracamy ją od razu
+            if (localPath) {
+                return localPath;
+            }
+            // Jeśli nie, pozwalamy na kontynuację do wyszukiwania hierarchicznego.
+            // Może się zdarzyć, że punkty są w tym samym chunku, ale w oddzielnych,
+            // niepołączonych obszarach, więc trzeba wyjść na zewnątrz.
         }
 
-        // Różne chunki - szukamy przez punkty przejścia
+        // Różne chunki (lub ten sam chunk bez ścieżki lokalnej) - szukamy przez punkty przejścia
         const startPoint = this.findNearestTransition(startPos, startChunk);
         const endPoint = this.findNearestTransition(endPos, endChunk);
 
@@ -215,9 +222,11 @@ export class HierarchicalPathfinding {
             const firstPoint = this.transitionGraph.getPoint(effectivePath[0]);
             const secondPoint = this.transitionGraph.getPoint(effectivePath[1]);
             
-            // Sprawdź czy drugi punkt jest dostępny z chunk'a startowego
-            if (secondPoint.chunks.includes(startChunk)) {
-                effectivePath.shift(); // Usuń pierwszy
+            // Sprawdź, czy drugi punkt jest dostępny z chunka startowego
+            // ORAZ czy istnieje bezpośrednie połączenie z pierwszego do drugiego punktu w tym chunku.
+            const connectionChunk = this.findConnectionChunk(firstPoint, secondPoint);
+            if (secondPoint.chunks.includes(startChunk) && connectionChunk === startChunk) {
+                effectivePath.shift(); // Usuń pierwszy, zbędny węzeł
             }
         }
         
@@ -228,6 +237,8 @@ export class HierarchicalPathfinding {
                 firstPoint, startChunk, this.config.chunkWidth, this.config.tileSize
             );
             
+            
+
             if (firstPointPos) {
                 segments.push({
                     chunk: startChunk,
