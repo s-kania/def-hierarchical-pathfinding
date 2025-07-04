@@ -247,6 +247,17 @@ export class HierarchicalPathfinding {
     }
 
     /**
+     * Znajduje chunk dla połączenia między dwoma punktami przejścia
+     * @param {Object} fromPoint - Punkt startowy
+     * @param {Object} toPoint - Punkt docelowy  
+     * @returns {string|null} - ID chunka lub null jeśli brak połączenia
+     */
+    findConnectionChunk(fromPoint, toPoint) {
+        const connection = fromPoint.connections.find(conn => conn.id === toPoint.id);
+        return connection ? connection.chunk : null;
+    }
+
+    /**
      * Zwraca czyste punkty przejścia z optymalizacją redundantnych węzłów
      * @param {Object} startPos - Pozycja startowa 
      * @param {Object} endPos - Pozycja końcowa  
@@ -286,16 +297,16 @@ export class HierarchicalPathfinding {
         }
         
         // 🔥 WERYFIKACJA OSTATNIEGO WĘZŁA  
-        if (effectivePath.length >= 2) {
-            const lastPoint = this.transitionGraph.getPoint(effectivePath[effectivePath.length - 1]);
-            const secondLastPoint = this.transitionGraph.getPoint(effectivePath[effectivePath.length - 2]);
+        // if (effectivePath.length >= 2) {
+        //     const lastPoint = this.transitionGraph.getPoint(effectivePath[effectivePath.length - 1]);
+        //     const secondLastPoint = this.transitionGraph.getPoint(effectivePath[effectivePath.length - 2]);
             
-            // Sprawdź czy przedostatni prowadzi do końcowego chunk'a
-            if (secondLastPoint.chunks.includes(endChunk)) {
-                console.log('✂️ Optymalizacja: usuwam ostatni węzeł (redundantny)');
-                effectivePath.pop(); // Usuń ostatni
-            }
-        }
+        //     // Sprawdź czy przedostatni prowadzi do końcowego chunk'a
+        //     if (secondLastPoint.chunks.includes(endChunk)) {
+        //         console.log('✂️ Optymalizacja: usuwam ostatni węzeł (redundantny)');
+        //         effectivePath.pop(); // Usuń ostatni
+        //     }
+        // }
         
         // Dodaj segment startowy (od startPos do pierwszego punktu przejścia)
         if (effectivePath.length > 0) {
@@ -317,13 +328,12 @@ export class HierarchicalPathfinding {
             const currentPoint = this.transitionGraph.getPoint(effectivePath[i]);
             const nextPoint = this.transitionGraph.getPoint(effectivePath[i + 1]);
             
-            // Znajdujemy połączenie z currentPoint do nextPoint i bierzemy chunk z tego połączenia
-            const connection = currentPoint.connections.find(conn => conn.id === nextPoint.id);
+            // Używamy funkcji pomocniczej do znalezienia chunka połączenia
+            const connectionChunk = this.findConnectionChunk(currentPoint, nextPoint);
             
-            if (!connection) {
+            if (!connectionChunk) {
                 continue;
             }
-            const connectionChunk = connection.chunk;
             
             const nextPointPos = CoordUtils.getTransitionGlobalPosition(
                 nextPoint, connectionChunk, this.config.chunkWidth, this.config.tileSize
