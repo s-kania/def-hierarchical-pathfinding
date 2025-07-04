@@ -1,6 +1,6 @@
 /**
  * Transition points graph for hierarchical pathfinding
- * Minimal A* implementation on pre-computed connections graph
+ * A* implementation on pre-computed connections graph
  */
 
 /**

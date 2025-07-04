@@ -1,6 +1,6 @@
 /**
  * Hierarchical Pathfinding Library for JavaScript
- * Minimal version with pre-computed connections graph
+ * High-performance pathfinding with pre-computed transition graph
  */
 
 import { CoordUtils } from './src/utils/CoordUtils.js';
@@ -52,6 +52,14 @@ export class HierarchicalPathfinding {
     findPath(startPos, endPos) {
         if (!this.config) {
             throw new Error("Pathfinder has not been initialized");
+        }
+
+        // Validate input parameters
+        if (!startPos || typeof startPos.x !== 'number' || typeof startPos.y !== 'number') {
+            throw new Error('Invalid startPos: must be {x: number, y: number}');
+        }
+        if (!endPos || typeof endPos.x !== 'number' || typeof endPos.y !== 'number') {
+            throw new Error('Invalid endPos: must be {x: number, y: number}');
         }
 
         // Check if positions are within world bounds
@@ -156,6 +164,17 @@ export class HierarchicalPathfinding {
      * @returns {Array|null} - Path segment or null
      */
     findLocalPath(chunkId, startPos, endPos) {
+        // Validate input parameters
+        if (!chunkId || typeof chunkId !== 'string') {
+            throw new Error('Invalid chunkId: must be a string');
+        }
+        if (!startPos || typeof startPos.x !== 'number' || typeof startPos.y !== 'number') {
+            throw new Error('Invalid startPos: must be {x: number, y: number}');
+        }
+        if (!endPos || typeof endPos.x !== 'number' || typeof endPos.y !== 'number') {
+            throw new Error('Invalid endPos: must be {x: number, y: number}');
+        }
+
         // Get chunk data (2D array)
         const chunkData = this.config.getChunkData(chunkId);
         if (!chunkData) {
@@ -237,8 +256,6 @@ export class HierarchicalPathfinding {
                 firstPoint, startChunk, this.config.chunkWidth, this.config.tileSize
             );
             
-            
-
             if (firstPointPos) {
                 segments.push({
                     chunk: startChunk,

@@ -1,178 +1,113 @@
-# Hierarchical Pathfinding Library
+# Hierarchical Pathfinding
 
-**Radykalnie uproszczona biblioteka pathfinding wykorzystująca pre-computed graf connections**
+High-performance hierarchical pathfinding library for games and applications.
 
-## 🎯 Kluczowe Zmiany
+## Features
+- 🚀 Ultra-fast hierarchical pathfinding
+- 🎯 A* algorithm with pre-computed transition graph
+- 🔧 Simple and flexible API
+- 📱 Works in browser and Node.js
+- 🎮 Game-ready with chunk-based navigation
 
-✅ **Uproszczenie z 6 do 3 modułów**  
-✅ **Wykorzystanie pre-computed grafu connections**  
-✅ **Znacznie prostsze API**  
-✅ **Lepsza wydajność (O(n) zamiast O(n²))**  
-✅ **Zgodność z zasadą KISS**  
-
-## 📁 Struktura Modułów
-
-```
-HierarchicalPathfinding.js     - Główny moduł API
-├── src/
-│   ├── TransitionGraph.js     - A* na grafie punktów przejścia
-│   ├── LocalPathfinder.js     - A* w obrębie chunka (bez zmian)
-│   └── utils/
-│       └── CoordUtils.js      - Uproszczone narzędzia współrzędnych
+## Installation
+```bash
+npm install hierarchical-pathfinding
 ```
 
-**Usunięte moduły:**
-- ❌ ChunkNavigator.js (zastąpiony przez TransitionGraph.js)
-- ❌ PathSegmentBuilder.js (logika przeniesiona do głównego modułu)
-- ❌ TransitionResolver.js (niepotrzebny)
-- ❌ DataStructures.js (zastąpiony prostą implementacją)
-
-## 🔧 Nowe API
-
-### Inicjalizacja
-
+## Quick Start
 ```javascript
-import { HierarchicalPathfinding } from './HierarchicalPathfinding.js';
+import { HierarchicalPathfinding } from 'hierarchical-pathfinding';
 
 const pathfinder = new HierarchicalPathfinding();
 
 pathfinder.init({
-    chunkSize: 32,               // Rozmiar chunka w kafelkach
-    tileSize: 10,                // Rozmiar kafelka w jednostkach świata
-    gridWidth: 10,               // Szerokość całego grida w chunkach
-    gridHeight: 8,               // Wysokość całego grida w chunkach
-    getChunkData: (chunkId) => chunks[chunkId], // 2D array danych chunka
-    transitionPoints: [          // KLUCZOWE: punkty z connections!
-        {
-            id: "0,0-1,0-15",
-            chunks: ["0,0", "1,0"],
-            position: 15,
-            connections: [       // Pre-computed graf połączeń
-                { id: "0,0-0,1-20", weight: 25 },
-                { id: "1,0-1,1-15", weight: 8 }
-            ]
-        }
-        // ...więcej punktów
-    ]
+    tileSize: 10,
+    gridWidth: 10,
+    gridHeight: 8,
+    chunkWidth: 32,
+    chunkHeight: 32,
+    getChunkData: (chunkId) => chunks[chunkId],
+    transitionPoints: transitionPoints
+});
+
+const path = pathfinder.findPath(
+    { x: 10, y: 10 },
+    { x: 500, y: 500 }
+);
+```
+
+## API Reference
+
+### Initialization
+```javascript
+pathfinder.init({
+    tileSize: number,        // Tile size in world units
+    gridWidth: number,       // Grid width in chunks
+    gridHeight: number,      // Grid height in chunks
+    chunkWidth: number,      // Chunk width in tiles
+    chunkHeight: number,     // Chunk height in tiles
+    getChunkData: function,  // Function returning chunk data
+    transitionPoints: array  // Pre-computed transition points
 });
 ```
 
 ### Pathfinding
-
 ```javascript
-const path = pathfinder.findPath(
-    { x: 10, y: 10 },    // Start
-    { x: 500, y: 500 }   // Cel
-);
+// Find path between two positions
+const path = pathfinder.findPath(startPos, endPos);
+// Returns: Array of segments [{chunk: "0,0", position: {x, y, z}}] or null
 
-// Zwraca: Array segmentów [{chunk: "0,0", position: {x, y, z}}] lub null
+// Find path within a single chunk
+const localPath = pathfinder.findLocalPath(chunkId, startPos, endPos);
 ```
 
-### Dodatkowe Metody
+### Data Format
 
+#### Chunk Data
 ```javascript
-// Sprawdź dostępność pozycji
-pathfinder.isPositionWalkable({x: 100, y: 100});
-
-// Sprawdź łączność
-pathfinder.canReach(startPos, endPos);
-
-// Sprawdź czy pozycja mieści się w granicach świata
-pathfinder.isPositionInBounds({x: 100, y: 100});
-
-// Pobierz rozmiar całego świata
-pathfinder.getWorldSize(); // {width: 3200, height: 2560}
-
-// Pobierz informacje o gridzie
-pathfinder.getGridInfo(); // pełne informacje o konfiguracji grida
-
-// Pobierz statystyki grafu
-pathfinder.getGraphStats();
-```
-
-## 🔄 Format Danych
-
-### Transition Points (NOWY FORMAT)
-
-```javascript
-{
-    id: string,              // "chunkA-chunkB-position"
-    chunks: [string],        // ["chunkA_id", "chunkB_id"]
-    position: number,        // pozycja na krawędzi chunka (0-chunkSize-1)
-    connections: [           // KLUCZOWE: graf połączeń z wagami!
-        {
-            id: string,      // ID połączonego punktu
-            weight: number   // waga/koszt przejścia
-        }
-    ]
-}
-```
-
-### Chunk Data
-
-```javascript
-// 2D array (bez zmian)
+// 2D array where 0 = walkable, 1 = blocked
 [
-    [0, 0, 0, 1, 1],  // 0 = woda (dostępne)
-    [0, 0, 0, 1, 1],  // 1 = ląd (zablokowane)
+    [0, 0, 0, 1, 1],  // 0 = walkable
+    [0, 0, 0, 1, 1],  // 1 = blocked
     [0, 0, 0, 0, 0],
     [1, 1, 0, 0, 0],
     [1, 1, 0, 0, 0]
 ]
 ```
 
-## 🚀 Algorytm Pathfinding
-
-1. **START**: Znajdź najbliższy punkt przejścia do pozycji startowej
-2. **END**: Znajdź najbliższy punkt przejścia do pozycji końcowej  
-3. **SPECIAL CASE**: Jeśli start i koniec w tym samym chunku → tylko LocalPathfinder
-4. **GRAPH PATH**: A* na grafie connections między punktami przejścia
-5. **BUILD SEGMENTS**: LocalPathfinder dla każdego segmentu + przejścia między chunkami
-
-## 📊 Porównanie Przed/Po
-
-| Aspekt | Przed | Po |
-|--------|-------|-----|
-| **Moduły** | 6 | 3 |
-| **Linie kodu** | ~1200 | ~400 |
-| **Złożoność** | Wysoka | Niska |
-| **Wydajność** | O(n²) | O(n) |
-| **API** | Skomplikowane | Proste |
-| **Connections** | Budowane na żądanie | Pre-computed |
-
-## ⚡ Korzyści
-
-1. **Prostota** - łatwiejsze zrozumienie i debugowanie
-2. **Wydajność** - wykorzystanie pre-computed grafu connections
-3. **Mniej kodu** - łatwiejsze utrzymanie  
-4. **KISS** - zgodne z zasadą "Keep It Simple, Stupid"
-5. **Elastyczność** - łatwe dodawanie nowych features
-
-## 🔧 Integracja
-
-### Z GameDataManager.js
-
-Biblioteka współpracuje z `GameDataManager.js` - wystarczy przekazać `transitionPoints` z built connections:
-
+#### Transition Points
 ```javascript
-// Po zbudowaniu grafu w GameDataManager
-const transitionPoints = gameDataManager.transitionPoints;
-
-pathfinder.init({
-    chunkSize: chunkSize,
-    tileSize: tileSize,
-    gridWidth: gridWidth,
-    gridHeight: gridHeight,
-    getChunkData: (chunkId) => getChunkData(chunkId),
-    transitionPoints: transitionPoints  // Już zawiera connections!
-});
+{
+    id: string,              // Unique identifier
+    chunks: [string],        // Connected chunk IDs
+    position: number,        // Position on chunk edge
+    connections: [           // Pre-computed connections
+        {
+            id: string,      // Connected point ID
+            weight: number   // Connection cost
+            chunk: string    // ID of chunk on which connection occurs
+        }
+    ]
+}
 ```
 
-## 📝 Przykład Użycia
+## Examples
+See `examples/basic-usage.html` for complete working example.
 
-Zobacz `example.js` dla pełnej demonstracji nowego API z pre-computed grafem connections.
+## How It Works
 
----
+1. **Chunk-based Navigation**: World is divided into chunks for efficient pathfinding
+2. **Pre-computed Graph**: Transition points between chunks are pre-calculated
+3. **Hierarchical Search**: 
+   - Same chunk: Direct A* pathfinding
+   - Different chunks: Find path through transition points, then local paths
+4. **Optimization**: Redundant nodes are automatically removed
 
-**Refaktoryzacja zakończona!** 🎉  
-Biblioteka jest teraz znacznie prostsza, szybsza i łatwiejsza w użyciu. 
+## Performance
+
+- **Time Complexity**: O(n) where n is number of transition points
+- **Space Complexity**: O(n) for transition graph
+- **Local Pathfinding**: O(chunk_size²) for A* within chunks
+
+## License
+MIT License - see LICENSE file for details. 

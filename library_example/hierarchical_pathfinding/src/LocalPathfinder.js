@@ -1,11 +1,11 @@
 /**
  * Local pathfinding within a single chunk using A*
- * Finds paths on water tiles (0) avoiding land (1)
+ * Finds paths on walkable tiles (0) avoiding blocked tiles (1)
  */
 
 export class LocalPathfinder {
     /**
-     * Check if position is walkable (water)
+     * Check if position is walkable
      * @param {Array} chunkData - 2D array of tiles
      * @param {Object} pos - Position {x, y}
      * @returns {boolean}
@@ -18,13 +18,13 @@ export class LocalPathfinder {
             return false;
         }
         
-        // 0 = water (walkable), 1 = land (not walkable)
+        // 0 = walkable, 1 = blocked
         return chunkData[pos.y][pos.x] === 0;
     }
 
     /**
      * Find path using A*
-     * @param {Array} chunkData - 2D array of tiles (0=water, 1=land)
+     * @param {Array} chunkData - 2D array of tiles (0=walkable, 1=blocked)
      * @param {Object} startPos - Start {x, y}
      * @param {Object} endPos - End {x, y}
      * @returns {Array|null} - Array of positions or null
