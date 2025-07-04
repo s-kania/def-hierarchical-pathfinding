@@ -15,89 +15,49 @@
 
         <!-- Główny kontener z mapą na środku -->
         <div class="main-content">
-            <!-- Przyciski w prawym górnym rogu -->
-            <div class="top-buttons-container">
-                <button class="btn btn--outline calculate-path-btn" id="calculatePath">
-                    🧭 Oblicz Ścieżkę
-                </button>
-                <button class="btn btn--primary settings-btn" id="settingsBtn">
-                    ⚙️ Settings
-                </button>
-            </div>
-
-            <!-- Zwinięty Transition Point Inspector nad mapą -->
-            <div class="collapsible-inspector">
-                <div class="inspector-header" id="inspectorToggle">
-                    <h3>🔍 Transition Point Inspector</h3>
-                    <span class="toggle-icon">▼</span>
-                </div>
-                <div class="inspector-content collapsed" id="inspectorContent">
-                    <div id="transitionPointDetails" class="transition-details">
-                        <div class="no-selection">
-                            <span class="placeholder-text">Najedź myszą na punkt przejścia aby zobaczyć szczegóły</span>
-                        </div>
-                        <div id="selectedPointInfo" class="point-info hidden">
-                            <div class="info-grid">
-                                <div class="info-item">
-                                    <span class="info-label">ID:</span>
-                                    <span id="detailId" class="info-value">-</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Chunki:</span>
-                                    <span id="detailChunks" class="info-value">-</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Pozycja:</span>
-                                    <span id="detailPosition" class="info-value">-</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Kierunek:</span>
-                                    <span id="detailDirection" class="info-value">-</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Długość segmentu:</span>
-                                    <span id="detailSegmentLength" class="info-value">-</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Połączenia:</span>
-                                    <span id="detailConnections" class="info-value">-</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Debug:</span>
-                                    <button id="debugConnectionsBtn" class="btn btn--info btn--sm">
-                                        🔍 Print
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Mapa jako główny element -->
             <div class="map-container main-map">
                 <div class="map-info">
-                    <div class="map-stats">
-                        <div class="stat">
-                            <span class="stat-label">Chunks:</span>
-                            <span id="totalChunks">15</span>
+                    <div class="map-info-header">
+                        <div class="map-stats">
+                            <div class="stat">
+                                <span class="stat-label">Chunks:</span>
+                                <span id="totalChunks" class="stat-value">15</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total tiles:</span>
+                                <span id="totalTiles" class="stat-value">540</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Islands:</span>
+                                <span id="islandPercentage" class="stat-value">0%</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Transition points:</span>
+                                <span id="totalTransitionPoints" class="stat-value">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Active Point ID:</span>
+                                <span id="activePointId" class="stat-value">-</span>
+                            </div>
+                            <div class="stat">
+                                <button id="debugConnectionsBtn" class="btn btn--info btn--sm" disabled>
+                                    🔍 Print point data
+                                </button>
+                            </div>
                         </div>
-                        <div class="stat">
-                            <span class="stat-label">Total tiles:</span>
-                            <span id="totalTiles">540</span>
+                        <div class="map-actions">
+                            <button class="btn btn--outline calculate-path-btn" id="calculatePath">
+                                🧭 Oblicz Ścieżkę
+                            </button>
+                            <button class="btn btn--primary settings-btn" id="settingsBtn">
+                                ⚙️ Settings
+                            </button>
                         </div>
-                        <div class="stat">
-                            <span class="stat-label">Islands:</span>
-                            <span id="islandPercentage">0%</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-label">Transition points:</span>
-                            <span id="totalTransitionPoints">0</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-label">Position:</span>
-                            <span id="mousePosition">-</span>
-                        </div>
+                    </div>
+                    <div class="map-position">
+                        <span class="stat-label">Position:</span>
+                        <span id="mousePosition" class="stat-value">-</span>
                     </div>
                 </div>
 

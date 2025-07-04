@@ -182,9 +182,6 @@ class ChunkMapGenerator {
             }
         });
         
-        // Zwijalny Inspector
-        this.setupCollapsibleInspector();
-        
         // Przycisk "Oblicz ścieżkę" w głównym layout
         this.setupCalculatePathButton();
     }
@@ -405,6 +402,34 @@ class ChunkMapGenerator {
     updateStats() {
         const transitionPoints = this.transitionPointManager.getTransitionPoints();
         this.uiController.updateStats(this.chunks, transitionPoints);
+        
+        // Aktualizuj Active Point ID
+        this.updateActivePointId();
+    }
+    
+    /**
+     * AKTUALIZUJE ACTIVE POINT ID W SEKCJI NAD MAPĄ
+     */
+    updateActivePointId() {
+        const activePointIdElement = document.getElementById('activePointId');
+        if (!activePointIdElement) return;
+        
+        const selectedPoint = this.inspector.getSelectedPoint();
+        const hoveredPoint = this.inspector.getHoveredPoint();
+        const activePoint = selectedPoint || hoveredPoint;
+        
+        if (activePoint) {
+            const pointId = `${activePoint.chunkA}-${activePoint.chunkB}-${activePoint.x}-${activePoint.y}`;
+            activePointIdElement.textContent = pointId;
+            // Enable Print button
+            const printBtn = document.getElementById('debugConnectionsBtn');
+            if (printBtn) printBtn.disabled = false;
+        } else {
+            activePointIdElement.textContent = '-';
+            // Disable Print button
+            const printBtn = document.getElementById('debugConnectionsBtn');
+            if (printBtn) printBtn.disabled = true;
+        }
     }
     
     /**
@@ -629,6 +654,7 @@ class ChunkMapGenerator {
                 // Renderuj mapę tylko jeśli hover się zmienił
                 if (hoverChanged) {
                     this.renderMap();
+                    this.updateActivePointId();
                 }
             } else {
                 this.inspector.setHoveredPoint(null);
@@ -644,6 +670,7 @@ class ChunkMapGenerator {
                 // Renderuj mapę tylko jeśli hover się zmienił
                 if (hoverChanged) {
                     this.renderMap();
+                    this.updateActivePointId();
                 }
             }
         });
@@ -669,18 +696,21 @@ class ChunkMapGenerator {
                     this.inspector.showInspector(clickedPoint, this.gameDataManager);
                     // Renderuj mapę z liniami połączeń dla selectedPoint
                     this.renderMap();
+                    this.updateActivePointId();
                 } else {
                     // Kliknięto poza punktem przejścia - resetuj zaznaczenie
                     this.inspector.setSelectedPoint(null);
                     this.inspector.hideInspector();
                     // Renderuj mapę bez linii połączeń
                     this.renderMap();
+                    this.updateActivePointId();
                 }
             } else {
                 // Punkty przejścia są wyłączone - resetuj zaznaczenie
                 this.inspector.setSelectedPoint(null);
                 this.inspector.hideInspector();
                 this.renderMap();
+                this.updateActivePointId();
             }
         });
 
@@ -720,6 +750,7 @@ class ChunkMapGenerator {
             
             // Renderuj mapę (może ukryć linie hover, ale zachować linie selected)
             this.renderMap();
+            this.updateActivePointId();
         });
     }
     
@@ -806,31 +837,6 @@ class ChunkMapGenerator {
         this.pathfindingUIController.showSuccess('Dane wydrukowane w konsoli');
     }
 
-    /**
-     * KONFIGURUJE ZWIJALNY INSPECTOR
-     */
-    setupCollapsibleInspector() {
-        const inspectorToggle = document.getElementById('inspectorToggle');
-        const inspectorContent = document.getElementById('inspectorContent');
-        const toggleIcon = inspectorToggle?.querySelector('.toggle-icon');
-        
-        if (inspectorToggle && inspectorContent) {
-            inspectorToggle.addEventListener('click', () => {
-                const isCollapsed = inspectorContent.classList.contains('collapsed');
-                
-                if (isCollapsed) {
-                    // Rozwiń
-                    inspectorContent.classList.remove('collapsed');
-                    if (toggleIcon) toggleIcon.textContent = '▲';
-                } else {
-                    // Zwiń
-                    inspectorContent.classList.add('collapsed');
-                    if (toggleIcon) toggleIcon.textContent = '▼';
-                }
-            });
-        }
-    }
-    
     /**
      * KONFIGURUJE PRZYCISK "OBLICZ ŚCIEŻKĘ"
      */
