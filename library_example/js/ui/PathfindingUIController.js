@@ -16,16 +16,10 @@ export class PathfindingUIController {
         this.linearDistance = document.getElementById('linearDistance');
         this.pathfindingStatus = document.getElementById('pathfindingStatus');
         
-        // Przyciski
-        this.clearPathfindingPointsBtn = document.getElementById('clearPathfindingPoints');
-        this.calculatePathBtn = document.getElementById('calculatePath');
-        this.buildTransitionGraphBtn = document.getElementById('buildTransitionGraph');
+        // Przyciski (tylko te które zostały)
         this.printDataBtn = document.getElementById('printData');
         
         // Callbacki
-        this.onClearPoints = null;
-        this.onCalculatePath = null;
-        this.onBuildTransitionGraph = null;
         this.onPrintData = null;
     }
 
@@ -33,24 +27,6 @@ export class PathfindingUIController {
      * INICJALIZUJE EVENT LISTENERS
      */
     setupEventListeners() {
-        this.clearPathfindingPointsBtn?.addEventListener('click', () => {
-            if (this.onClearPoints) {
-                this.onClearPoints();
-            }
-        });
-
-        this.calculatePathBtn?.addEventListener('click', () => {
-            if (this.onCalculatePath) {
-                this.onCalculatePath();
-            }
-        });
-
-        this.buildTransitionGraphBtn?.addEventListener('click', () => {
-            if (this.onBuildTransitionGraph) {
-                this.onBuildTransitionGraph();
-            }
-        });
-
         this.printDataBtn?.addEventListener('click', () => {
             if (this.onPrintData) {
                 this.onPrintData();
@@ -132,36 +108,12 @@ export class PathfindingUIController {
         } else {
             this.updateStatus('Gotowy do obliczenia ścieżki');
         }
-        
-        // Aktualizuj stan przycisków
-        this.updateButtonStates(pathfindingPointManager);
-    }
-
-    /**
-     * AKTUALIZUJE STAN PRZYCISKÓW
-     */
-    updateButtonStates(pathfindingPointManager) {
-        const hasPoints = pathfindingPointManager.hasPoints();
-        const hasAnyPoint = pathfindingPointManager.getStartPoint() || pathfindingPointManager.getEndPoint();
-        
-        // Przycisk "Wyczyść punkty" - aktywny jeśli są jakieś punkty
-        if (this.clearPathfindingPointsBtn) {
-            this.clearPathfindingPointsBtn.disabled = !hasAnyPoint;
-        }
-        
-        // Przycisk "Oblicz ścieżkę" - aktywny jeśli są oba punkty
-        if (this.calculatePathBtn) {
-            this.calculatePathBtn.disabled = !hasPoints;
-        }
     }
 
     /**
      * USTAWIA CALLBACKI
      */
-    setCallbacks({ onClearPoints, onCalculatePath, onBuildTransitionGraph, onPrintData }) {
-        this.onClearPoints = onClearPoints;
-        this.onCalculatePath = onCalculatePath;
-        this.onBuildTransitionGraph = onBuildTransitionGraph;
+    setCallbacks({ onPrintData }) {
         this.onPrintData = onPrintData;
     }
 

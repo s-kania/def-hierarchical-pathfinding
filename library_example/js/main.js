@@ -51,6 +51,10 @@ class ChunkMapGenerator {
         this.canvas = null;
         this.inspectorPanel = null;
         
+        // Modal i zakładki
+        this.settingsModal = null;
+        this.currentTab = 'map-config';
+        
         this.init();
     }
     
@@ -58,6 +62,7 @@ class ChunkMapGenerator {
         // Inicjalizuj elementy DOM
         this.canvas = document.getElementById('mapCanvas');
         this.inspectorPanel = document.getElementById('transitionPointDetails');
+        this.settingsModal = document.getElementById('settingsModal');
         
         if (!this.canvas) {
             console.error('❌ Canvas element not found!');
@@ -69,6 +74,9 @@ class ChunkMapGenerator {
         
         // Skonfiguruj UI
         this.setupUI();
+        
+        // Skonfiguruj modal i zakładki
+        this.setupModalAndTabs();
         
         // Wygeneruj początkową mapę
         this.generateMap();
@@ -122,9 +130,6 @@ class ChunkMapGenerator {
         
         // Ustaw callbacki dla pathfinding UI
         this.pathfindingUIController.setCallbacks({
-            onClearPoints: () => this.onClearPathfindingPoints(),
-            onCalculatePath: () => this.onCalculatePathfindingPath(),
-            onBuildTransitionGraph: () => this.onBuildTransitionGraph(),
             onPrintData: () => this.onPrintGameData()
         });
         
@@ -134,6 +139,100 @@ class ChunkMapGenerator {
         
         // Skonfiguruj interaktywność canvas
         this.setupCanvasInteractivity();
+    }
+    
+    /**
+     * KONFIGURUJE MODAL I ZAKŁADKI
+     */
+    setupModalAndTabs() {
+        // Przycisk Settings
+        const settingsBtn = document.getElementById('settingsBtn');
+        const closeModalBtn = document.getElementById('closeSettingsModal');
+        
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', () => this.openSettingsModal());
+        }
+        
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', () => this.closeSettingsModal());
+        }
+        
+        // Zamknij modal po kliknięciu poza nim
+        if (this.settingsModal) {
+            this.settingsModal.addEventListener('click', (e) => {
+                if (e.target === this.settingsModal) {
+                    this.closeSettingsModal();
+                }
+            });
+        }
+        
+        // Zakładki
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tabName = e.target.dataset.tab;
+                this.switchTab(tabName);
+            });
+        });
+        
+        // Zamknij modal po naciśnięciu Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.settingsModal.classList.contains('show')) {
+                this.closeSettingsModal();
+            }
+        });
+        
+        // Zwijalny Inspector
+        this.setupCollapsibleInspector();
+        
+        // Przycisk "Oblicz ścieżkę" w głównym layout
+        this.setupCalculatePathButton();
+    }
+    
+    /**
+     * OTWIERA MODAL SETTINGS
+     */
+    openSettingsModal() {
+        if (this.settingsModal) {
+            this.settingsModal.classList.add('show');
+            document.body.style.overflow = 'hidden'; // Zablokuj scrollowanie strony
+        }
+    }
+    
+    /**
+     * ZAMYKA MODAL SETTINGS
+     */
+    closeSettingsModal() {
+        if (this.settingsModal) {
+            this.settingsModal.classList.remove('show');
+            document.body.style.overflow = ''; // Przywróć scrollowanie strony
+        }
+    }
+    
+    /**
+     * PRZEŁĄCZA ZAKŁADKĘ
+     */
+    switchTab(tabName) {
+        // Usuń aktywną klasę ze wszystkich przycisków i paneli
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('active');
+        });
+        
+        // Dodaj aktywną klasę do wybranej zakładki
+        const activeTabBtn = document.querySelector(`[data-tab="${tabName}"]`);
+        const activeTabPane = document.getElementById(tabName);
+        
+        if (activeTabBtn) {
+            activeTabBtn.classList.add('active');
+        }
+        if (activeTabPane) {
+            activeTabPane.classList.add('active');
+        }
+        
+        this.currentTab = tabName;
     }
     
     /**
@@ -705,6 +804,43 @@ class ChunkMapGenerator {
         
         // Pokazuje też sukces w UI
         this.pathfindingUIController.showSuccess('Dane wydrukowane w konsoli');
+    }
+
+    /**
+     * KONFIGURUJE ZWIJALNY INSPECTOR
+     */
+    setupCollapsibleInspector() {
+        const inspectorToggle = document.getElementById('inspectorToggle');
+        const inspectorContent = document.getElementById('inspectorContent');
+        const toggleIcon = inspectorToggle?.querySelector('.toggle-icon');
+        
+        if (inspectorToggle && inspectorContent) {
+            inspectorToggle.addEventListener('click', () => {
+                const isCollapsed = inspectorContent.classList.contains('collapsed');
+                
+                if (isCollapsed) {
+                    // Rozwiń
+                    inspectorContent.classList.remove('collapsed');
+                    if (toggleIcon) toggleIcon.textContent = '▲';
+                } else {
+                    // Zwiń
+                    inspectorContent.classList.add('collapsed');
+                    if (toggleIcon) toggleIcon.textContent = '▼';
+                }
+            });
+        }
+    }
+    
+    /**
+     * KONFIGURUJE PRZYCISK "OBLICZ ŚCIEŻKĘ"
+     */
+    setupCalculatePathButton() {
+        const calculatePathBtn = document.getElementById('calculatePath');
+        if (calculatePathBtn) {
+            calculatePathBtn.addEventListener('click', () => {
+                this.onCalculatePathfindingPath();
+            });
+        }
     }
 }
 

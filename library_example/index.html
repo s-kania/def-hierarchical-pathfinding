@@ -13,342 +13,358 @@
             <p>Configure and generate a chunk map with islands for your game</p>
         </header>
 
-        <div class="config-panel card">
-            <div class="card__header">
-                <h2>Map Configuration</h2>
+        <!-- Główny kontener z mapą na środku -->
+        <div class="main-content">
+            <!-- Przyciski w prawym górnym rogu -->
+            <div class="top-buttons-container">
+                <button class="btn btn--outline calculate-path-btn" id="calculatePath">
+                    🧭 Oblicz Ścieżkę
+                </button>
+                <button class="btn btn--primary settings-btn" id="settingsBtn">
+                    ⚙️ Settings
+                </button>
             </div>
-            <div class="card__body">
-                <div class="config-grid">
-                    <div class="form-group">
-                        <label class="form-label" for="chunkSize">
-                            Chunk size: <span id="chunkSizeValue">11x11</span>
-                        </label>
-                        <input type="range" id="chunkSize" class="form-control" min="4" max="16" value="11">
-                    </div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="chunkCols">
-                            Chunk columns: <span id="chunkColsValue">8</span>
-                        </label>
-                        <input type="range" id="chunkCols" class="form-control" min="3" max="12" value="8">
+            <!-- Zwinięty Transition Point Inspector nad mapą -->
+            <div class="collapsible-inspector">
+                <div class="inspector-header" id="inspectorToggle">
+                    <h3>🔍 Transition Point Inspector</h3>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="inspector-content collapsed" id="inspectorContent">
+                    <div id="transitionPointDetails" class="transition-details">
+                        <div class="no-selection">
+                            <span class="placeholder-text">Najedź myszą na punkt przejścia aby zobaczyć szczegóły</span>
+                        </div>
+                        <div id="selectedPointInfo" class="point-info hidden">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <span class="info-label">ID:</span>
+                                    <span id="detailId" class="info-value">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Chunki:</span>
+                                    <span id="detailChunks" class="info-value">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Pozycja:</span>
+                                    <span id="detailPosition" class="info-value">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Kierunek:</span>
+                                    <span id="detailDirection" class="info-value">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Długość segmentu:</span>
+                                    <span id="detailSegmentLength" class="info-value">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Połączenia:</span>
+                                    <span id="detailConnections" class="info-value">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Debug:</span>
+                                    <button id="debugConnectionsBtn" class="btn btn--info btn--sm">
+                                        🔍 Print
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="chunkRows">
-                            Chunk rows: <span id="chunkRowsValue">6</span>
-                        </label>
-                        <input type="range" id="chunkRows" class="form-control" min="2" max="8" value="6">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="tileSize">
-                            Tile size: <span id="tileSizeValue">16px</span>
-                        </label>
-                        <input type="range" id="tileSize" class="form-control" min="8" max="32" value="16">
+            <!-- Mapa jako główny element -->
+            <div class="map-container main-map">
+                <div class="map-info">
+                    <div class="map-stats">
+                        <div class="stat">
+                            <span class="stat-label">Chunks:</span>
+                            <span id="totalChunks">15</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Total tiles:</span>
+                            <span id="totalTiles">540</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Islands:</span>
+                            <span id="islandPercentage">0%</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Transition points:</span>
+                            <span id="totalTransitionPoints">0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Position:</span>
+                            <span id="mousePosition">-</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="config-buttons">
-                    <button class="btn btn--primary" id="regenerateBtn">
-                        🔄 Regenerate Map
-                    </button>
-                    <button class="btn btn--secondary" id="resetBtn">
-                        ↺ Reset Settings
-                    </button>
-                    <button class="btn btn--outline" id="exportBtn">
-                        📥 Export PNG
-                    </button>
-                </div>
+                <canvas id="mapCanvas" width="800" height="600"></canvas>
             </div>
         </div>
 
-        <div class="island-config-panel card">
-            <div class="card__header">
-                <h2>🏝️ Island Generation Settings</h2>
-            </div>
-            <div class="card__body">
-                <div class="config-grid">
-                    <div class="form-group">
-                        <label class="form-label" for="islandPreset">
-                            Preset: <span id="islandPresetValue">Archipelago</span>
-                        </label>
-                        <select id="islandPreset" class="form-control">
-                            <option value="oceanic">🌊 Oceanic (few small islands)</option>
-                            <option value="archipelago" selected>🏝️ Archipelago (island chains)</option>
-                            <option value="continental">🏔️ Continental (large landmasses)</option>
-                            <option value="scattered">⚡ Scattered (sparse islands)</option>
-                            <option value="custom">⚙️ Custom Settings</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="landDensity">
-                            Land density: <span id="landDensityValue">27%</span>
-                        </label>
-                        <input type="range" id="landDensity" class="form-control" min="10" max="70" value="27">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="iterations">
-                            Smoothing iterations: <span id="iterationsValue">4</span>
-                        </label>
-                        <input type="range" id="iterations" class="form-control" min="1" max="8" value="4">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="neighborThreshold">
-                            Neighbor threshold: <span id="neighborThresholdValue">4</span>
-                        </label>
-                        <input type="range" id="neighborThreshold" class="form-control" min="2" max="6" value="4">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="archipelagoMode">
-                            <span>Archipelago clustering</span>
-                        </label>
-                        <input type="checkbox" id="archipelagoMode" class="form-control" checked>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="islandSize">
-                            Island size: <span id="islandSizeValue">Medium</span>
-                        </label>
-                        <select id="islandSize" class="form-control">
-                            <option value="small">Small Islands</option>
-                            <option value="medium" selected>Medium Islands</option>
-                            <option value="large">Large Islands</option>
-                        </select>
-                    </div>
+        <!-- Modal Settings -->
+        <div id="settingsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>⚙️ Settings</h2>
+                    <button class="modal-close" id="closeSettingsModal">&times;</button>
                 </div>
-            </div>
-        </div>
-
-        <div class="transition-point-inspector card">
-            <div class="card__header">
-                <h3>🔍 Transition Point Inspector</h3>
-            </div>
-            <div class="card__body">
-                <div id="transitionPointDetails" class="transition-details">
-                    <div class="no-selection">
-                        <span class="placeholder-text">Najedź myszą na punkt przejścia aby zobaczyć szczegóły</span>
+                
+                <div class="modal-body">
+                    <!-- Tabs dla różnych sekcji ustawień -->
+                    <div class="settings-tabs">
+                        <button class="tab-btn active" data-tab="map-config">🗺️ Map Config</button>
+                        <button class="tab-btn" data-tab="island-config">🏝️ Islands</button>
+                        <button class="tab-btn" data-tab="pathfinding">🚀 Pathfinding</button>
+                        <button class="tab-btn" data-tab="legend">📋 Legend</button>
                     </div>
-                    <div id="selectedPointInfo" class="point-info hidden">
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <span class="info-label">ID:</span>
-                                <span id="detailId" class="info-value">-</span>
+
+                    <!-- Tab content -->
+                    <div class="tab-content">
+                        <!-- Map Configuration Tab -->
+                        <div id="map-config" class="tab-pane active">
+                            <div class="config-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="chunkSize">
+                                        Chunk size: <span id="chunkSizeValue">11x11</span>
+                                    </label>
+                                    <input type="range" id="chunkSize" class="form-control" min="4" max="16" value="11">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="chunkCols">
+                                        Chunk columns: <span id="chunkColsValue">8</span>
+                                    </label>
+                                    <input type="range" id="chunkCols" class="form-control" min="3" max="12" value="8">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="chunkRows">
+                                        Chunk rows: <span id="chunkRowsValue">6</span>
+                                    </label>
+                                    <input type="range" id="chunkRows" class="form-control" min="2" max="8" value="6">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="tileSize">
+                                        Tile size: <span id="tileSizeValue">16px</span>
+                                    </label>
+                                    <input type="range" id="tileSize" class="form-control" min="8" max="32" value="16">
+                                </div>
                             </div>
-                            <div class="info-item">
-                                <span class="info-label">Chunki:</span>
-                                <span id="detailChunks" class="info-value">-</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Pozycja:</span>
-                                <span id="detailPosition" class="info-value">-</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Kierunek:</span>
-                                <span id="detailDirection" class="info-value">-</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Długość segmentu:</span>
-                                <span id="detailSegmentLength" class="info-value">-</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Połączenia:</span>
-                                <span id="detailConnections" class="info-value">-</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Debug:</span>
-                                <button id="debugConnectionsBtn" class="btn btn--info btn--sm">
-                                    🔍 Print
+
+                            <div class="config-buttons">
+                                <button class="btn btn--primary" id="regenerateBtn">
+                                    🔄 Regenerate Map
+                                </button>
+                                <button class="btn btn--secondary" id="resetBtn">
+                                    ↺ Reset Settings
+                                </button>
+                                <button class="btn btn--outline" id="exportBtn">
+                                    📥 Export PNG
                                 </button>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="map-container">
-            <div class="map-info">
-                <div class="map-stats">
-                    <div class="stat">
-                        <span class="stat-label">Chunks:</span>
-                        <span id="totalChunks">15</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Total tiles:</span>
-                        <span id="totalTiles">540</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Islands:</span>
-                        <span id="islandPercentage">0%</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Transition points:</span>
-                        <span id="totalTransitionPoints">0</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Position:</span>
-                        <span id="mousePosition">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <canvas id="mapCanvas" width="800" height="600"></canvas>
-        </div>
-
-        <!-- Sekcja Pathfinding z wszystkimi kontrolkami -->
-        <div class="pathfinding-panel card">
-            <div class="card__header">
-                <h2>🚀 Pathfinding</h2>
-            </div>
-            <div class="card__body">
-                <!-- Ustawienia Pathfinding -->
-                <div class="pathfinding-settings">
-                    <h3>⚙️ Ustawienia</h3>
-                    <div class="config-grid">
-                        <div class="form-group">
-                            <label class="form-label" for="maxTransitionPoints">
-                                Max transition points per border: <span id="maxTransitionPointsValue">3</span>
-                            </label>
-                            <input type="range" id="maxTransitionPoints" class="form-control" min="1" max="8" value="3">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="transitionPointScale">
-                                Transition point scale: <span id="transitionPointScaleValue">1.0x</span>
-                            </label>
-                            <input type="range" id="transitionPointScale" class="form-control" min="0.5" max="3.0" step="0.1" value="1.0">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="pathfindingPointScale">
-                                Pathfinding cross scale: <span id="pathfindingPointScaleValue">2.0x</span>
-                            </label>
-                            <input type="range" id="pathfindingPointScale" class="form-control" min="0.5" max="4.0" step="0.1" value="2.0">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="showTransitionPoints">
-                                <span>Show transition points</span>
-                            </label>
-                            <input type="checkbox" id="showTransitionPoints" class="form-control" checked>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="showConnectionWeights">
-                                <span>Show connection weights</span>
-                            </label>
-                            <input type="checkbox" id="showConnectionWeights" class="form-control" checked>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Punkty Startowy i Końcowy -->
-                <div class="pathfinding-info">
-                    <h3>📍 Punkty Start/Koniec</h3>
-                    <div class="pathfinding-grid">
-                        <div class="pathfinding-section">
-                            <h4>📍 Punkt Startowy</h4>
-                            <div class="point-details">
-                                <div class="point-info-item">
-                                    <span class="point-label">Pozycja:</span>
-                                    <span id="startPointPosition" class="point-value">Nie ustawiony</span>
+                        <!-- Island Configuration Tab -->
+                        <div id="island-config" class="tab-pane">
+                            <div class="config-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="islandPreset">
+                                        Preset: <span id="islandPresetValue">Archipelago</span>
+                                    </label>
+                                    <select id="islandPreset" class="form-control">
+                                        <option value="oceanic">🌊 Oceanic (few small islands)</option>
+                                        <option value="archipelago" selected>🏝️ Archipelago (island chains)</option>
+                                        <option value="continental">🏔️ Continental (large landmasses)</option>
+                                        <option value="scattered">⚡ Scattered (sparse islands)</option>
+                                        <option value="custom">⚙️ Custom Settings</option>
+                                    </select>
                                 </div>
-                                <div class="point-info-item">
-                                    <span class="point-label">Współrzędne:</span>
-                                    <span id="startPointCoords" class="point-value">-</span>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="landDensity">
+                                        Land density: <span id="landDensityValue">27%</span>
+                                    </label>
+                                    <input type="range" id="landDensity" class="form-control" min="10" max="70" value="27">
                                 </div>
-                                <div class="point-info-item">
-                                    <span class="point-label">Chunk:</span>
-                                    <span id="startPointChunk" class="point-value">-</span>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="iterations">
+                                        Smoothing iterations: <span id="iterationsValue">4</span>
+                                    </label>
+                                    <input type="range" id="iterations" class="form-control" min="1" max="8" value="4">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="neighborThreshold">
+                                        Neighbor threshold: <span id="neighborThresholdValue">4</span>
+                                    </label>
+                                    <input type="range" id="neighborThreshold" class="form-control" min="2" max="6" value="4">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="archipelagoMode">
+                                        <span>Archipelago clustering</span>
+                                    </label>
+                                    <input type="checkbox" id="archipelagoMode" class="form-control" checked>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="islandSize">
+                                        Island size: <span id="islandSizeValue">Medium</span>
+                                    </label>
+                                    <select id="islandSize" class="form-control">
+                                        <option value="small">Small Islands</option>
+                                        <option value="medium" selected>Medium Islands</option>
+                                        <option value="large">Large Islands</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="pathfinding-section">
-                            <h4>🎯 Punkt Końcowy</h4>
-                            <div class="point-details">
-                                <div class="point-info-item">
-                                    <span class="point-label">Pozycja:</span>
-                                    <span id="endPointPosition" class="point-value">Nie ustawiony</span>
+
+                        <!-- Pathfinding Tab -->
+                        <div id="pathfinding" class="tab-pane">
+                            <!-- Ustawienia Pathfinding -->
+                            <div class="pathfinding-settings">
+                                <h3>⚙️ Ustawienia</h3>
+                                <div class="config-grid">
+                                    <div class="form-group">
+                                        <label class="form-label" for="maxTransitionPoints">
+                                            Max transition points per border: <span id="maxTransitionPointsValue">3</span>
+                                        </label>
+                                        <input type="range" id="maxTransitionPoints" class="form-control" min="1" max="8" value="3">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="transitionPointScale">
+                                            Transition point scale: <span id="transitionPointScaleValue">1.0x</span>
+                                        </label>
+                                        <input type="range" id="transitionPointScale" class="form-control" min="0.5" max="3.0" step="0.1" value="1.0">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="pathfindingPointScale">
+                                            Pathfinding cross scale: <span id="pathfindingPointScaleValue">2.0x</span>
+                                        </label>
+                                        <input type="range" id="pathfindingPointScale" class="form-control" min="0.5" max="4.0" step="0.1" value="2.0">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="showTransitionPoints">
+                                            <span>Show transition points</span>
+                                        </label>
+                                        <input type="checkbox" id="showTransitionPoints" class="form-control" checked>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="showConnectionWeights">
+                                            <span>Show connection weights</span>
+                                        </label>
+                                        <input type="checkbox" id="showConnectionWeights" class="form-control" checked>
+                                    </div>
                                 </div>
-                                <div class="point-info-item">
-                                    <span class="point-label">Współrzędne:</span>
-                                    <span id="endPointCoords" class="point-value">-</span>
+                            </div>
+
+                            <!-- Punkty Startowy i Końcowy -->
+                            <div class="pathfinding-info">
+                                <h3>📍 Punkty Start/Koniec</h3>
+                                <div class="pathfinding-grid">
+                                    <div class="pathfinding-section">
+                                        <h4>📍 Punkt Startowy</h4>
+                                        <div class="point-details">
+                                            <div class="point-info-item">
+                                                <span class="point-label">Pozycja:</span>
+                                                <span id="startPointPosition" class="point-value">Nie ustawiony</span>
+                                            </div>
+                                            <div class="point-info-item">
+                                                <span class="point-label">Współrzędne:</span>
+                                                <span id="startPointCoords" class="point-value">-</span>
+                                            </div>
+                                            <div class="point-info-item">
+                                                <span class="point-label">Chunk:</span>
+                                                <span id="startPointChunk" class="point-value">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="pathfinding-section">
+                                        <h4>🎯 Punkt Końcowy</h4>
+                                        <div class="point-details">
+                                            <div class="point-info-item">
+                                                <span class="point-label">Pozycja:</span>
+                                                <span id="endPointPosition" class="point-value">Nie ustawiony</span>
+                                            </div>
+                                            <div class="point-info-item">
+                                                <span class="point-label">Współrzędne:</span>
+                                                <span id="endPointCoords" class="point-value">-</span>
+                                            </div>
+                                            <div class="point-info-item">
+                                                <span class="point-label">Chunk:</span>
+                                                <span id="endPointChunk" class="point-value">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="point-info-item">
-                                    <span class="point-label">Chunk:</span>
-                                    <span id="endPointChunk" class="point-value">-</span>
+                                
+                                <!-- Kontrolki i Statystyki -->
+                                <div class="pathfinding-controls">
+                                    <button class="btn btn--info" id="printData">
+                                        📊 Print Data
+                                    </button>
+                                </div>
+                                
+                                <div class="pathfinding-stats">
+                                    <div class="stat">
+                                        <span class="stat-label">Dystans liniowy:</span>
+                                        <span id="linearDistance" class="stat-value">-</span>
+                                    </div>
+                                    <div class="stat">
+                                        <span class="stat-label">Status:</span>
+                                        <span id="pathfindingStatus" class="stat-value">Oczekuje punktów</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Legend Tab -->
+                        <div id="legend" class="tab-pane">
+                            <div class="legend-content">
+                                <h3>📋 Legend & Presets Info</h3>
+                                <div class="legend-items">
+                                    <div class="legend-item">
+                                        <div class="legend-color ocean"></div>
+                                        <span>Ocean (0)</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color island"></div>
+                                        <span>Island (1)</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color transition-point"></div>
+                                        <span>Transition Point</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color pathfinding-start"></div>
+                                        <span>Punkt Startowy 📍</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color pathfinding-end"></div>
+                                        <span>Punkt Końcowy 🎯</span>
+                                    </div>
+                                </div>
+                                <div class="preset-info">
+                                    <p><strong>🌊 Oceanic:</strong> Vast oceans with small scattered islands, like Pacific atolls</p>
+                                    <p><strong>🏝️ Archipelago:</strong> Island chains and clusters, like Caribbean or Greek islands</p>
+                                    <p><strong>🏔️ Continental:</strong> Large landmasses with fewer water gaps, like Mediterranean</p>
+                                    <p><strong>⚡ Scattered:</strong> Sparse, isolated islands in open ocean</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Kontrolki i Statystyki -->
-                    <div class="pathfinding-controls">
-                        <button class="btn btn--secondary" id="clearPathfindingPoints">
-                            🗑️ Wyczyść Punkty
-                        </button>
-                        <button class="btn btn--outline" id="calculatePath">
-                            🧭 Oblicz Ścieżkę
-                        </button>
-                        <button class="btn btn--success" id="buildTransitionGraph">
-                            🔗 Zbuduj Graf Przejść
-                        </button>
-                        <button class="btn btn--info" id="printData">
-                            📊 Print Data
-                        </button>
-                    </div>
-                    
-                    <div class="pathfinding-stats">
-                        <div class="stat">
-                            <span class="stat-label">Dystans liniowy:</span>
-                            <span id="linearDistance" class="stat-value">-</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-label">Status:</span>
-                            <span id="pathfindingStatus" class="stat-value">Oczekuje punktów</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="legend card">
-            <div class="card__header">
-                <h3>Legend & Presets Info</h3>
-            </div>
-            <div class="card__body">
-                <div class="legend-items">
-                    <div class="legend-item">
-                        <div class="legend-color ocean"></div>
-                        <span>Ocean (0)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color island"></div>
-                        <span>Island (1)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color transition-point"></div>
-                        <span>Transition Point</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color pathfinding-start"></div>
-                        <span>Punkt Startowy 📍</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color pathfinding-end"></div>
-                        <span>Punkt Końcowy 🎯</span>
-                    </div>
-                </div>
-                <div class="preset-info">
-                    <p><strong>🌊 Oceanic:</strong> Vast oceans with small scattered islands, like Pacific atolls</p>
-                    <p><strong>🏝️ Archipelago:</strong> Island chains and clusters, like Caribbean or Greek islands</p>
-                    <p><strong>🏔️ Continental:</strong> Large landmasses with fewer water gaps, like Mediterranean</p>
-                    <p><strong>⚡ Scattered:</strong> Sparse, isolated islands in open ocean</p>
                 </div>
             </div>
         </div>
