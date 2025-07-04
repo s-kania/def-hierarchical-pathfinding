@@ -239,9 +239,9 @@ export class CanvasRenderer {
         if (this.selectedPoint) {
             this.renderConnectionLines(this.selectedPoint, allTransitionPoints, gameDataManager, {
                 color: '#00ff00',  // Zielony dla selected
-                lineWidth: 3,
+                lineWidth: 2.7,    // Zmniejszone o 10% (3 * 0.9)
                 dashPattern: [10, 5],
-                showArrows: true
+                showArrows: false  // Usunięte strzałki
             });
         }
         
@@ -253,9 +253,9 @@ export class CanvasRenderer {
             if (hoveredId !== selectedId) {
                 this.renderConnectionLines(this.hoveredPoint, allTransitionPoints, gameDataManager, {
                     color: '#ff8800',  // Pomarańczowy dla hover
-                    lineWidth: 2,
+                    lineWidth: 1.8,    // Zmniejszone o 10% (2 * 0.9)
                     dashPattern: [8, 4],
-                    showArrows: false
+                    showArrows: false  // Już były wyłączone, ale dla spójności
                 });
             }
         }
