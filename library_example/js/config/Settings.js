@@ -25,7 +25,26 @@ export const DEFAULT_PATHFINDING_SETTINGS = {
     showConnectionWeights: true, // Show connection weights on lines
     transitionPointScale: 1.0,  // Scale of transition point size
     pathfindingPointScale: 2.0, // Scale of pathfinding cross size
-    showDebugLabels: false      // Show segment numbers on path
+    showDebugLabels: false,     // Show segment numbers on path
+    
+    // NEW: Algorithm and heuristic settings
+    localAlgorithm: 'astar',    // Local pathfinding algorithm: 'astar' or 'jps'
+    localHeuristic: 'manhattan', // Local heuristic: 'manhattan', 'euclidean', 'diagonal', 'octile'
+    hierarchicalHeuristic: 'manhattan', // Hierarchical heuristic: 'manhattan', 'euclidean', 'diagonal', 'octile'
+    heuristicWeight: 1.0        // Heuristic weight (1.0 = admissible, >1.0 = weighted A*)
+};
+
+// Available algorithms and heuristics
+export const PATHFINDING_ALGORITHMS = {
+    astar: 'A* (A-Star)',
+    jps: 'JPS (Jump Point Search)'
+};
+
+export const PATHFINDING_HEURISTICS = {
+    manhattan: 'Manhattan Distance',
+    euclidean: 'Euclidean Distance', 
+    diagonal: 'Diagonal Distance',
+    octile: 'Octile Distance'
 };
 
 export const ISLAND_PRESETS = {

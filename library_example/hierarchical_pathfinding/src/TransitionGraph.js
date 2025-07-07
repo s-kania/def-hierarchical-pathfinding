@@ -73,11 +73,25 @@ export class TransitionGraph {
         this.graph = new Map();  // id -> connections
         this.gridConfig = gridConfig;
         
+        // Algorithm settings
+        this.heuristicType = 'manhattan';
+        this.heuristicWeight = 1.0;
+        
         // Build data structures
         for (const point of transitionPoints) {
             this.points.set(point.id, point);
             this.graph.set(point.id, point.connections || []);
         }
+    }
+    
+    /**
+     * Set algorithm parameters
+     * @param {string} heuristicType - Type of heuristic
+     * @param {number} heuristicWeight - Weight for heuristic
+     */
+    setAlgorithmParams(heuristicType = 'manhattan', heuristicWeight = 1.0) {
+        this.heuristicType = heuristicType;
+        this.heuristicWeight = heuristicWeight;
     }
     
     /**
@@ -107,7 +121,7 @@ export class TransitionGraph {
         gScore.set(startId, 0);
         openSet.push({ 
             id: startId, 
-            f: this.heuristic(startId, endId) 
+            f: this.heuristic(startId, endId, this.heuristicType, this.heuristicWeight) 
         });
         
         let iterations = 0;
@@ -152,7 +166,7 @@ export class TransitionGraph {
                 cameFrom.set(neighbor, current.id);
                 gScore.set(neighbor, tentativeG);
                 
-                const heuristicValue = this.heuristic(neighbor, endId);
+                const heuristicValue = this.heuristic(neighbor, endId, this.heuristicType, this.heuristicWeight);
                 const fScore = tentativeG + heuristicValue;
                 
                 // Add to priority queue
@@ -192,12 +206,14 @@ export class TransitionGraph {
     }
     
     /**
-     * Heuristic for A* - Manhattan distance between chunks
+     * Heuristic for A* - Configurable distance between chunks
      * @param {string} pointId1 - First point ID
      * @param {string} pointId2 - Second point ID
+     * @param {string} heuristicType - Type of heuristic to use
+     * @param {number} heuristicWeight - Weight for heuristic
      * @returns {number} - Estimated distance
      */
-    heuristic(pointId1, pointId2) {
+    heuristic(pointId1, pointId2, heuristicType = 'manhattan', heuristicWeight = 1.0) {
         const point1 = this.points.get(pointId1);
         const point2 = this.points.get(pointId2);
         
@@ -209,16 +225,35 @@ export class TransitionGraph {
         const chunk1 = this.parseChunkId(point1.chunks[0]);
         const chunk2 = this.parseChunkId(point2.chunks[0]);
         
-        // Manhattan distance in chunks
-        const chunkDistance = Math.abs(chunk2.x - chunk1.x) + Math.abs(chunk2.y - chunk1.y);
+        // Calculate chunk distance based on heuristic type
+        let chunkDistance;
+        const dx = Math.abs(chunk2.x - chunk1.x);
+        const dy = Math.abs(chunk2.y - chunk1.y);
+        
+        switch (heuristicType) {
+            case 'euclidean':
+                chunkDistance = Math.sqrt(dx * dx + dy * dy);
+                break;
+            case 'diagonal':
+                chunkDistance = Math.max(dx, dy);
+                break;
+            case 'octile':
+                const F = Math.SQRT2 - 1;
+                chunkDistance = Math.max(dx, dy) + F * Math.min(dx, dy);
+                break;
+            case 'manhattan':
+            default:
+                chunkDistance = dx + dy;
+                break;
+        }
         
         // Scale if we have configuration
         if (this.gridConfig) {
             const scale = (this.gridConfig.chunkSize * this.gridConfig.tileSize) * 0.5;
-            return chunkDistance * scale;
+            return chunkDistance * scale * heuristicWeight;
         }
         
-        return chunkDistance;
+        return chunkDistance * heuristicWeight;
     }
     
     /**

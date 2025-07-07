@@ -11,6 +11,12 @@ export class HierarchicalPathfinding {
     constructor() {
         this.transitionGraph = null;
         this.config = null;
+        
+        // Algorithm settings
+        this.localAlgorithm = 'astar';
+        this.localHeuristic = 'manhattan';
+        this.hierarchicalHeuristic = 'manhattan';
+        this.heuristicWeight = 1.0;
     }
 
     /**
@@ -21,6 +27,10 @@ export class HierarchicalPathfinding {
      *   - chunkWidth/chunkHeight: chunk dimensions (in tiles)
      *   - getChunkData: function returning chunk data
      *   - transitionPoints: array of transition points between chunks
+     *   - localAlgorithm: local pathfinding algorithm ('astar' or 'jps')
+     *   - localHeuristic: local heuristic type
+     *   - hierarchicalHeuristic: hierarchical heuristic type
+     *   - heuristicWeight: weight for heuristics
      */
     init(config) {
         // Basic validation
@@ -34,6 +44,12 @@ export class HierarchicalPathfinding {
         // Save configuration
         this.config = config;
         
+        // Update algorithm settings if provided
+        if (config.localAlgorithm) this.localAlgorithm = config.localAlgorithm;
+        if (config.localHeuristic) this.localHeuristic = config.localHeuristic;
+        if (config.hierarchicalHeuristic) this.hierarchicalHeuristic = config.hierarchicalHeuristic;
+        if (config.heuristicWeight) this.heuristicWeight = config.heuristicWeight;
+        
         // Build connections graph between transition points
         this.transitionGraph = new TransitionGraph(config.transitionPoints, {
             gridWidth: config.gridWidth,
@@ -41,6 +57,9 @@ export class HierarchicalPathfinding {
             chunkSize: config.chunkWidth, // Use chunkWidth as chunkSize for compatibility
             tileSize: config.tileSize
         });
+        
+        // Set algorithm parameters for transition graph
+        this.transitionGraph.setAlgorithmParams(this.hierarchicalHeuristic, this.heuristicWeight);
     }
 
     /**
@@ -185,8 +204,15 @@ export class HierarchicalPathfinding {
         const localStart = CoordUtils.globalToLocal(startPos, chunkId, this.config.chunkWidth, this.config.tileSize);
         const localEnd = CoordUtils.globalToLocal(endPos, chunkId, this.config.chunkWidth, this.config.tileSize);
 
-        // Find path with local A*
-        const localPath = LocalPathfinder.findPath(chunkData, localStart, localEnd);
+        // Find path with local algorithm
+        const localPath = LocalPathfinder.findPath(
+            chunkData, 
+            localStart, 
+            localEnd, 
+            this.localAlgorithm, 
+            this.localHeuristic, 
+            this.heuristicWeight
+        );
 
         if (localPath) {
             // Return as single segment

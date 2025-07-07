@@ -95,6 +95,9 @@ class ChunkMapGenerator {
         // Initialize pathfinding UI
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
         
+        // Initialize UI with current settings
+        this.uiController.updateUIFromSettings();
+        
         // Make available globally for developer console
         window.mapGenerator = this;
         window.app = this;
@@ -600,7 +603,13 @@ class ChunkMapGenerator {
                 chunkWidth: this.gameDataManager.chunkWidth,
                 chunkHeight: this.gameDataManager.chunkHeight,
                 getChunkData: (chunkId) => this.gameDataManager.getChunkData(chunkId),
-                transitionPoints: this.gameDataManager.transitionPoints
+                transitionPoints: this.gameDataManager.transitionPoints,
+                
+                // NEW: Algorithm and heuristic settings
+                localAlgorithm: this.pathfindingSettings.localAlgorithm,
+                localHeuristic: this.pathfindingSettings.localHeuristic,
+                hierarchicalHeuristic: this.pathfindingSettings.hierarchicalHeuristic,
+                heuristicWeight: this.pathfindingSettings.heuristicWeight
             };
             
             // Initialize pathfinder

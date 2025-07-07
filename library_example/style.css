@@ -1270,13 +1270,15 @@ input[type="range"]::-moz-range-thumb:hover {
   font-size: var(--font-size-xl);
 }
 
-.pathfinding-settings {
+.pathfinding-settings,
+.pathfinding-algorithms {
   margin-bottom: var(--space-24);
   padding-bottom: var(--space-16);
   border-bottom: 1px solid var(--color-border);
 }
 
-.pathfinding-settings h3 {
+.pathfinding-settings h3,
+.pathfinding-algorithms h3 {
   margin-bottom: var(--space-16);
   color: var(--color-text);
   font-size: var(--font-size-lg);

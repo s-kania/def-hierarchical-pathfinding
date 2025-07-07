@@ -150,4 +150,75 @@ export class CoordUtils {
         
         return this.localToGlobal(localPos, chunkId, chunkSize, tileSize);
     }
+
+    /**
+     * HEURISTIC FUNCTIONS
+     */
+    
+    /**
+     * Calculate Manhattan distance between two positions
+     * @param {Object} a - Position {x, y}
+     * @param {Object} b - Position {x, y}
+     * @returns {number} - Manhattan distance
+     */
+    static manhattanDistance(a, b) {
+        return Math.abs(b.x - a.x) + Math.abs(b.y - a.y);
+    }
+    
+    /**
+     * Calculate Euclidean distance between two positions
+     * @param {Object} a - Position {x, y}
+     * @param {Object} b - Position {x, y}
+     * @returns {number} - Euclidean distance
+     */
+    static euclideanDistance(a, b) {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+    
+    /**
+     * Calculate diagonal distance between two positions
+     * @param {Object} a - Position {x, y}
+     * @param {Object} b - Position {x, y}
+     * @returns {number} - Diagonal distance
+     */
+    static diagonalDistance(a, b) {
+        const dx = Math.abs(b.x - a.x);
+        const dy = Math.abs(b.y - a.y);
+        return Math.max(dx, dy);
+    }
+    
+    /**
+     * Calculate octile distance between two positions
+     * @param {Object} a - Position {x, y}
+     * @param {Object} b - Position {x, y}
+     * @returns {number} - Octile distance
+     */
+    static octileDistance(a, b) {
+        const dx = Math.abs(b.x - a.x);
+        const dy = Math.abs(b.y - a.y);
+        const F = Math.SQRT2 - 1; // Cost of diagonal movement
+        return Math.max(dx, dy) + F * Math.min(dx, dy);
+    }
+    
+    /**
+     * Get heuristic function by name
+     * @param {string} heuristicName - Name of heuristic
+     * @returns {Function} - Heuristic function
+     */
+    static getHeuristic(heuristicName) {
+        switch (heuristicName) {
+            case 'manhattan':
+                return this.manhattanDistance;
+            case 'euclidean':
+                return this.euclideanDistance;
+            case 'diagonal':
+                return this.diagonalDistance;
+            case 'octile':
+                return this.octileDistance;
+            default:
+                return this.manhattanDistance; // Default fallback
+        }
+    }
 } 

@@ -165,6 +165,36 @@ export class UIController {
             this.pathfindingSettings.showConnectionWeights = e.target.checked;
             this.triggerRenderOnly();
         });
+
+        // NEW: Algorithm and heuristic settings
+        // Local algorithm
+        const localAlgorithmSelect = document.getElementById('localAlgorithm');
+        localAlgorithmSelect?.addEventListener('change', (e) => {
+            this.pathfindingSettings.localAlgorithm = e.target.value;
+            this.triggerPathfindingUpdate();
+        });
+
+        // Local heuristic
+        const localHeuristicSelect = document.getElementById('localHeuristic');
+        localHeuristicSelect?.addEventListener('change', (e) => {
+            this.pathfindingSettings.localHeuristic = e.target.value;
+            this.triggerPathfindingUpdate();
+        });
+
+        // Hierarchical heuristic
+        const hierarchicalHeuristicSelect = document.getElementById('hierarchicalHeuristic');
+        hierarchicalHeuristicSelect?.addEventListener('change', (e) => {
+            this.pathfindingSettings.hierarchicalHeuristic = e.target.value;
+            this.triggerPathfindingUpdate();
+        });
+
+        // Heuristic weight
+        const heuristicWeightSlider = document.getElementById('heuristicWeight');
+        heuristicWeightSlider?.addEventListener('input', (e) => {
+            this.pathfindingSettings.heuristicWeight = parseFloat(e.target.value);
+            document.getElementById('heuristicWeightValue').textContent = e.target.value;
+            this.triggerPathfindingUpdate();
+        });
     }
 
     /**
@@ -283,6 +313,13 @@ export class UIController {
         document.getElementById('archipelagoMode').checked = this.islandSettings.archipelagoMode;
         document.getElementById('islandSize').value = this.islandSettings.islandSize;
         document.getElementById('islandSizeValue').textContent = capitalizeFirst(this.islandSettings.islandSize);
+        
+        // NEW: Update algorithm and heuristic settings
+        document.getElementById('localAlgorithm').value = this.pathfindingSettings.localAlgorithm;
+        document.getElementById('localHeuristic').value = this.pathfindingSettings.localHeuristic;
+        document.getElementById('hierarchicalHeuristic').value = this.pathfindingSettings.hierarchicalHeuristic;
+        document.getElementById('heuristicWeight').value = this.pathfindingSettings.heuristicWeight;
+        document.getElementById('heuristicWeightValue').textContent = this.pathfindingSettings.heuristicWeight;
     }
 
     /**
@@ -339,6 +376,12 @@ export class UIController {
         this.pathfindingSettings.showConnectionWeights = true;
         this.pathfindingSettings.transitionPointScale = 1.0;
         this.pathfindingSettings.pathfindingPointScale = 2.0;
+        
+        // NEW: Reset algorithm and heuristic settings
+        this.pathfindingSettings.localAlgorithm = 'astar';
+        this.pathfindingSettings.localHeuristic = 'manhattan';
+        this.pathfindingSettings.hierarchicalHeuristic = 'manhattan';
+        this.pathfindingSettings.heuristicWeight = 1.0;
 
         this.resetUI();
     }
@@ -374,6 +417,13 @@ export class UIController {
         document.getElementById('maxTransitionPointsValue').textContent = '3';
         document.getElementById('transitionPointScaleValue').textContent = '1.0x';
         document.getElementById('pathfindingPointScaleValue').textContent = '2.0x';
+        
+        // NEW: Reset algorithm and heuristic controls
+        document.getElementById('localAlgorithm').value = 'astar';
+        document.getElementById('localHeuristic').value = 'manhattan';
+        document.getElementById('hierarchicalHeuristic').value = 'manhattan';
+        document.getElementById('heuristicWeight').value = 1.0;
+        document.getElementById('heuristicWeightValue').textContent = '1.0';
 
         // Reset seed display
         const seedElement = document.getElementById('mapSeed');
