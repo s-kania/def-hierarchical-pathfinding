@@ -398,6 +398,9 @@ class ChunkMapGenerator {
         this.renderer.selectedPoint = selectedPoint;
         this.renderer.hoveredPoint = hoveredPoint;
         
+        // Get calculated segments from PathfindingUIController
+        const calculatedSegments = this.pathfindingUIController.getCalculatedSegments();
+        
         this.renderer.renderMap(
             this.chunks, 
             this.chunkManager, 
@@ -405,7 +408,8 @@ class ChunkMapGenerator {
             activePoint,
             this.pathfindingPointManager,
             this.gameDataManager,
-            this.pathSegments
+            this.pathSegments,
+            calculatedSegments
         );
     }
     
@@ -543,6 +547,7 @@ class ChunkMapGenerator {
         // Reset pathfinding points and path
         this.pathfindingPointManager.clearPoints();
         this.pathSegments = null;
+        this.pathfindingUIController.resetSegments(); // Reset calculated segments
         
         // Reset UI settings
         this.uiController.resetToDefaults();
@@ -576,7 +581,7 @@ class ChunkMapGenerator {
     onClearPathfindingPoints() {
         this.pathfindingPointManager.clearPoints();
         this.pathSegments = null; // Also clear calculated path
-        this.pathfindingUIController.resetSegments(); // Reset segment manager
+        this.pathfindingUIController.resetSegments(); // Reset segment manager and calculated segments
         this.pathfindingUIController.showSuccess('Cleared points');
         this.renderMap();
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);

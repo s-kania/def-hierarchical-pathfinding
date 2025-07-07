@@ -15,7 +15,7 @@ export class CanvasRenderer {
     /**
      * RENDERS ENTIRE MAP
      */
-    renderMap(chunks, chunkManager, transitionPoints, activePoint = null, pathfindingPoints = null, gameDataManager = null, pathSegments = null) {
+    renderMap(chunks, chunkManager, transitionPoints, activePoint = null, pathfindingPoints = null, gameDataManager = null, pathSegments = null, calculatedSegments = null) {
         const canvasSize = chunkManager.calculateCanvasSize();
         
         // Set canvas size
@@ -41,6 +41,11 @@ export class CanvasRenderer {
         // Render calculated pathfinding path (green dashed lines)
         if (pathSegments && pathSegments.length > 0) {
             this.renderPathSegments(pathSegments);
+        }
+
+        // ETAP 4: Render local paths for calculated segments
+        if (calculatedSegments && calculatedSegments.length > 0) {
+            this.renderLocalPaths(calculatedSegments);
         }
 
         // Render transition points if enabled
@@ -581,5 +586,74 @@ export class CanvasRenderer {
                       localY;
         
         return { x: pixelX, y: pixelY };
+    }
+
+    /**
+     * RENDERS LOCAL PATHS FOR CALCULATED SEGMENTS
+     * @param {Array} calculatedSegments - Array of calculated segments with local paths
+     */
+    renderLocalPaths(calculatedSegments) {
+        calculatedSegments.forEach(segment => {
+            if (!segment.localPath || segment.localPath.length === 0) {
+                return; // Skip segments without local path
+            }
+
+            // Set style for local path - green squares on tiles
+            this.ctx.save();
+            this.ctx.fillStyle = '#00ff88'; // Light green for local paths
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 1;
+
+            // Draw green squares on each tile of the local path
+            segment.localPath.forEach(localPos => {
+                // Convert local position to world position
+                const worldPos = this.localToWorld(localPos, segment.chunkId);
+                
+                // Convert world position to pixel position
+                const pixelPos = this.worldToPixel(worldPos);
+                
+                // Draw square on tile (smaller than tile size)
+                const squareSize = Math.max(6, this.settings.tileSize * 0.8);
+                const halfSize = squareSize / 2;
+                
+                // Draw filled square
+                this.ctx.fillRect(
+                    pixelPos.x - halfSize, 
+                    pixelPos.y - halfSize, 
+                    squareSize, 
+                    squareSize
+                );
+                
+                // Draw white border
+                this.ctx.strokeRect(
+                    pixelPos.x - halfSize, 
+                    pixelPos.y - halfSize, 
+                    squareSize, 
+                    squareSize
+                );
+            });
+
+            this.ctx.restore();
+        });
+    }
+
+    /**
+     * CONVERTS LOCAL POSITION TO WORLD POSITION
+     * @param {Object} localPos - Local position {x, y} in chunk
+     * @param {string} chunkId - Chunk ID "x,y"
+     * @returns {Object} - World position {x, y}
+     */
+    localToWorld(localPos, chunkId) {
+        // Parse chunk coordinates
+        const [chunkX, chunkY] = chunkId.split(',').map(Number);
+        
+        // Calculate chunk world size
+        const chunkWorldSize = this.settings.chunkSize * this.settings.tileSize;
+        
+        // Calculate world position
+        const worldX = chunkX * chunkWorldSize + localPos.x * this.settings.tileSize + this.settings.tileSize / 2;
+        const worldY = chunkY * chunkWorldSize + localPos.y * this.settings.tileSize + this.settings.tileSize / 2;
+        
+        return { x: worldX, y: worldY };
     }
 } 
