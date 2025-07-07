@@ -40,7 +40,7 @@ export class CanvasRenderer {
 
         // Render calculated pathfinding path (green dashed lines)
         if (pathSegments && pathSegments.length > 0) {
-            this.renderPathSegments(pathSegments);
+            this.renderPathSegments(pathSegments, calculatedSegments);
         }
 
         // ETAP 4: Render local paths for calculated segments
@@ -485,10 +485,19 @@ export class CanvasRenderer {
     /**
      * RENDERS PATHFINDING PATH BASED ON SEGMENTS
      * @param {Array} pathSegments - Array of segments [{chunk, position}, ...]
+     * @param {Array} calculatedSegments - Array of calculated segments to skip lines
      */
-    renderPathSegments(pathSegments) {
+    renderPathSegments(pathSegments, calculatedSegments = null) {
         if (!pathSegments || pathSegments.length < 2) {
             return; // Need at least 2 points to draw line
+        }
+
+        // Create set of calculated chunk IDs for quick lookup
+        const calculatedChunkIds = new Set();
+        if (calculatedSegments) {
+            calculatedSegments.forEach(segment => {
+                calculatedChunkIds.add(segment.chunkId);
+            });
         }
 
         // Set style for path - green dashed lines
@@ -499,7 +508,7 @@ export class CanvasRenderer {
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
 
-        // Draw lines between consecutive segments
+        // Draw lines between consecutive segments, but skip calculated ones
         this.ctx.beginPath();
         
         for (let i = 0; i < pathSegments.length; i++) {
@@ -512,8 +521,14 @@ export class CanvasRenderer {
                 // First point - start path
                 this.ctx.moveTo(pixelPos.x, pixelPos.y);
             } else {
-                // Subsequent points - draw lines
-                this.ctx.lineTo(pixelPos.x, pixelPos.y);
+                // Check if current segment is calculated - if so, don't draw line TO it
+                if (calculatedChunkIds.has(segment.chunk)) {
+                    // Don't draw line to this segment, but start new path from it
+                    this.ctx.moveTo(pixelPos.x, pixelPos.y);
+                } else {
+                    // Draw line to this segment
+                    this.ctx.lineTo(pixelPos.x, pixelPos.y);
+                }
             }
         }
         
@@ -600,7 +615,7 @@ export class CanvasRenderer {
 
             // Set style for local path - green squares on tiles
             this.ctx.save();
-            this.ctx.fillStyle = '#00ff88'; // Light green for local paths
+            this.ctx.fillStyle = 'rgba(0, 255, 136, 0.5)'; // Light green with 50% transparency
             this.ctx.strokeStyle = '#ffffff';
             this.ctx.lineWidth = 1;
 
@@ -613,7 +628,7 @@ export class CanvasRenderer {
                 const pixelPos = this.worldToPixel(worldPos);
                 
                 // Draw square on tile (smaller than tile size)
-                const squareSize = Math.max(6, this.settings.tileSize * 0.8);
+                const squareSize = Math.max(4, this.settings.tileSize * 0.6);
                 const halfSize = squareSize / 2;
                 
                 // Draw filled square
