@@ -2,7 +2,7 @@
 
 ## 📋 Lista zadań do uproszczenia kodu zgodnie z zasadą KISS
 
-### 🔥 **ZADANIE 1: Usunięcie HeuristicRegistry - Injection heurystyk**
+### ✅ **ZADANIE 1: Usunięcie HeuristicRegistry - Injection heurystyk**
 **Priorytet:** WYSOKI  
 **Pliki:** `algorithms/AStarAlgorithm.js`, `algorithms/JPSAlgorithm.js`
 
@@ -39,9 +39,11 @@ constructor(heuristic, heuristicWeight = 1.0) {
 - ✅ Zgodność z zasadą dependency injection
 - ✅ Łatwiejsze dodawanie nowych heurystyk
 
+**Status:** ✅ WYKONANE
+
 ---
 
-### 🔥 **ZADANIE 2: Uproszczenie MinHeap w TransitionPathfinder**
+### ✅ **ZADANIE 2: Uproszczenie MinHeap w TransitionPathfinder - WYKONANE**
 **Priorytet:** WYSOKI  
 **Plik:** `pathfinders/TransitionPathfinder.js`
 
@@ -71,6 +73,8 @@ const openSet = [];
 - ✅ Prostsza implementacja
 - ✅ Mniej błędów do debugowania
 - ✅ Łatwiejsze zrozumienie
+
+**Status:** ✅ WYKONANE - MinHeap został zastąpiony prostą tablicą z sortowaniem
 
 ---
 
@@ -185,22 +189,22 @@ isWalkable(chunkData, pos) { return this.algorithm.isWalkable(chunkData, pos); }
 
 ## 📊 **Podsumowanie zadań**
 
-| Zadanie | Priorytet | Szacowany zysk | Trudność |
-|---------|-----------|----------------|----------|
-| 1. Injection heurystyk | WYSOKI | ~30 linii | Łatwa |
-| 2. Uproszczenie MinHeap | WYSOKI | ~200 linii | Średnia |
-| 3. Usunięcie fallbacków | ŚREDNI | ~20 linii | Łatwa |
-| 4. Wykorzystanie klasy bazowej | ŚREDNI | ~50 linii | Średnia |
-| 5. Uproszczenie CoordUtils | NISKI | ~40 linii | Łatwa |
-| 6. Usunięcie getterów | NISKI | ~15 linii | Łatwa |
+| Zadanie | Priorytet | Szacowany zysk | Trudność | Status |
+|---------|-----------|----------------|----------|--------|
+| 1. Injection heurystyk | WYSOKI | ~30 linii | Łatwa | ✅ WYKONANE  |
+| 2. Uproszczenie MinHeap | WYSOKI | ~200 linii | Średnia | ✅ WYKONANE |
+| 3. Usunięcie fallbacków | ŚREDNI | ~20 linii | Łatwa | 🔥 |
+| 4. Wykorzystanie klasy bazowej | ŚREDNI | ~50 linii | Średnia | 🔥 |
+| 5. Uproszczenie CoordUtils | NISKI | ~40 linii | Łatwa | 🔥 |
+| 6. Usunięcie getterów | NISKI | ~15 linii | Łatwa | 🔥 |
 
 **Łączny szacowany zysk:** ~355 linii kodu
 
 ## 🎯 **Zalecana kolejność wykonania:**
 
-1. **Zadanie 1** - Injection heurystyk (łatwe, duży wpływ)
+1. **Zadanie 1** - Injection heurystyk (łatwe, duży wpływ)  - **WYKONANE**
 2. **Zadanie 3** - Usunięcie fallbacków (łatwe, poprawia jakość)
-3. **Zadanie 2** - Uproszczenie MinHeap (średnie, duży zysk)
+3. ✅ **Zadanie 2** - Uproszczenie MinHeap (średnie, duży zysk) - **WYKONANE**
 4. **Zadanie 4** - Wykorzystanie klasy bazowej (średnie, architektura)
 5. **Zadanie 5** - Uproszczenie CoordUtils (łatwe, kosmetyka)
 6. **Zadanie 6** - Usunięcie getterów (łatwe, kosmetyka)

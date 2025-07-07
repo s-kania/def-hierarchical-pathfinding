@@ -51,7 +51,7 @@ export class TransitionPathfinder {
         }
         
         // A* implementation
-        const openSet = new MinHeap();
+        const openSet = [];
         const closedSet = new Set();
         const cameFrom = new Map();
         const gScore = new Map();
@@ -67,9 +67,11 @@ export class TransitionPathfinder {
         const maxIterations = 1000;
         
         // Main A* loop
-        while (!openSet.isEmpty() && iterations < maxIterations) {
+        while (openSet.length > 0 && iterations < maxIterations) {
             iterations++;
-            const current = openSet.pop();
+            // Sort by f-score and take the first element (lowest f-score)
+            openSet.sort((a, b) => a.f - b.f);
+            const current = openSet.shift();
             
             // Found the goal!
             if (current.id === endId) {
@@ -225,65 +227,4 @@ export class TransitionPathfinder {
     }
 }
 
-/**
- * Simple Min Heap implementation for A*
- */
-class MinHeap {
-    constructor() {
-        this.heap = [];
-    }
-
-    push(element) {
-        this.heap.push(element);
-        this.bubbleUp(this.heap.length - 1);
-    }
-
-    pop() {
-        if (this.heap.length === 0) return null;
-        
-        const min = this.heap[0];
-        const end = this.heap.pop();
-        
-        if (this.heap.length > 0) {
-            this.heap[0] = end;
-            this.bubbleDown(0);
-        }
-        
-        return min;
-    }
-
-    bubbleUp(index) {
-        while (index > 0) {
-            const parentIndex = Math.floor((index - 1) / 2);
-            if (this.heap[index].f >= this.heap[parentIndex].f) break;
-            
-            [this.heap[index], this.heap[parentIndex]] = [this.heap[parentIndex], this.heap[index]];
-            index = parentIndex;
-        }
-    }
-
-    bubbleDown(index) {
-        while (true) {
-            const leftChild = 2 * index + 1;
-            const rightChild = 2 * index + 2;
-            let smallest = index;
-
-            if (leftChild < this.heap.length && this.heap[leftChild].f < this.heap[smallest].f) {
-                smallest = leftChild;
-            }
-
-            if (rightChild < this.heap.length && this.heap[rightChild].f < this.heap[smallest].f) {
-                smallest = rightChild;
-            }
-
-            if (smallest === index) break;
-
-            [this.heap[index], this.heap[smallest]] = [this.heap[smallest], this.heap[index]];
-            index = smallest;
-        }
-    }
-
-    isEmpty() {
-        return this.heap.length === 0;
-    }
-} 
+ 
