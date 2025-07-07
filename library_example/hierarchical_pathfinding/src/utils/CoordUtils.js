@@ -6,18 +6,12 @@
 export class CoordUtils {
     /**
      * Convert global position to chunk ID
-     * @param {Object} globalPos - Global position {x, y} or object with chunkX/chunkY
+     * @param {Object} globalPos - Global position {x, y}
      * @param {number} chunkSize - Chunk size in tiles
      * @param {number} tileSize - Tile size in world units
      * @returns {string} - Chunk ID "x,y"
      */
     static globalToChunkId(globalPos, chunkSize, tileSize) {
-        // Check if position already has calculated chunk coordinates
-        if (globalPos.chunkX !== undefined && globalPos.chunkY !== undefined) {
-            return `${globalPos.chunkX},${globalPos.chunkY}`;
-        }
-        
-        // Calculate from global position
         const chunkWorldSize = chunkSize * tileSize;
         const chunkX = Math.floor(globalPos.x / chunkWorldSize);
         const chunkY = Math.floor(globalPos.y / chunkWorldSize);
@@ -26,29 +20,14 @@ export class CoordUtils {
     
     /**
      * Convert global position to local position within chunk
-     * @param {Object} globalPos - Global position {x, y} or object with localX/localY
+     * @param {Object} globalPos - Global position {x, y}
      * @param {string} chunkId - Chunk ID
      * @param {number} chunkSize - Chunk size in tiles
      * @param {number} tileSize - Tile size in world units
      * @returns {Object} - Local position {x, y}
      */
     static globalToLocal(globalPos, chunkId, chunkSize, tileSize) {
-        // Check if position already has calculated local coordinates
-        if (globalPos.localX !== undefined && globalPos.localY !== undefined) {
-            const expectedChunkId = globalPos.chunkX !== undefined && globalPos.chunkY !== undefined 
-                ? `${globalPos.chunkX},${globalPos.chunkY}` 
-                : null;
-            
-            if (expectedChunkId === chunkId) {
-                return { x: globalPos.localX, y: globalPos.localY };
-            }
-        }
-        
-        // Calculate local position
-        const chunkCoords = globalPos.chunkX !== undefined && globalPos.chunkY !== undefined
-            ? { x: globalPos.chunkX, y: globalPos.chunkY }
-            : this.chunkIdToCoords(chunkId);
-            
+        const chunkCoords = this.chunkIdToCoords(chunkId);
         const chunkWorldSize = chunkSize * tileSize;
         const localX = Math.floor((globalPos.x - chunkCoords.x * chunkWorldSize) / tileSize);
         const localY = Math.floor((globalPos.y - chunkCoords.y * chunkWorldSize) / tileSize);
@@ -66,7 +45,7 @@ export class CoordUtils {
      * @param {string} chunkId - Chunk ID
      * @param {number} chunkSize - Chunk size in tiles
      * @param {number} tileSize - Tile size in world units
-     * @returns {Object} - Global position {x, y, z}
+     * @returns {Object} - Global position {x, y}
      */
     static localToGlobal(localPos, chunkId, chunkSize, tileSize) {
         const chunkCoords = this.chunkIdToCoords(chunkId);
@@ -74,8 +53,7 @@ export class CoordUtils {
         
         return {
             x: chunkCoords.x * chunkWorldSize + localPos.x * tileSize + tileSize / 2,
-            y: chunkCoords.y * chunkWorldSize + localPos.y * tileSize + tileSize / 2,
-            z: 0
+            y: chunkCoords.y * chunkWorldSize + localPos.y * tileSize + tileSize / 2
         };
     }
     
@@ -111,7 +89,6 @@ export class CoordUtils {
             return null;
         }
         
-        // Find second chunk to determine direction
         const otherChunkId = point.chunks.find(id => id !== chunkId);
         if (!otherChunkId) {
             return null;
@@ -120,16 +97,14 @@ export class CoordUtils {
         const coords = this.chunkIdToCoords(chunkId);
         const otherCoords = this.chunkIdToCoords(otherChunkId);
         
-        // Determine position on chunk edge
-        if (otherCoords.x > coords.x) {
-            return { x: chunkSize - 1, y: point.position };
-        } else if (otherCoords.x < coords.x) {
-            return { x: 0, y: point.position };
-        } else if (otherCoords.y > coords.y) {
-            return { x: point.position, y: chunkSize - 1 };
-        } else if (otherCoords.y < coords.y) {
-            return { x: point.position, y: 0 };
-        }
+        // Determine position on chunk edge based on direction
+        const dx = otherCoords.x - coords.x;
+        const dy = otherCoords.y - coords.y;
+        
+        if (dx > 0) return { x: chunkSize - 1, y: point.position };
+        if (dx < 0) return { x: 0, y: point.position };
+        if (dy > 0) return { x: point.position, y: chunkSize - 1 };
+        if (dy < 0) return { x: point.position, y: 0 };
         
         return null;
     }
@@ -140,7 +115,7 @@ export class CoordUtils {
      * @param {string} chunkId - Chunk ID
      * @param {number} chunkSize - Chunk size in tiles
      * @param {number} tileSize - Tile size in world units
-     * @returns {Object|null} - Global position {x, y, z} or null
+     * @returns {Object|null} - Global position {x, y} or null
      */
     static getTransitionGlobalPosition(point, chunkId, chunkSize, tileSize) {
         const localPos = this.getTransitionLocalPosition(point, chunkId, chunkSize);
@@ -149,56 +124,5 @@ export class CoordUtils {
         }
         
         return this.localToGlobal(localPos, chunkId, chunkSize, tileSize);
-    }
-
-    /**
-     * HEURISTIC FUNCTIONS
-     */
-    
-    /**
-     * Calculate Manhattan distance between two positions
-     * @param {Object} a - Position {x, y}
-     * @param {Object} b - Position {x, y}
-     * @returns {number} - Manhattan distance
-     */
-    static manhattanDistance(a, b) {
-        return Math.abs(b.x - a.x) + Math.abs(b.y - a.y);
-    }
-    
-    /**
-     * Calculate Euclidean distance between two positions
-     * @param {Object} a - Position {x, y}
-     * @param {Object} b - Position {x, y}
-     * @returns {number} - Euclidean distance
-     */
-    static euclideanDistance(a, b) {
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-    
-    /**
-     * Calculate diagonal distance between two positions
-     * @param {Object} a - Position {x, y}
-     * @param {Object} b - Position {x, y}
-     * @returns {number} - Diagonal distance
-     */
-    static diagonalDistance(a, b) {
-        const dx = Math.abs(b.x - a.x);
-        const dy = Math.abs(b.y - a.y);
-        return Math.max(dx, dy);
-    }
-    
-    /**
-     * Calculate octile distance between two positions
-     * @param {Object} a - Position {x, y}
-     * @param {Object} b - Position {x, y}
-     * @returns {number} - Octile distance
-     */
-    static octileDistance(a, b) {
-        const dx = Math.abs(b.x - a.x);
-        const dy = Math.abs(b.y - a.y);
-        const F = Math.SQRT2 - 1; // Cost of diagonal movement
-        return Math.max(dx, dy) + F * Math.min(dx, dy);
     }
 } 
