@@ -1,4 +1,5 @@
-import { HeuristicRegistry } from '../heuristics/HeuristicRegistry.js';
+import { ManhattanHeuristic } from '../heuristics/ManhattanHeuristic.js';
+import { EuclideanHeuristic } from '../heuristics/EuclideanHeuristic.js';
 
 /**
  * Pathfinder for transition graph (hierarchical level)
@@ -142,7 +143,7 @@ export class TransitionPathfinder {
         const dx = Math.abs(chunk2.x - chunk1.x);
         const dy = Math.abs(chunk2.y - chunk1.y);
         
-        const heuristic = HeuristicRegistry.get(this.heuristicType);
+        const heuristic = this.getHeuristic(this.heuristicType);
         chunkDistance = heuristic.calculate({ x: chunk1.x, y: chunk1.y }, { x: chunk2.x, y: chunk2.y });
         
         // Scale if we have configuration
@@ -152,6 +153,23 @@ export class TransitionPathfinder {
         }
         
         return chunkDistance * this.heuristicWeight;
+    }
+
+    /**
+     * Get heuristic instance
+     * @param {string} heuristicType - Heuristic type
+     * @returns {Object} - Heuristic instance
+     */
+    getHeuristic(heuristicType) {
+        switch (heuristicType.toLowerCase()) {
+            case 'manhattan':
+                return new ManhattanHeuristic();
+            case 'euclidean':
+                return new EuclideanHeuristic();
+            default:
+                console.warn(`Unknown heuristic type '${heuristicType}', using Manhattan as fallback`);
+                return new ManhattanHeuristic();
+        }
     }
 
     /**

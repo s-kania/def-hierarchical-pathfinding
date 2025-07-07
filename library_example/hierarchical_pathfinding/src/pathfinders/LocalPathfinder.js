@@ -1,24 +1,36 @@
-import { AlgorithmFactory } from '../algorithms/AlgorithmFactory.js';
+import { AStarAlgorithm } from '../algorithms/AStarAlgorithm.js';
+import { JPSAlgorithm } from '../algorithms/JPSAlgorithm.js';
 
 /**
  * Local pathfinder for single chunk pathfinding
- * Uses dependency injection for algorithm selection
+ * Simplified version without dependency injection
  */
 export class LocalPathfinder {
-    constructor(algorithm) {
-        this.algorithm = algorithm;
+    constructor(algorithmType = 'astar', heuristicName = 'manhattan', heuristicWeight = 1.0) {
+        this.algorithm = this.createAlgorithm(algorithmType, heuristicName, heuristicWeight);
     }
 
     /**
-     * Create LocalPathfinder with algorithm factory
-     * @param {string} algorithmType - Algorithm type
+     * Create algorithm instance
+     * @param {string} algorithmType - Algorithm type ('astar' or 'jps')
      * @param {string} heuristicName - Heuristic name
      * @param {number} heuristicWeight - Heuristic weight
-     * @returns {LocalPathfinder} - LocalPathfinder instance
+     * @returns {Object} - Algorithm instance
      */
-    static create(algorithmType, heuristicName = 'manhattan', heuristicWeight = 1.0) {
-        const algorithm = AlgorithmFactory.createAlgorithm(algorithmType, heuristicName, heuristicWeight);
-        return new LocalPathfinder(algorithm);
+    createAlgorithm(algorithmType, heuristicName, heuristicWeight) {
+        switch (algorithmType.toLowerCase()) {
+            case 'astar':
+            case 'a*':
+                return new AStarAlgorithm(heuristicName, heuristicWeight);
+            
+            case 'jps':
+            case 'jump point search':
+                return new JPSAlgorithm(heuristicName, heuristicWeight);
+            
+            default:
+                console.warn(`Unknown algorithm type '${algorithmType}', using A* as fallback`);
+                return new AStarAlgorithm(heuristicName, heuristicWeight);
+        }
     }
 
     /**

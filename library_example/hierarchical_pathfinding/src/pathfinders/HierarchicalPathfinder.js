@@ -2,7 +2,6 @@ import { CoordUtils } from '../utils/CoordUtils.js';
 import { LocalPathfinder } from './LocalPathfinder.js';
 import { TransitionPathfinder } from './TransitionPathfinder.js';
 import { PathSegmentBuilder } from '../builders/PathSegmentBuilder.js';
-import { PathfindingConfig } from '../config/PathfindingConfig.js';
 
 /**
  * Main hierarchical pathfinding class
@@ -18,26 +17,24 @@ export class HierarchicalPathfinder {
 
     /**
      * Initialize the pathfinding system
-     * @param {PathfindingConfig|Object} config - Configuration object
+     * @param {Object} config - Configuration object
      */
     init(config) {
-        // Convert plain object to PathfindingConfig if needed
-        if (!(config instanceof PathfindingConfig)) {
-            config = new PathfindingConfig(config);
-        }
+        // Validate configuration
+        this.validateConfig(config);
         
         this.config = config;
         
         // Create local pathfinder
-        this.localPathfinder = LocalPathfinder.create(
-            config.localAlgorithm,
-            config.localHeuristic,
-            config.heuristicWeight
+        this.localPathfinder = new LocalPathfinder(
+            config.localAlgorithm || 'astar',
+            config.localHeuristic || 'manhattan',
+            config.heuristicWeight || 1.0
         );
         
         // Create transition pathfinder
         this.transitionPathfinder = new TransitionPathfinder(
-            config.transitionPoints,
+            config.transitionPoints || [],
             {
                 gridWidth: config.gridWidth,
                 gridHeight: config.gridHeight,
@@ -48,12 +45,55 @@ export class HierarchicalPathfinder {
         
         // Set algorithm parameters for transition pathfinder
         this.transitionPathfinder.setAlgorithmParams(
-            config.hierarchicalHeuristic,
-            config.heuristicWeight
+            config.hierarchicalHeuristic || 'manhattan',
+            config.heuristicWeight || 1.0
         );
         
         // Create segment builder
         this.segmentBuilder = new PathSegmentBuilder(config, this.transitionPathfinder);
+    }
+
+    /**
+     * Validate configuration
+     * @param {Object} config - Configuration object
+     * @throws {Error} If configuration is invalid
+     */
+    validateConfig(config) {
+        if (!config) {
+            throw new Error('Configuration is required');
+        }
+        
+        if (!config.tileSize || config.tileSize <= 0) {
+            throw new Error('tileSize must be positive');
+        }
+        
+        if (!config.gridWidth || config.gridWidth <= 0) {
+            throw new Error('gridWidth must be positive');
+        }
+        
+        if (!config.gridHeight || config.gridHeight <= 0) {
+            throw new Error('gridHeight must be positive');
+        }
+        
+        if (!config.chunkWidth || config.chunkWidth <= 0) {
+            throw new Error('chunkWidth must be positive');
+        }
+        
+        if (!config.chunkHeight || config.chunkHeight <= 0) {
+            throw new Error('chunkHeight must be positive');
+        }
+        
+        if (typeof config.getChunkData !== 'function') {
+            throw new Error('getChunkData must be a function');
+        }
+        
+        if (!Array.isArray(config.transitionPoints)) {
+            throw new Error('transitionPoints must be an array');
+        }
+        
+        if (config.heuristicWeight && config.heuristicWeight <= 0) {
+            throw new Error('heuristicWeight must be positive');
+        }
     }
 
     /**
@@ -132,12 +172,13 @@ export class HierarchicalPathfinder {
      * @returns {boolean} - True if positions are in bounds
      */
     arePositionsInBounds(startPos, endPos) {
-        const worldDimensions = this.config.getWorldDimensions();
+        const worldWidth = this.config.gridWidth * this.config.chunkWidth * this.config.tileSize;
+        const worldHeight = this.config.gridHeight * this.config.chunkHeight * this.config.tileSize;
         
-        return startPos.x >= 0 && startPos.x < worldDimensions.width &&
-               startPos.y >= 0 && startPos.y < worldDimensions.height &&
-               endPos.x >= 0 && endPos.x < worldDimensions.width &&
-               endPos.y >= 0 && endPos.y < worldDimensions.height;
+        return startPos.x >= 0 && startPos.x < worldWidth &&
+               startPos.y >= 0 && startPos.y < worldHeight &&
+               endPos.x >= 0 && endPos.x < worldWidth &&
+               endPos.y >= 0 && endPos.y < worldHeight;
     }
 
     /**
@@ -221,7 +262,7 @@ export class HierarchicalPathfinder {
 
     /**
      * Get configuration
-     * @returns {PathfindingConfig} - Current configuration
+     * @returns {Object} - Current configuration
      */
     getConfig() {
         return this.config;

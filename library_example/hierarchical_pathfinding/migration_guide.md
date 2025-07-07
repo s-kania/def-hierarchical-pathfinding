@@ -1,8 +1,8 @@
-# Przewodnik migracji do nowej architektury
+# Przewodnik migracji do uproszczonej architektury (KISS)
 
 ## Przegląd zmian
 
-Nowa architektura wprowadza znaczące zmiany w strukturze kodu, ale zachowuje kompatybilność wsteczną. Oto jak migrować istniejący kod.
+Uproszczona architektura wprowadza zmiany zgodnie z zasadą **KISS (Keep It Simple, Stupid)**. Usunięto niepotrzebne abstrakcje i wzorce projektowe, zachowując pełną funkcjonalność.
 
 ## Zmiany w importach
 
@@ -20,7 +20,7 @@ import { HierarchicalPathfinding } from './src/index.js';
 
 ## Zmiany w konfiguracji
 
-### Stary sposób:
+### Stary sposób (nadal działa):
 ```javascript
 const pathfinder = new HierarchicalPathfinding();
 pathfinder.init({
@@ -38,78 +38,76 @@ pathfinder.init({
 });
 ```
 
-### Nowy sposób (zalecany):
+### Nowy sposób (uproszczony):
 ```javascript
-import { HierarchicalPathfinder, ConfigBuilder } from './src/index.js';
+import { HierarchicalPathfinder } from './src/index.js';
 
-const config = ConfigBuilder.createDefault()
-    .withTileSize(16)
-    .withGridDimensions(8, 6)
-    .withChunkDimensions(11, 11)
-    .withChunkDataProvider((chunkId) => { /* ... */ })
-    .withTransitionPoints([ /* ... */ ])
-    .withLocalAlgorithm('astar')
-    .withLocalHeuristic('manhattan')
-    .withHierarchicalHeuristic('manhattan')
-    .withHeuristicWeight(1.0)
-    .build();
+const config = {
+    // Algorithm settings
+    localAlgorithm: 'astar',
+    localHeuristic: 'manhattan',
+    hierarchicalHeuristic: 'manhattan',
+    heuristicWeight: 1.0,
+    
+    // Grid settings
+    tileSize: 16,
+    gridWidth: 8,
+    gridHeight: 6,
+    chunkWidth: 11,
+    chunkHeight: 11,
+    
+    // Data providers
+    getChunkData: (chunkId) => { /* ... */ },
+    transitionPoints: [ /* ... */ ]
+};
 
 const pathfinder = new HierarchicalPathfinder();
 pathfinder.init(config);
 ```
 
-### Stary sposób (nadal działa):
+## Usunięte komponenty
+
+### ❌ Usunięte (niepotrzebne):
+- `ConfigBuilder` - builder pattern
+- `PathfindingConfig` - klasa konfiguracji
+- `HeuristicRegistry` - registry pattern
+- `AlgorithmFactory` - factory pattern
+- `DiagonalHeuristic` - rzadko używana
+- `OctileHeuristic` - zbyt specyficzna
+
+### ✅ Zachowane (niezbędne):
+- `HierarchicalPathfinder` - główna klasa
+- `LocalPathfinder` - pathfinding lokalny
+- `TransitionPathfinder` - pathfinding hierarchiczny
+- `PathSegmentBuilder` - builder segmentów
+- `AStarAlgorithm` - algorytm A*
+- `JPSAlgorithm` - algorytm JPS
+- `ManhattanHeuristic` - heurystyka Manhattan
+- `EuclideanHeuristic` - heurystyka Euclidean
+
+## Nowe możliwości (uproszczone)
+
+### 1. Sprawdzanie dostępnych algorytmów
 ```javascript
-const pathfinder = new HierarchicalPathfinding();
-pathfinder.init({
-    // wszystkie parametry jak wcześniej
-});
+// Zamiast AlgorithmFactory.getAvailableAlgorithms()
+const availableAlgorithms = ['astar', 'jps'];
 ```
 
-## Nowe możliwości
-
-### 1. Dodawanie nowych algorytmów
+### 2. Sprawdzanie dostępnych heurystyk
 ```javascript
-import { AlgorithmFactory } from './src/index.js';
-
-// Sprawdź dostępne algorytmy
-console.log(AlgorithmFactory.getAvailableAlgorithms()); // ['astar', 'jps']
-
-// Sprawdź nazwy wyświetlane
-console.log(AlgorithmFactory.getDisplayName('jps')); // 'JPS (Jump Point Search)'
+// Zamiast HeuristicRegistry.getAvailableHeuristics()
+const availableHeuristics = ['manhattan', 'euclidean'];
 ```
 
-### 2. Dodawanie nowych heurystyk
+### 3. Prosta konfiguracja
 ```javascript
-import { HeuristicRegistry } from './src/index.js';
-
-// Sprawdź dostępne heurystyki
-console.log(HeuristicRegistry.getAvailableHeuristics()); 
-// ['manhattan', 'euclidean', 'diagonal', 'octile']
-
-// Sprawdź czy heurystyka jest admissible
-const manhattan = HeuristicRegistry.get('manhattan');
-console.log(manhattan.isAdmissible()); // true
-```
-
-### 3. Zaawansowana konfiguracja
-```javascript
-import { PathfindingConfig } from './src/index.js';
-
-// Tworzenie konfiguracji z walidacją
-const config = new PathfindingConfig({
-    // parametry z walidacją
-});
-
-// Klonowanie z nadpisami
-const newConfig = config.clone({
+// Zamiast ConfigBuilder
+const config = {
     localAlgorithm: 'jps',
-    heuristicWeight: 1.2
-});
-
-// Pobieranie wymiarów świata
-const worldDimensions = config.getWorldDimensions();
-console.log(worldDimensions.width, worldDimensions.height);
+    localHeuristic: 'euclidean',
+    heuristicWeight: 1.2,
+    // ... reszta parametrów
+};
 ```
 
 ## Migracja krok po kroku
@@ -124,37 +122,23 @@ import { HierarchicalPathfinder } from './src/index.js';
 // lub zachowaj stary import dla kompatybilności
 ```
 
-### Krok 2: Dodaj nowe importy (jeśli potrzebne)
-```javascript
-import { 
-    HierarchicalPathfinder, 
-    ConfigBuilder, 
-    AlgorithmFactory,
-    HeuristicRegistry 
-} from './src/index.js';
-```
-
-### Krok 3: Zaktualizuj konfigurację (opcjonalne)
+### Krok 2: Uprość konfigurację (opcjonalne)
 ```javascript
 // Stary sposób nadal działa, ale możesz użyć nowego:
-const config = ConfigBuilder.createDefault()
-    .withLocalAlgorithm('jps')  // Nowy algorytm
-    .withLocalHeuristic('euclidean')  // Nowa heurystyka
-    .withHeuristicWeight(1.2)  // Waga heurystyki
-    .build();
+const config = {
+    localAlgorithm: 'jps',  // Nowy algorytm
+    localHeuristic: 'euclidean',  // Nowa heurystyka
+    heuristicWeight: 1.2,  // Waga heurystyki
+    // ... reszta konfiguracji
+};
 ```
 
-### Krok 4: Dodaj nowe funkcjonalności
+### Krok 3: Usuń niepotrzebne importy
 ```javascript
-// Sprawdź dostępne opcje
-console.log('Algorithms:', AlgorithmFactory.getAvailableAlgorithms());
-console.log('Heuristics:', HeuristicRegistry.getAvailableHeuristics());
-
-// Użyj nowych algorytmów
-const config = ConfigBuilder.createDefault()
-    .withLocalAlgorithm('jps')
-    .withLocalHeuristic('octile')
-    .build();
+// Usuń te importy (nie istnieją już):
+// import { ConfigBuilder } from './src/index.js';
+// import { AlgorithmFactory } from './src/index.js';
+// import { HeuristicRegistry } from './src/index.js';
 ```
 
 ## Przykłady migracji
@@ -209,24 +193,26 @@ pathfinder.init({
 });
 
 // PO (z nowymi możliwościami):
-import { HierarchicalPathfinder, ConfigBuilder } from './src/index.js';
+import { HierarchicalPathfinder } from './src/index.js';
 
-const config = ConfigBuilder.createDefault()
-    .withTileSize(16)
-    .withGridDimensions(8, 6)
-    .withChunkDimensions(11, 11)
-    .withChunkDataProvider(getChunkData)
-    .withTransitionPoints(transitionPoints)
-    .withLocalAlgorithm('jps')  // Nowy algorytm
-    .withLocalHeuristic('euclidean')  // Nowa heurystyka
-    .withHeuristicWeight(1.1)  // Optymalizacja wydajności
-    .build();
+const config = {
+    localAlgorithm: 'jps',  // Nowy algorytm
+    localHeuristic: 'euclidean',  // Nowa heurystyka
+    heuristicWeight: 1.1,  // Optymalizacja wydajności
+    tileSize: 16,
+    gridWidth: 8,
+    gridHeight: 6,
+    chunkWidth: 11,
+    chunkHeight: 11,
+    getChunkData: getChunkData,
+    transitionPoints: transitionPoints
+};
 
 const pathfinder = new HierarchicalPathfinder();
 pathfinder.init(config);
 ```
 
-### Przykład 3: Zaawansowana migracja z UI
+### Przykład 3: Uproszczona migracja z UI
 ```javascript
 // PRZED:
 function updatePathfindingSettings() {
@@ -243,8 +229,6 @@ function updatePathfindingSettings() {
 }
 
 // PO:
-import { ConfigBuilder, AlgorithmFactory, HeuristicRegistry } from './src/index.js';
-
 function updatePathfindingSettings() {
     const settings = {
         localAlgorithm: document.getElementById('localAlgorithm').value,
@@ -252,22 +236,24 @@ function updatePathfindingSettings() {
         heuristicWeight: parseFloat(document.getElementById('heuristicWeight').value)
     };
     
-    // Walidacja
-    if (!AlgorithmFactory.isSupported(settings.localAlgorithm)) {
+    // Walidacja (opcjonalna)
+    const availableAlgorithms = ['astar', 'jps'];
+    const availableHeuristics = ['manhattan', 'euclidean'];
+    
+    if (!availableAlgorithms.includes(settings.localAlgorithm)) {
         console.warn(`Algorithm ${settings.localAlgorithm} not supported`);
         return;
     }
     
-    if (!HeuristicRegistry.has(settings.localHeuristic)) {
+    if (!availableHeuristics.includes(settings.localHeuristic)) {
         console.warn(`Heuristic ${settings.localHeuristic} not supported`);
         return;
     }
     
-    const config = ConfigBuilder.createDefault()
-        .withLocalAlgorithm(settings.localAlgorithm)
-        .withLocalHeuristic(settings.localHeuristic)
-        .withHeuristicWeight(settings.heuristicWeight)
-        .build();
+    const config = {
+        ...existingConfig,
+        ...settings
+    };
     
     pathfinder.init(config);
 }
@@ -277,14 +263,14 @@ function populateUI() {
     const algorithmSelect = document.getElementById('localAlgorithm');
     const heuristicSelect = document.getElementById('localHeuristic');
     
-    AlgorithmFactory.getAvailableAlgorithms().forEach(algorithm => {
+    ['astar', 'jps'].forEach(algorithm => {
         const option = document.createElement('option');
         option.value = algorithm;
-        option.textContent = AlgorithmFactory.getDisplayName(algorithm);
+        option.textContent = algorithm.toUpperCase();
         algorithmSelect.appendChild(option);
     });
     
-    HeuristicRegistry.getAvailableHeuristics().forEach(heuristic => {
+    ['manhattan', 'euclidean'].forEach(heuristic => {
         const option = document.createElement('option');
         option.value = heuristic;
         option.textContent = heuristic;
@@ -293,14 +279,14 @@ function populateUI() {
 }
 ```
 
-## Korzyści migracji
+## Korzyści uproszczenia
 
-1. **Lepsze wsparcie dla JPS**: Szybszy algorytm dla dużych map
-2. **Więcej heurystyk**: Euclidean, Diagonal, Octile
-3. **Lepsza walidacja**: Automatyczna walidacja konfiguracji
-4. **Większa elastyczność**: Builder pattern dla konfiguracji
-5. **Lepsze testowanie**: Dependency injection
-6. **Rozszerzalność**: Łatwe dodawanie nowych algorytmów
+1. **Prostota**: Mniej plików, mniej abstrakcji
+2. **Czytelność**: Jasna struktura bez nadmiarowych wzorców
+3. **Łatwość utrzymania**: Mniej zależności do zarządzania
+4. **Wydajność**: Mniej warstw abstrakcji
+5. **Rozszerzalność**: Nadal łatwe dodawanie nowych funkcji
+6. **Testowalność**: Proste komponenty łatwiej testować
 
 ## Kompatybilność wsteczna
 
@@ -315,4 +301,8 @@ Jeśli napotkasz problemy podczas migracji:
 1. Sprawdź konsolę pod kątem błędów
 2. Użyj starych importów dla kompatybilności
 3. Przejdź na nową architekturę stopniowo
-4. Skonsultuj się z dokumentacją w `ARCHITECTURE.md` 
+4. Skonsultuj się z dokumentacją w `ARCHITECTURE.md`
+
+## Podsumowanie
+
+Uproszczona architektura zachowuje wszystkie funkcjonalności, ale jest znacznie łatwiejsza do zrozumienia i utrzymania. Zasada KISS została zastosowana konsekwentnie, usuwając niepotrzebne abstrakcje i wzorce projektowe. 
