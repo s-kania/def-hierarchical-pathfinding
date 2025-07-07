@@ -119,7 +119,7 @@ renderPathWithSegments(hierarchicalPath, calculatedSegments)
 
 1. ✅ Utworzenie planu (ten plik)
 2. ✅ Dodanie przycisku w HTML
-3. 🔄 Utworzenie SegmentManager.js
+3. ✅ Utworzenie SegmentManager.js
 4. 🔄 Modyfikacja PathfindingUIController.js
 5. 🔄 Modyfikacja CanvasRenderer.js
 6. 🔄 Testowanie i debugowanie
