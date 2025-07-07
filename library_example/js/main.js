@@ -145,7 +145,8 @@ class ChunkMapGenerator {
         
         // Set callbacks for pathfinding UI
         this.pathfindingUIController.setCallbacks({
-            onPrintData: () => this.onPrintGameData()
+            onPrintData: () => this.onPrintGameData(),
+            onCalculateNextSegment: () => this.onCalculateNextSegment()
         });
         
         // Configure event listeners
@@ -575,6 +576,7 @@ class ChunkMapGenerator {
     onClearPathfindingPoints() {
         this.pathfindingPointManager.clearPoints();
         this.pathSegments = null; // Also clear calculated path
+        this.pathfindingUIController.resetSegments(); // Reset segment manager
         this.pathfindingUIController.showSuccess('Cleared points');
         this.renderMap();
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
@@ -663,6 +665,11 @@ class ChunkMapGenerator {
                 
                 // Save complete path for rendering
                 this.pathSegments = completePath;
+                
+
+                
+                // Initialize segment manager with hierarchical path
+                this.pathfindingUIController.setHierarchicalPath(pathSegments, startPos, endPos);
                 
                 // Re-render map with drawn path
                 this.renderMap();
@@ -917,6 +924,56 @@ class ChunkMapGenerator {
         
         // Also show success in UI
         this.pathfindingUIController.showSuccess('Data printed to console');
+    }
+
+    /**
+     * CALCULATES NEXT SEGMENT
+     */
+    onCalculateNextSegment() {
+        if (!this.pathfindingUIController.canCalculateNext()) {
+            this.pathfindingUIController.showError('No segments to calculate');
+            return;
+        }
+
+        try {
+            // Create new HierarchicalPathfinding instance
+            const pathfinder = new HierarchicalPathfinding();
+            
+            // Configuration with chunk dimensions from settings
+            const config = {
+                tileSize: this.settings.tileSize,
+                gridWidth: this.gameDataManager.gridWidth,
+                gridHeight: this.gameDataManager.gridHeight,
+                chunkWidth: this.gameDataManager.chunkWidth,
+                chunkHeight: this.gameDataManager.chunkHeight,
+                getChunkData: (chunkId) => this.gameDataManager.getChunkData(chunkId),
+                transitionPoints: this.gameDataManager.transitionPoints,
+                
+                // Algorithm and heuristic settings
+                localAlgorithm: this.pathfindingSettings.localAlgorithm,
+                localHeuristic: this.pathfindingSettings.localHeuristic,
+                hierarchicalHeuristic: this.pathfindingSettings.hierarchicalHeuristic,
+                heuristicWeight: this.pathfindingSettings.heuristicWeight
+            };
+            
+            // Initialize pathfinder
+            pathfinder.init(config);
+            
+            // Calculate next segment
+            const result = this.pathfindingUIController.calculateNextSegment(
+                pathfinder,
+                this.gameDataManager.getChunkData.bind(this.gameDataManager)
+            );
+            
+            if (result) {
+                // Re-render map to show new segment
+                this.renderMap();
+            }
+            
+        } catch (error) {
+            console.error('❌ Error calculating segment:', error);
+            this.pathfindingUIController.showError(`Error: ${error.message}`);
+        }
     }
 
     /**

@@ -2,6 +2,8 @@
  * UI CONTROLLER FOR PATHFINDING SECTION
  */
 
+import { SegmentManager } from '../pathfinding/SegmentManager.js';
+
 export class PathfindingUIController {
     constructor() {
         // UI elements
@@ -16,11 +18,16 @@ export class PathfindingUIController {
         this.linearDistance = document.getElementById('linearDistance');
         this.pathfindingStatus = document.getElementById('pathfindingStatus');
         
-        // Buttons (only those that remain)
+        // Buttons
         this.printDataBtn = document.getElementById('printData');
+        this.calculateNextSegmentBtn = document.getElementById('calculateNextSegmentBtn');
+        
+        // Segment management
+        this.segmentManager = new SegmentManager();
         
         // Callbacks
         this.onPrintData = null;
+        this.onCalculateNextSegment = null;
     }
 
     /**
@@ -30,6 +37,12 @@ export class PathfindingUIController {
         this.printDataBtn?.addEventListener('click', () => {
             if (this.onPrintData) {
                 this.onPrintData();
+            }
+        });
+
+        this.calculateNextSegmentBtn?.addEventListener('click', () => {
+            if (this.onCalculateNextSegment) {
+                this.onCalculateNextSegment();
             }
         });
     }
@@ -113,8 +126,9 @@ export class PathfindingUIController {
     /**
      * SETS CALLBACKS
      */
-    setCallbacks({ onPrintData }) {
+    setCallbacks({ onPrintData, onCalculateNextSegment }) {
         this.onPrintData = onPrintData;
+        this.onCalculateNextSegment = onCalculateNextSegment;
     }
 
     /**
@@ -149,5 +163,80 @@ export class PathfindingUIController {
         setTimeout(() => {
             this.updateAll(window.app?.pathfindingPointManager);
         }, 2000);
+    }
+
+    /**
+     * SEGMENT MANAGEMENT METHODS
+     */
+
+    /**
+     * Sets hierarchical path in segment manager
+     */
+    setHierarchicalPath(pathSegments, startPoint, endPoint) {
+        this.segmentManager.setPath(pathSegments, startPoint, endPoint);
+        this.updateSegmentButtonState();
+    }
+
+    /**
+     * Calculates next segment
+     */
+    calculateNextSegment(pathfinder, getChunkData) {
+        const result = this.segmentManager.calculateNext(pathfinder, getChunkData);
+        
+        if (result) {
+            this.showSuccess(`Obliczono segment ${this.segmentManager.getProgress()}`);
+            this.updateSegmentButtonState();
+            return result;
+        } else {
+            this.showError('Nie można obliczyć segmentu');
+            return null;
+        }
+    }
+
+    /**
+     * Updates segment button state
+     */
+    updateSegmentButtonState() {
+        if (!this.calculateNextSegmentBtn) return;
+
+        if (this.segmentManager.isComplete()) {
+            this.calculateNextSegmentBtn.disabled = true;
+            this.calculateNextSegmentBtn.textContent = '✅ Wszystkie segmenty obliczone';
+        } else if (this.segmentManager.canCalculateNext()) {
+            this.calculateNextSegmentBtn.disabled = false;
+            this.calculateNextSegmentBtn.textContent = `➡️ Calculate next segment (${this.segmentManager.getProgress()})`;
+        } else {
+            this.calculateNextSegmentBtn.disabled = true;
+            this.calculateNextSegmentBtn.textContent = '➡️ Calculate next segment';
+        }
+    }
+
+    /**
+     * Gets calculated segments
+     */
+    getCalculatedSegments() {
+        return this.segmentManager.getCalculatedSegments();
+    }
+
+    /**
+     * Checks if segments are complete
+     */
+    isSegmentsComplete() {
+        return this.segmentManager.isComplete();
+    }
+
+    /**
+     * Resets segment state
+     */
+    resetSegments() {
+        this.segmentManager.reset();
+        this.updateSegmentButtonState();
+    }
+
+    /**
+     * Checks if can calculate next segment
+     */
+    canCalculateNext() {
+        return this.segmentManager.canCalculateNext();
     }
 } 

@@ -25,14 +25,16 @@ export class SegmentManager {
      * @param {Object} endPoint - punkt końcowy {x, y}
      */
     setPath(pathSegments, startPoint, endPoint) {
+        this.reset();
         this.startPoint = startPoint;
         this.endPoint = endPoint;
-        this.reset();
         
         // Filtruj segmenty, ignorując chunk 'start'
         this.segments = pathSegments.filter(segment => segment.chunk !== 'start');
         
         console.log(`SegmentManager: Przygotowano ${this.segments.length} segmentów`);
+        console.log('SegmentManager: StartPoint:', this.startPoint);
+        console.log('SegmentManager: EndPoint:', this.endPoint);
     }
 
     /**
@@ -50,6 +52,18 @@ export class SegmentManager {
         const startPoint = this.getStartPoint(segment);
         const endPoint = this.getEndPoint(segment);
         
+        // Debug
+        console.log(`SegmentManager: Obliczanie segmentu ${this.currentIndex + 1}/${this.segments.length}`);
+        console.log('Segment:', segment);
+        console.log('StartPoint:', startPoint);
+        console.log('EndPoint:', endPoint);
+        
+        // Sprawdź czy punkty są poprawne
+        if (!startPoint || !endPoint) {
+            console.error('SegmentManager: Nieprawidłowe punkty start/end:', { startPoint, endPoint });
+            return null;
+        }
+        
         // Pobierz dane chunka
         const chunkData = getChunkData(segment.chunk);
         if (!chunkData) {
@@ -57,8 +71,23 @@ export class SegmentManager {
             return null;
         }
         
-        // Oblicz lokalną ścieżkę
-        const localPath = pathfinder.findLocalPath(segment.chunk, startPoint, endPoint);
+        // ETAP 3 PUNKT 2: Wykorzystanie LocalPathfinder bezpośrednio
+        const localPathfinder = pathfinder.getLocalPathfinder();
+        if (!localPathfinder) {
+            console.error('SegmentManager: Brak LocalPathfinder w HierarchicalPathfinder');
+            return null;
+        }
+        
+        // Konwertuj pozycje globalne na lokalne w chunku
+        const config = pathfinder.getConfig();
+        const localStart = this.globalToLocal(startPoint, segment.chunk, config.chunkWidth, config.tileSize);
+        const localEnd = this.globalToLocal(endPoint, segment.chunk, config.chunkWidth, config.tileSize);
+        
+        console.log('LocalStart:', localStart);
+        console.log('LocalEnd:', localEnd);
+        
+        // Oblicz lokalną ścieżkę używając LocalPathfinder
+        const localPath = localPathfinder.findPath(chunkData, localStart, localEnd);
         
         if (localPath) {
             const calculatedSegment = {
@@ -73,11 +102,38 @@ export class SegmentManager {
             this.currentIndex++;
             
             console.log(`SegmentManager: Obliczono segment ${this.currentIndex}/${this.segments.length}`);
+            console.log('LocalPath:', localPath);
             return calculatedSegment;
         } else {
             console.warn(`SegmentManager: Nie można znaleźć ścieżki w segmencie ${this.currentIndex + 1}`);
             return null;
         }
+    }
+
+    /**
+     * Konwertuje pozycję globalną na lokalną w chunku
+     * @param {Object} globalPos - pozycja globalna {x, y}
+     * @param {string} chunkId - ID chunka
+     * @param {number} chunkSize - rozmiar chunka w kafelkach
+     * @param {number} tileSize - rozmiar kafelka w jednostkach świata
+     * @returns {Object} pozycja lokalna {x, y}
+     */
+    globalToLocal(globalPos, chunkId, chunkSize, tileSize) {
+        // Parsuj chunkId (format: "x,y")
+        const [chunkX, chunkY] = chunkId.split(',').map(Number);
+        
+        // Oblicz rozmiar chunka w jednostkach świata
+        const chunkWorldSize = chunkSize * tileSize;
+        
+        // Oblicz pozycję lokalną
+        const localX = Math.floor((globalPos.x - chunkX * chunkWorldSize) / tileSize);
+        const localY = Math.floor((globalPos.y - chunkY * chunkWorldSize) / tileSize);
+        
+        // Ogranicz do granic chunka
+        return {
+            x: Math.max(0, Math.min(chunkSize - 1, localX)),
+            y: Math.max(0, Math.min(chunkSize - 1, localY))
+        };
     }
 
     /**
@@ -88,6 +144,10 @@ export class SegmentManager {
             return this.startPoint;
         } else {
             const previousSegment = this.segments[this.currentIndex - 1];
+            if (!previousSegment || !previousSegment.position) {
+                console.error('SegmentManager: Brak poprzedniego segmentu lub pozycji:', previousSegment);
+                return null;
+            }
             return previousSegment.position;
         }
     }
@@ -96,6 +156,10 @@ export class SegmentManager {
      * Określa punkt końcowy dla segmentu
      */
     getEndPoint(segment) {
+        if (!segment || !segment.position) {
+            console.error('SegmentManager: Brak segmentu lub pozycji:', segment);
+            return null;
+        }
         return segment.position;
     }
 
