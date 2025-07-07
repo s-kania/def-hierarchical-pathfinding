@@ -78,20 +78,20 @@ const openSet = [];
 
 ---
 
-### 🔥 **ZADANIE 3: Usunięcie niepotrzebnych fallbacków**
+### ✅ **ZADANIE 3: Usunięcie niepotrzebnych fallbacków - WYKONANE**
 **Priorytet:** ŚREDNI  
-**Pliki:** `algorithms/AStarAlgorithm.js`, `algorithms/JPSAlgorithm.js`, `pathfinders/LocalPathfinder.js`, `pathfinders/TransitionPathfinder.js`
+**Pliki:** `pathfinders/LocalPathfinder.js`, `pathfinders/TransitionPathfinder.js`
 
 **Problem:** Fallbacki ukrywają błędy konfiguracji
 ```javascript
 // PRZED: Ukrywa błędy
 default: 
-    console.warn(`Unknown heuristic '${heuristicName}', using Manhattan as fallback`);
-    return new ManhattanHeuristic();
+    console.warn(`Unknown algorithm type '${algorithmType}', using A* as fallback`);
+    return new AStarAlgorithm(heuristic, heuristicWeight);
 
 // PO: Jasny błąd
 default: 
-    throw new Error(`Unknown heuristic: ${heuristicName}`);
+    throw new Error(`Unknown algorithm type: ${algorithmType}`);
 ```
 
 **Korzyści:**
@@ -99,6 +99,8 @@ default:
 - ✅ Zgodność z fail-fast principle
 - ✅ Mniej ukrytych problemów
 - ✅ Jaśniejsze API
+
+**Status:** ✅ WYKONANE - Fallbacki zostały zastąpione jasnymi błędami
 
 ---
 
@@ -193,7 +195,7 @@ isWalkable(chunkData, pos) { return this.algorithm.isWalkable(chunkData, pos); }
 |---------|-----------|----------------|----------|--------|
 | 1. Injection heurystyk | WYSOKI | ~30 linii | Łatwa | ✅ WYKONANE  |
 | 2. Uproszczenie MinHeap | WYSOKI | ~200 linii | Średnia | ✅ WYKONANE |
-| 3. Usunięcie fallbacków | ŚREDNI | ~20 linii | Łatwa | 🔥 |
+| 3. Usunięcie fallbacków | ŚREDNI | ~20 linii | Łatwa | ✅ WYKONANE |
 | 4. Wykorzystanie klasy bazowej | ŚREDNI | ~50 linii | Średnia | 🔥 |
 | 5. Uproszczenie CoordUtils | NISKI | ~40 linii | Łatwa | 🔥 |
 | 6. Usunięcie getterów | NISKI | ~15 linii | Łatwa | 🔥 |
@@ -203,7 +205,7 @@ isWalkable(chunkData, pos) { return this.algorithm.isWalkable(chunkData, pos); }
 ## 🎯 **Zalecana kolejność wykonania:**
 
 1. **Zadanie 1** - Injection heurystyk (łatwe, duży wpływ)  - **WYKONANE**
-2. **Zadanie 3** - Usunięcie fallbacków (łatwe, poprawia jakość)
+2. ✅ **Zadanie 3** - Usunięcie fallbacków (łatwe, poprawia jakość) - **WYKONANE**
 3. ✅ **Zadanie 2** - Uproszczenie MinHeap (średnie, duży zysk) - **WYKONANE**
 4. **Zadanie 4** - Wykorzystanie klasy bazowej (średnie, architektura)
 5. **Zadanie 5** - Uproszczenie CoordUtils (łatwe, kosmetyka)

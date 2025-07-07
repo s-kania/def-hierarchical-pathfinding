@@ -169,8 +169,7 @@ export class TransitionPathfinder {
             case 'euclidean':
                 return new EuclideanHeuristic();
             default:
-                console.warn(`Unknown heuristic type '${heuristicType}', using Manhattan as fallback`);
-                return new ManhattanHeuristic();
+                throw new Error(`Unknown heuristic type: ${heuristicType}`);
         }
     }
 

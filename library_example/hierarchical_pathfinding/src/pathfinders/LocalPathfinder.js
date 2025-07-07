@@ -33,8 +33,7 @@ export class LocalPathfinder {
                 return new JPSAlgorithm(heuristic, heuristicWeight);
             
             default:
-                console.warn(`Unknown algorithm type '${algorithmType}', using A* as fallback`);
-                return new AStarAlgorithm(heuristic, heuristicWeight);
+                throw new Error(`Unknown algorithm type: ${algorithmType}`);
         }
     }
 
