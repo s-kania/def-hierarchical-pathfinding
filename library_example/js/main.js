@@ -18,7 +18,7 @@ import { PathfindingUIController } from './ui/PathfindingUIController.js';
 import { Inspector } from './ui/Inspector.js';
 import { GameDataManager } from './data/GameDataManager.js';
 import { getCanvasCoordinates } from './utils/MathUtils.js';
-import { HierarchicalPathfinding } from '../hierarchical_pathfinding/HierarchicalPathfinding.js';
+import { HierarchicalPathfinding } from '../hierarchical_pathfinding/src/index.js';
 
 /**
  * MAIN APPLICATION CLASS

@@ -1,5 +1,23 @@
 import { PathfindingAlgorithm } from './PathfindingAlgorithm.js';
-import { HeuristicRegistry } from '../heuristics/HeuristicRegistry.js';
+import { ManhattanHeuristic } from '../heuristics/ManhattanHeuristic.js';
+import { EuclideanHeuristic } from '../heuristics/EuclideanHeuristic.js';
+
+/**
+ * Simple heuristic registry
+ */
+const HeuristicRegistry = {
+    get: (heuristicName) => {
+        switch (heuristicName.toLowerCase()) {
+            case 'manhattan':
+                return new ManhattanHeuristic();
+            case 'euclidean':
+                return new EuclideanHeuristic();
+            default:
+                console.warn(`Unknown heuristic '${heuristicName}', using Manhattan as fallback`);
+                return new ManhattanHeuristic();
+        }
+    }
+};
 
 /**
  * Jump Point Search (JPS) algorithm implementation
