@@ -1,31 +1,12 @@
 import { PathfindingAlgorithm } from './PathfindingAlgorithm.js';
-import { ManhattanHeuristic } from '../heuristics/ManhattanHeuristic.js';
-import { EuclideanHeuristic } from '../heuristics/EuclideanHeuristic.js';
-
-/**
- * Simple heuristic registry
- */
-const HeuristicRegistry = {
-    get: (heuristicName) => {
-        switch (heuristicName.toLowerCase()) {
-            case 'manhattan':
-                return new ManhattanHeuristic();
-            case 'euclidean':
-                return new EuclideanHeuristic();
-            default:
-                console.warn(`Unknown heuristic '${heuristicName}', using Manhattan as fallback`);
-                return new ManhattanHeuristic();
-        }
-    }
-};
 
 /**
  * A* pathfinding algorithm implementation
  */
 export class AStarAlgorithm extends PathfindingAlgorithm {
-    constructor(heuristicName = 'manhattan', heuristicWeight = 1.0) {
+    constructor(heuristic, heuristicWeight = 1.0) {
         super();
-        this.heuristic = HeuristicRegistry.get(heuristicName);
+        this.heuristic = heuristic;
         this.heuristicWeight = heuristicWeight;
     }
 

@@ -1,12 +1,14 @@
 import { AStarAlgorithm } from '../algorithms/AStarAlgorithm.js';
 import { JPSAlgorithm } from '../algorithms/JPSAlgorithm.js';
+import { ManhattanHeuristic } from '../heuristics/ManhattanHeuristic.js';
+import { EuclideanHeuristic } from '../heuristics/EuclideanHeuristic.js';
 
 /**
  * Local pathfinder for single chunk pathfinding
  * Simplified version without dependency injection
  */
 export class LocalPathfinder {
-    constructor(algorithmType = 'astar', heuristicName = 'manhattan', heuristicWeight = 1.0) {
+    constructor(algorithmType = 'astar', heuristicName = 'euclidean', heuristicWeight = 1.0) {
         this.algorithm = this.createAlgorithm(algorithmType, heuristicName, heuristicWeight);
     }
 
@@ -18,18 +20,37 @@ export class LocalPathfinder {
      * @returns {Object} - Algorithm instance
      */
     createAlgorithm(algorithmType, heuristicName, heuristicWeight) {
+        // Create heuristic instance
+        const heuristic = this.createHeuristic(heuristicName);
+        
         switch (algorithmType.toLowerCase()) {
             case 'astar':
             case 'a*':
-                return new AStarAlgorithm(heuristicName, heuristicWeight);
+                return new AStarAlgorithm(heuristic, heuristicWeight);
             
             case 'jps':
             case 'jump point search':
-                return new JPSAlgorithm(heuristicName, heuristicWeight);
+                return new JPSAlgorithm(heuristic, heuristicWeight);
             
             default:
                 console.warn(`Unknown algorithm type '${algorithmType}', using A* as fallback`);
-                return new AStarAlgorithm(heuristicName, heuristicWeight);
+                return new AStarAlgorithm(heuristic, heuristicWeight);
+        }
+    }
+
+    /**
+     * Create heuristic instance
+     * @param {string} heuristicName - Heuristic name
+     * @returns {Object} - Heuristic instance
+     */
+    createHeuristic(heuristicName) {
+        switch (heuristicName.toLowerCase()) {
+            case 'manhattan':
+                return new ManhattanHeuristic();
+            case 'euclidean':
+                return new EuclideanHeuristic();
+            default:
+                throw new Error(`Unknown heuristic: ${heuristicName}`);
         }
     }
 

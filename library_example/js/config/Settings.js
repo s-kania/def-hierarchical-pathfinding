@@ -29,8 +29,8 @@ export const DEFAULT_PATHFINDING_SETTINGS = {
     
     // NEW: Algorithm and heuristic settings
     localAlgorithm: 'astar',    // Local pathfinding algorithm: 'astar' or 'jps'
-    localHeuristic: 'manhattan', // Local heuristic: 'manhattan', 'euclidean', 'diagonal', 'octile'
-    hierarchicalHeuristic: 'manhattan', // Hierarchical heuristic: 'manhattan', 'euclidean', 'diagonal', 'octile'
+    localHeuristic: 'euclidean', // Local heuristic: 'manhattan', 'euclidean'
+    hierarchicalHeuristic: 'euclidean', // Hierarchical heuristic: 'manhattan', 'euclidean'
     heuristicWeight: 1.0        // Heuristic weight (1.0 = admissible, >1.0 = weighted A*)
 };
 
@@ -42,9 +42,7 @@ export const PATHFINDING_ALGORITHMS = {
 
 export const PATHFINDING_HEURISTICS = {
     manhattan: 'Manhattan Distance',
-    euclidean: 'Euclidean Distance', 
-    diagonal: 'Diagonal Distance',
-    octile: 'Octile Distance'
+    euclidean: 'Euclidean Distance'
 };
 
 export const ISLAND_PRESETS = {

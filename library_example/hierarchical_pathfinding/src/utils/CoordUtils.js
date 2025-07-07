@@ -201,24 +201,4 @@ export class CoordUtils {
         const F = Math.SQRT2 - 1; // Cost of diagonal movement
         return Math.max(dx, dy) + F * Math.min(dx, dy);
     }
-    
-    /**
-     * Get heuristic function by name
-     * @param {string} heuristicName - Name of heuristic
-     * @returns {Function} - Heuristic function
-     */
-    static getHeuristic(heuristicName) {
-        switch (heuristicName) {
-            case 'manhattan':
-                return this.manhattanDistance;
-            case 'euclidean':
-                return this.euclideanDistance;
-            case 'diagonal':
-                return this.diagonalDistance;
-            case 'octile':
-                return this.octileDistance;
-            default:
-                return this.manhattanDistance; // Default fallback
-        }
-    }
 } 
