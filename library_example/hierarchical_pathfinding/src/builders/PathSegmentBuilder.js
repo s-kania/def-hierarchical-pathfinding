@@ -32,8 +32,8 @@ export class PathSegmentBuilder {
         
         // 🔥 FIRST NODE VERIFICATION - remove redundant first node
         if (effectivePath.length >= 2) {
-            const firstPoint = this.getTransitionPoint(effectivePath[0]);
-            const secondPoint = this.getTransitionPoint(effectivePath[1]);
+            const firstPoint = this.transitionPathfinder.getPoint(effectivePath[0]);
+            const secondPoint = this.transitionPathfinder.getPoint(effectivePath[1]);
             
             const connectionChunk = this.findConnectionChunk(firstPoint, secondPoint);
             if (secondPoint.chunks.includes(startChunk) && connectionChunk === startChunk) {
@@ -43,7 +43,7 @@ export class PathSegmentBuilder {
         
         // Add start segment (from startPos to first transition point)
         if (effectivePath.length > 0) {
-            const firstPoint = this.getTransitionPoint(effectivePath[0]);
+            const firstPoint = this.transitionPathfinder.getPoint(effectivePath[0]);
             const firstPointPos = CoordUtils.getTransitionGlobalPosition(
                 firstPoint, startChunk, this.config.chunkWidth, this.config.tileSize
             );
@@ -55,8 +55,8 @@ export class PathSegmentBuilder {
         
         // Build segments between transition points
         for (let i = 0; i < effectivePath.length - 1; i++) {
-            const currentPoint = this.getTransitionPoint(effectivePath[i]);
-            const nextPoint = this.getTransitionPoint(effectivePath[i + 1]);
+            const currentPoint = this.transitionPathfinder.getPoint(effectivePath[i]);
+            const nextPoint = this.transitionPathfinder.getPoint(effectivePath[i + 1]);
             
             const connectionChunk = this.findConnectionChunk(currentPoint, nextPoint);
             if (!connectionChunk) continue;
@@ -83,18 +83,6 @@ export class PathSegmentBuilder {
         }
         
         return segments;
-    }
-
-    /**
-     * Get transition point by ID
-     * @param {string} pointId - Point ID
-     * @returns {Object} - Transition point
-     */
-    getTransitionPoint(pointId) {
-        if (this.transitionPathfinder) {
-            return this.transitionPathfinder.getPoint(pointId);
-        }
-        return this.config.transitionPoints.find(p => p.id === pointId);
     }
 
     /**
