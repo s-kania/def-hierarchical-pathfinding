@@ -64,38 +64,4 @@ export class LocalPathfinder {
     findPath(chunkData, startPos, endPos, config = {}) {
         return this.algorithm.findPath(chunkData, startPos, endPos, config);
     }
-
-    /**
-     * Get algorithm name
-     * @returns {string} - Algorithm name
-     */
-    getAlgorithmName() {
-        return this.algorithm.getName();
-    }
-
-    /**
-     * Get heuristic name
-     * @returns {string} - Heuristic name
-     */
-    getHeuristicName() {
-        return this.algorithm.heuristic.getName();
-    }
-
-    /**
-     * Get heuristic weight
-     * @returns {number} - Heuristic weight
-     */
-    getHeuristicWeight() {
-        return this.algorithm.heuristicWeight;
-    }
-
-    /**
-     * Check if position is walkable
-     * @param {Array} chunkData - 2D array of tiles
-     * @param {Object} pos - Position {x, y}
-     * @returns {boolean} - True if walkable
-     */
-    isWalkable(chunkData, pos) {
-        return this.algorithm.isWalkable(chunkData, pos);
-    }
 } 
