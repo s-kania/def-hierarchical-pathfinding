@@ -742,7 +742,19 @@ class ChunkMapGenerator {
     generateRandomPathfindingPoints() {
         const success = this.pathfindingPointManager.generateRandomPoints(this.chunks);
         
-        if (!success) {
+        if (success) {
+            // Clear any existing path when generating new points
+            this.pathSegments = null;
+            this.pathfindingUIController.hideCalculatedSegments();
+            
+            // Render map to show new points
+            this.renderMap();
+            
+            // Update UI
+            this.pathfindingUIController.updateAll(this.pathfindingPointManager);
+            
+            console.log('✅ Random points generated successfully');
+        } else {
             console.log('⚠️ Cannot generate points - insufficient ocean');
         }
     }

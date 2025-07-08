@@ -239,6 +239,25 @@ export class UIController {
         document.getElementById('exportBtn')?.addEventListener('click', () => {
             this.triggerExportPNG();
         });
+
+        // Random Points button - generate random start and end points
+        document.getElementById('randomPointsBtn')?.addEventListener('click', () => {
+            if (window.app && window.app.generateRandomPathfindingPoints) {
+                window.app.generateRandomPathfindingPoints();
+                // Update UI after generating points
+                if (window.app.pathfindingUIController) {
+                    window.app.pathfindingUIController.updateAll(window.app.pathfindingPointManager);
+                }
+                // Re-render map to show new points
+                if (window.app.renderMap) {
+                    window.app.renderMap();
+                }
+                // Show success message
+                if (window.app.pathfindingUIController) {
+                    window.app.pathfindingUIController.showSuccess('Losowo wygenerowano punkty startowy i końcowy');
+                }
+            }
+        });
     }
 
     /**
