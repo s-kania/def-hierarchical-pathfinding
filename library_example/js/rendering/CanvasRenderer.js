@@ -10,6 +10,18 @@ export class CanvasRenderer {
         this.ctx = canvas.getContext('2d');
         this.settings = settings;
         this.pathfindingSettings = pathfindingSettings;
+        
+        // Zoom properties
+        this.zoom = 1.0;
+        this.minZoom = 0.5;
+        this.maxZoom = 3.0;
+        this.zoomStep = 0.2;
+        this.panX = 0;
+        this.panY = 0;
+        this.isDragging = false;
+        this.lastMouseX = 0;
+        this.lastMouseY = 0;
+        this.mouseWheelZoomEnabled = false; // Disabled by default on Mac
     }
 
     /**
@@ -22,11 +34,14 @@ export class CanvasRenderer {
         this.canvas.width = canvasSize.width;
         this.canvas.height = canvasSize.height;
         
-
-        
         // Clear canvas (background)
         this.ctx.fillStyle = COLORS.chunkBackground;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Apply zoom and pan transformations
+        this.ctx.save();
+        this.ctx.translate(this.panX, this.panY);
+        this.ctx.scale(this.zoom, this.zoom);
         
         // Render each chunk
         chunks.forEach(chunk => {
@@ -57,6 +72,9 @@ export class CanvasRenderer {
         if (pathfindingPoints) {
             this.renderPathfindingPoints(pathfindingPoints);
         }
+        
+        // Restore context
+        this.ctx.restore();
     }
 
     /**
@@ -670,5 +688,183 @@ export class CanvasRenderer {
         const worldY = chunkY * chunkWorldSize + localPos.y * this.settings.tileSize + this.settings.tileSize / 2;
         
         return { x: worldX, y: worldY };
+    }
+
+    /**
+     * ZOOM METHODS
+     */
+    
+    /**
+     * ZOOMS IN
+     */
+    zoomIn() {
+        const newZoom = Math.min(this.zoom + this.zoomStep, this.maxZoom);
+        if (newZoom !== this.zoom) {
+            this.zoom = newZoom;
+            this.updateZoomButtons();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * ZOOMS OUT
+     */
+    zoomOut() {
+        const newZoom = Math.max(this.zoom - this.zoomStep, this.minZoom);
+        if (newZoom !== this.zoom) {
+            this.zoom = newZoom;
+            this.updateZoomButtons();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * RESETS ZOOM AND PAN
+     */
+    resetZoom() {
+        this.zoom = 1.0;
+        this.panX = 0;
+        this.panY = 0;
+        this.updateZoomButtons();
+        return true;
+    }
+
+    /**
+     * ZOOMS TO SPECIFIC LEVEL
+     */
+    setZoom(zoomLevel) {
+        const newZoom = Math.max(this.minZoom, Math.min(this.maxZoom, zoomLevel));
+        if (newZoom !== this.zoom) {
+            this.zoom = newZoom;
+            this.updateZoomButtons();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * UPDATES ZOOM BUTTON STATES
+     */
+    updateZoomButtons() {
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const zoomResetBtn = document.getElementById('zoomResetBtn');
+        const zoomLevelElement = document.getElementById('zoomLevel');
+        const toggleMouseZoomBtn = document.getElementById('toggleMouseZoomBtn');
+        const mouseZoomIcon = document.getElementById('mouseZoomIcon');
+
+        if (zoomInBtn) {
+            zoomInBtn.disabled = this.zoom >= this.maxZoom;
+        }
+        if (zoomOutBtn) {
+            zoomOutBtn.disabled = this.zoom <= this.minZoom;
+        }
+        if (zoomResetBtn) {
+            zoomResetBtn.disabled = this.zoom === 1.0 && this.panX === 0 && this.panY === 0;
+        }
+        if (zoomLevelElement) {
+            zoomLevelElement.textContent = `${Math.round(this.zoom * 100)}%`;
+        }
+        if (toggleMouseZoomBtn && mouseZoomIcon) {
+            if (this.mouseWheelZoomEnabled) {
+                toggleMouseZoomBtn.classList.add('active');
+                mouseZoomIcon.textContent = '✅';
+                toggleMouseZoomBtn.title = 'Mouse wheel zoom: ON (click to disable)';
+            } else {
+                toggleMouseZoomBtn.classList.remove('active');
+                mouseZoomIcon.textContent = '🚫';
+                toggleMouseZoomBtn.title = 'Mouse wheel zoom: OFF (click to enable)';
+            }
+        }
+    }
+
+    /**
+     * CONVERTS SCREEN COORDINATES TO CANVAS COORDINATES WITH ZOOM
+     */
+    screenToCanvas(screenX, screenY) {
+        return {
+            x: (screenX - this.panX) / this.zoom,
+            y: (screenY - this.panY) / this.zoom
+        };
+    }
+
+    /**
+     * CONVERTS CANVAS COORDINATES TO SCREEN COORDINATES WITH ZOOM
+     */
+    canvasToScreen(canvasX, canvasY) {
+        return {
+            x: canvasX * this.zoom + this.panX,
+            y: canvasY * this.zoom + this.panY
+        };
+    }
+
+    /**
+     * STARTS PAN DRAGGING
+     */
+    startPan(mouseX, mouseY) {
+        this.isDragging = true;
+        this.lastMouseX = mouseX;
+        this.lastMouseY = mouseY;
+        this.canvas.style.cursor = 'grabbing';
+    }
+
+    /**
+     * UPDATES PAN DRAGGING
+     */
+    updatePan(mouseX, mouseY) {
+        if (this.isDragging) {
+            const deltaX = mouseX - this.lastMouseX;
+            const deltaY = mouseY - this.lastMouseY;
+            
+            this.panX += deltaX;
+            this.panY += deltaY;
+            
+            this.lastMouseX = mouseX;
+            this.lastMouseY = mouseY;
+            
+            this.updateZoomButtons();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * STOPS PAN DRAGGING
+     */
+    stopPan() {
+        this.isDragging = false;
+        this.canvas.style.cursor = 'grab';
+    }
+
+    /**
+     * GETS CURRENT ZOOM LEVEL
+     */
+    getZoom() {
+        return this.zoom;
+    }
+
+    /**
+     * GETS CURRENT PAN POSITION
+     */
+    getPan() {
+        return { x: this.panX, y: this.panY };
+    }
+
+    /**
+     * TOGGLES MOUSE WHEEL ZOOM
+     */
+    toggleMouseWheelZoom() {
+        this.mouseWheelZoomEnabled = !this.mouseWheelZoomEnabled;
+        this.updateZoomButtons();
+        return this.mouseWheelZoomEnabled;
+    }
+
+    /**
+     * GETS MOUSE WHEEL ZOOM STATE
+     */
+    isMouseWheelZoomEnabled() {
+        return this.mouseWheelZoomEnabled;
     }
 } 

@@ -241,6 +241,8 @@ export class UIController {
             this.autoSaveSettings();
             this.triggerPathfindingUpdate();
         });
+
+
     }
 
     /**
@@ -542,6 +544,8 @@ export class UIController {
                 transitionPointMarginEl.value = this.pathfindingSettings.transitionPointMargin;
                 transitionPointMarginValueEl.textContent = this.pathfindingSettings.transitionPointMargin;
             }
+
+
             
             console.log('✅ UI updated from settings successfully');
         } catch (error) {

@@ -45,6 +45,10 @@
                                 <span id="mapSeed" class="stat-value">-</span>
                             </div>
                             <div class="stat">
+                                <span class="stat-label">Zoom:</span>
+                                <span id="zoomLevel" class="stat-value">100%</span>
+                            </div>
+                            <div class="stat">
                                 <button id="debugConnectionsBtn" class="btn btn--info btn--sm" disabled>
                                     🔍 Print point data
                                 </button>
@@ -72,10 +76,29 @@
                     <div class="map-position">
                         <span class="stat-label">Position:</span>
                         <span id="mousePosition" class="stat-value">-</span>
+                        <span class="map-controls-info">
+                            <span class="control-hint" id="mapControlsHint">🖱️ Drag to pan • 🔍 Scroll to zoom • ⌨️ Escape to reset</span>
+                        </span>
                     </div>
                 </div>
 
-                <canvas id="mapCanvas" width="800" height="600"></canvas>
+                <div class="canvas-container">
+                    <canvas id="mapCanvas" width="800" height="600"></canvas>
+                    <div class="zoom-controls">
+                        <button id="zoomInBtn" class="zoom-btn" title="Zoom In">
+                            <span>🔍+</span>
+                        </button>
+                        <button id="zoomOutBtn" class="zoom-btn" title="Zoom Out">
+                            <span>🔍-</span>
+                        </button>
+                        <button id="zoomResetBtn" class="zoom-btn" title="Reset Zoom (Escape)">
+                            <span>🔄</span>
+                        </button>
+                        <button id="toggleMouseZoomBtn" class="zoom-btn zoom-toggle-btn" title="Toggle Mouse Wheel Zoom">
+                            <span id="mouseZoomIcon">🚫</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -260,6 +283,8 @@
                                     </div>
                                 </div>
                             </div>
+
+
 
                             <!-- Algorithm and Heuristic Settings -->
                             <div class="pathfinding-algorithms">

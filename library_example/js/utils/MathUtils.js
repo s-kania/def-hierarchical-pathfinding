@@ -90,13 +90,20 @@ export function countLandNeighborsUnified(tiles, x, y, width, height) {
 /**
  * CONVERTS MOUSE COORDINATES TO CANVAS
  */
-export function getCanvasCoordinates(e, canvas) {
+export function getCanvasCoordinates(e, canvas, renderer = null) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     
-    const mouseX = (e.clientX - rect.left) * scaleX;
-    const mouseY = (e.clientY - rect.top) * scaleY;
+    let mouseX = (e.clientX - rect.left) * scaleX;
+    let mouseY = (e.clientY - rect.top) * scaleY;
+    
+    // If renderer has zoom/pan, convert to canvas coordinates
+    if (renderer && renderer.zoom !== 1.0) {
+        const canvasCoords = renderer.screenToCanvas(mouseX, mouseY);
+        mouseX = canvasCoords.x;
+        mouseY = canvasCoords.y;
+    }
     
     return { mouseX, mouseY, rect, scaleX, scaleY };
 }

@@ -863,6 +863,26 @@ input[type="range"]::-moz-range-thumb:hover {
   font-family: var(--font-family-mono);
 }
 
+.map-controls-info {
+  margin-left: auto;
+}
+
+.control-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.setting-description {
+  margin-top: var(--space-4);
+}
+
+.setting-description small {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}
+
 @media (max-width: 900px) {
   .map-info-header {
     flex-direction: column;
@@ -934,6 +954,11 @@ input[type="range"]::-moz-range-thumb:hover {
   font-size: var(--font-size-sm);
 }
 
+.canvas-container {
+  position: relative;
+  display: inline-block;
+}
+
 #mapCanvas {
   border: 2px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -941,6 +966,85 @@ input[type="range"]::-moz-range-thumb:hover {
   box-shadow: var(--shadow-lg);
   max-width: 100%;
   height: auto;
+  cursor: grab;
+}
+
+#mapCanvas:active {
+  cursor: grabbing;
+}
+
+.zoom-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
+}
+
+.zoom-btn {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all var(--duration-fast) var(--ease-standard);
+  box-shadow: var(--shadow-sm);
+}
+
+.zoom-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: var(--color-primary);
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+.zoom-btn:active {
+  transform: scale(0.95);
+}
+
+.zoom-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.zoom-toggle-btn {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.zoom-toggle-btn.active {
+  background: rgba(0, 255, 0, 0.2) !important;
+  border-color: #00aa00 !important;
+}
+
+.zoom-toggle-btn:hover {
+  background: rgba(255, 255, 255, 1) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.zoom-toggle-btn.active:hover {
+  background: rgba(0, 255, 0, 0.3) !important;
+  border-color: #00aa00 !important;
+}
+
+[data-color-scheme="dark"] .zoom-btn {
+  background: rgba(30, 30, 30, 0.9);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+[data-color-scheme="dark"] .zoom-btn:hover {
+  background: rgba(50, 50, 50, 1);
+  border-color: var(--color-primary);
 }
 
 .legend {

@@ -123,6 +123,9 @@ class ChunkMapGenerator {
             this.uiController.updateSettingsStatus();
         }
         
+        // Update controls hint
+        this.updateControlsHint();
+        
         // Make available globally for developer console
         window.mapGenerator = this;
         window.app = this;
@@ -195,6 +198,9 @@ class ChunkMapGenerator {
         
         // Configure canvas interactivity
         this.setupCanvasInteractivity();
+        
+        // Configure zoom controls
+        this.setupZoomControls();
     }
     
     /**
@@ -235,6 +241,11 @@ class ChunkMapGenerator {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.settingsModal.classList.contains('show')) {
                 this.closeSettingsModal();
+            } else if (e.key === 'Escape' && !this.settingsModal.classList.contains('show')) {
+                // Reset zoom when Escape is pressed outside modal
+                if (this.renderer.resetZoom()) {
+                    this.renderMap();
+                }
             }
         });
         
@@ -887,10 +898,18 @@ class ChunkMapGenerator {
     setupCanvasInteractivity() {
         // Mouse movement handling
         this.canvas.addEventListener('mousemove', (e) => {
-            const { mouseX, mouseY } = getCanvasCoordinates(e, this.canvas);
+            const { mouseX, mouseY } = getCanvasCoordinates(e, this.canvas, this.renderer);
             
             // Update mouse position in UI
             this.uiController.updateMousePosition(mouseX, mouseY);
+            
+            // Handle pan dragging
+            if (this.renderer.isDragging) {
+                if (this.renderer.updatePan(mouseX, mouseY)) {
+                    this.renderMap();
+                }
+                return;
+            }
             
             // Update pathfinding point dragging
             if (this.pathfindingPointManager.isDraggingPoint()) {
@@ -915,7 +934,7 @@ class ChunkMapGenerator {
             // Check transition points (existing logic)
             if (!this.pathfindingSettings.showTransitionPoints) {
                 this.inspector.hideInspector();
-                this.canvas.style.cursor = 'default';
+                this.canvas.style.cursor = 'grab';
                 return;
             }
 
@@ -942,7 +961,7 @@ class ChunkMapGenerator {
             } else {
                 this.inspector.setHoveredPoint(null);
                 this.canvas.classList.remove('pointer-cursor');
-                this.canvas.style.cursor = 'default';
+                this.canvas.style.cursor = 'grab';
                 
                 if (this.inspector.getSelectedPoint()) {
                     this.inspector.showInspector(this.inspector.getSelectedPoint(), this.gameDataManager);
@@ -960,7 +979,7 @@ class ChunkMapGenerator {
 
         // Mouse click handling
         this.canvas.addEventListener('mousedown', (e) => {
-            const { mouseX, mouseY } = getCanvasCoordinates(e, this.canvas);
+            const { mouseX, mouseY } = getCanvasCoordinates(e, this.canvas, this.renderer);
             
             // Check if clicked on pathfinding point
             const pathfindingPoint = this.pathfindingPointManager.getPointAt(mouseX, mouseY);
@@ -981,19 +1000,16 @@ class ChunkMapGenerator {
                     this.renderMap();
                     this.updateActivePointId();
                 } else {
-                    // Clicked outside transition point - reset selection
+                    // Clicked outside transition point - start pan
                     this.inspector.setSelectedPoint(null);
                     this.inspector.hideInspector();
-                    // Render map without connection lines
-                    this.renderMap();
-                    this.updateActivePointId();
+                    this.renderer.startPan(mouseX, mouseY);
                 }
             } else {
-                // Transition points are disabled - reset selection
+                // Transition points are disabled - start pan
                 this.inspector.setSelectedPoint(null);
                 this.inspector.hideInspector();
-                this.renderMap();
-                this.updateActivePointId();
+                this.renderer.startPan(mouseX, mouseY);
             }
         });
 
@@ -1002,7 +1018,12 @@ class ChunkMapGenerator {
             if (this.pathfindingPointManager.isDraggingPoint()) {
                 this.pathfindingPointManager.stopDragging();
                 this.pathfindingUIController.updateAll(this.pathfindingPointManager);
-                this.canvas.style.cursor = 'default';
+                this.canvas.style.cursor = this.pathfindingSettings.enablePanDragging ? 'grab' : 'default';
+            }
+            
+            // Stop pan dragging
+            if (this.renderer.isDragging) {
+                this.renderer.stopPan();
             }
         });
 
@@ -1011,6 +1032,11 @@ class ChunkMapGenerator {
             if (this.pathfindingPointManager.isDraggingPoint()) {
                 this.pathfindingPointManager.stopDragging();
                 this.pathfindingUIController.updateAll(this.pathfindingPointManager);
+            }
+            
+            // Stop pan dragging
+            if (this.renderer.isDragging) {
+                this.renderer.stopPan();
             }
             
             // Clear mouse position
@@ -1022,7 +1048,7 @@ class ChunkMapGenerator {
             // Reset hover (but keep selected)
             this.inspector.setHoveredPoint(null);
             this.canvas.classList.remove('pointer-cursor');
-            this.canvas.style.cursor = 'default';
+            this.canvas.style.cursor = this.pathfindingSettings.enablePanDragging ? 'grab' : 'default';
             
             // Show selectedPoint if exists, otherwise hide inspector
             if (this.inspector.getSelectedPoint()) {
@@ -1034,6 +1060,30 @@ class ChunkMapGenerator {
             // Render map (may hide hover lines, but keep selected lines)
             this.renderMap();
             this.updateActivePointId();
+        });
+
+        // Mouse wheel handling for zoom
+        this.canvas.addEventListener('wheel', (e) => {
+            // Check if mouse wheel zoom is enabled
+            if (!this.renderer.isMouseWheelZoomEnabled()) {
+                return; // Don't prevent default, let normal scrolling work
+            }
+            
+            e.preventDefault();
+            
+            const { mouseX, mouseY } = getCanvasCoordinates(e, this.canvas, this.renderer);
+            const delta = e.deltaY > 0 ? -1 : 1;
+            
+            // Zoom in/out
+            if (delta > 0) {
+                if (this.renderer.zoomIn()) {
+                    this.renderMap();
+                }
+            } else {
+                if (this.renderer.zoomOut()) {
+                    this.renderMap();
+                }
+            }
         });
     }
     
@@ -1180,6 +1230,74 @@ class ChunkMapGenerator {
                 this.onCalculatePathfindingPath();
             });
         }
+    }
+
+    /**
+     * CONFIGURES ZOOM CONTROLS
+     */
+    setupZoomControls() {
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const zoomResetBtn = document.getElementById('zoomResetBtn');
+        const toggleMouseZoomBtn = document.getElementById('toggleMouseZoomBtn');
+
+        if (zoomInBtn) {
+            zoomInBtn.addEventListener('click', () => {
+                if (this.renderer.zoomIn()) {
+                    this.renderMap();
+                }
+            });
+        }
+
+        if (zoomOutBtn) {
+            zoomOutBtn.addEventListener('click', () => {
+                if (this.renderer.zoomOut()) {
+                    this.renderMap();
+                }
+            });
+        }
+
+        if (zoomResetBtn) {
+            zoomResetBtn.addEventListener('click', () => {
+                if (this.renderer.resetZoom()) {
+                    this.renderMap();
+                }
+            });
+        }
+
+        if (toggleMouseZoomBtn) {
+            toggleMouseZoomBtn.addEventListener('click', () => {
+                this.renderer.toggleMouseWheelZoom();
+                this.updateControlsHint();
+            });
+        }
+
+        // Initialize zoom button states
+        this.renderer.updateZoomButtons();
+        
+        // Update controls hint
+        this.updateControlsHint();
+    }
+
+    /**
+     * UPDATES CONTROLS HINT BASED ON CURRENT SETTINGS
+     */
+    updateControlsHint() {
+        const controlsHint = document.getElementById('mapControlsHint');
+        if (!controlsHint) return;
+
+        const hints = [];
+        
+        hints.push('🖱️ Drag to pan');
+        
+        if (this.renderer.isMouseWheelZoomEnabled()) {
+            hints.push('🔍 Scroll to zoom');
+        }
+        
+        hints.push('🔍+/- Buttons to zoom');
+        hints.push('⌨️ Escape to reset');
+        
+        controlsHint.textContent = hints.join(' • ');
     }
 }
 
