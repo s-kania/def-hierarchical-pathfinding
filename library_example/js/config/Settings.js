@@ -20,7 +20,7 @@ export const DEFAULT_ISLAND_SETTINGS = {
 };
 
 export const DEFAULT_PATHFINDING_SETTINGS = {
-    maxTransitionPoints: 3,     // Maximum number of transition points per border
+    maxTransitionPoints: 1,     // Maximum number of transition points per border
     showTransitionPoints: true, // Show transition points on map
     showConnectionWeights: true, // Show connection weights on lines
     transitionPointScale: 1.0,  // Scale of transition point size

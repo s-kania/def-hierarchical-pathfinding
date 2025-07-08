@@ -90,36 +90,55 @@ export class TransitionPointManager {
         // Find continuous passable segments
         const segments = this.findPassableSegments(canPass);
         
-        // Limit number of segments to maxPoints
-        const selectedSegments = this.selectBestSegments(segments, maxPoints);
-        
-        // Create transition points at the center of each segment
-        selectedSegments.forEach(segment => {
-            const midPoint = Math.floor((segment.start + segment.end) / 2);
+        // Process all segments and add points to each (up to maxPoints per segment)
+        segments.forEach(segment => {
+            const segmentLength = segment.end - segment.start + 1;
             
-            let globalX, globalY;
+            // Calculate how many points to place in this segment
+            const pointsInSegment = Math.min(maxPoints, segmentLength);
             
-            if (direction === 'horizontal') {
-                // Point on border between chunks (at the end of chunk A)
-                globalX = chunkA.x * chunkSize + chunkSize; // Border on the right side of chunkA
-                globalY = chunkA.y * chunkSize + midPoint;
-            } else if (direction === 'vertical') {
-                // Point on border between chunks (at the end of chunk A)
-                globalX = chunkA.x * chunkSize + midPoint;
-                globalY = chunkA.y * chunkSize + chunkSize; // Border below chunkA
+            if (pointsInSegment === 1) {
+                // Single point at center (existing behavior)
+                const midPoint = Math.floor((segment.start + segment.end) / 2);
+                this.addTransitionPoint(points, chunkA, chunkB, direction, chunkSize, midPoint, segmentLength);
+            } else {
+                // Multiple points distributed evenly across the segment
+                const step = segmentLength / (pointsInSegment + 1); // +1 to avoid edges
+                
+                for (let i = 1; i <= pointsInSegment; i++) {
+                    const position = Math.floor(segment.start + step * i);
+                    this.addTransitionPoint(points, chunkA, chunkB, direction, chunkSize, position, segmentLength);
+                }
             }
-            
-            points.push({
-                chunkA: chunkA.id,
-                chunkB: chunkB.id,
-                x: globalX,
-                y: globalY,
-                direction: direction,
-                segmentLength: segment.end - segment.start + 1
-            });
         });
         
         return points;
+    }
+
+    /**
+     * ADDS A TRANSITION POINT TO THE POINTS ARRAY
+     */
+    addTransitionPoint(points, chunkA, chunkB, direction, chunkSize, position, segmentLength) {
+        let globalX, globalY;
+        
+        if (direction === 'horizontal') {
+            // Point on border between chunks (at the end of chunk A)
+            globalX = chunkA.x * chunkSize + chunkSize; // Border on the right side of chunkA
+            globalY = chunkA.y * chunkSize + position;
+        } else if (direction === 'vertical') {
+            // Point on border between chunks (at the end of chunk A)
+            globalX = chunkA.x * chunkSize + position;
+            globalY = chunkA.y * chunkSize + chunkSize; // Border below chunkA
+        }
+        
+        points.push({
+            chunkA: chunkA.id,
+            chunkB: chunkB.id,
+            x: globalX,
+            y: globalY,
+            direction: direction,
+            segmentLength: segmentLength
+        });
     }
 
     /**
@@ -148,20 +167,7 @@ export class TransitionPointManager {
         return segments;
     }
 
-    /**
-     * SELECTS BEST SEGMENTS (LONGEST)
-     */
-    selectBestSegments(segments, maxCount) {
-        // Sort segments by length (longest first)
-        const sortedSegments = segments.sort((a, b) => {
-            const lengthA = a.end - a.start + 1;
-            const lengthB = b.end - b.start + 1;
-            return lengthB - lengthA;
-        });
-        
-        // Select maximum maxCount longest segments
-        return sortedSegments.slice(0, maxCount);
-    }
+
 
     /**
      * CALCULATES PIXEL COORDINATES FOR TRANSITION POINTS
