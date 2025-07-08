@@ -316,7 +316,7 @@ class ChunkMapGenerator {
         // Clear pathfinding points and path when generating new map
         this.pathfindingPointManager.clearPoints();
         this.pathSegments = null;
-        this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments
+        this.pathfindingUIController.resetSegments(); // Reset segment state when generating new map
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
         
         // Generate map
@@ -386,7 +386,7 @@ class ChunkMapGenerator {
         
         // Clear path and segments after smoothing (they may be invalid now)
         this.pathSegments = null;
-        this.pathfindingUIController.hideCalculatedSegments();
+        this.pathfindingUIController.resetSegments(); // Reset segment state after smoothing
     }
     
     /**
@@ -420,7 +420,7 @@ class ChunkMapGenerator {
         // Update UI if any points were removed
         if (pointsRemoved) {
             this.pathSegments = null; // Clear path when points are removed
-            this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments when points are removed
+            this.pathfindingUIController.resetSegments(); // Reset segment state when points are removed
             this.pathfindingUIController.updateAll(this.pathfindingPointManager);
             
             // Automatically generate new points if all were removed
@@ -480,7 +480,7 @@ class ChunkMapGenerator {
         
         // Clear path and segments when settings change (they may be invalid now)
         this.pathSegments = null;
-        this.pathfindingUIController.hideCalculatedSegments();
+        this.pathfindingUIController.resetSegments(); // Reset segment state when settings change
     }
     
     /**
@@ -566,7 +566,7 @@ class ChunkMapGenerator {
     
     onSmoothingOnly() {
         this.applySmoothingToExistingMap();
-        this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments after smoothing
+        this.pathfindingUIController.resetSegments(); // Reset segment state after smoothing
         this.renderMap();
         this.updateStats();
     }
@@ -574,14 +574,14 @@ class ChunkMapGenerator {
     onRenderOnly() {
         this.updateComponentSettings();
         this.transitionPointManager.calculateTransitionPointPixels(this.chunks);
-        this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments after render-only update
+        this.pathfindingUIController.resetSegments(); // Reset segment state after render-only update
         this.renderMap();
     }
     
     onPathfindingUpdate() {
         this.transitionPointManager.generateTransitionPoints(this.chunks);
         this.transitionPointManager.calculateTransitionPointPixels(this.chunks);
-        this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments after pathfinding update
+        this.pathfindingUIController.resetSegments(); // Reset segment state after pathfinding update
         this.renderMap();
         this.updateStats();
     }
@@ -601,7 +601,7 @@ class ChunkMapGenerator {
         // Reset pathfinding points and path
         this.pathfindingPointManager.clearPoints();
         this.pathSegments = null;
-        this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments
+        this.pathfindingUIController.resetSegments(); // Reset segment state when resetting
         
         // Reset UI settings
         this.uiController.resetToDefaults();
@@ -745,7 +745,7 @@ class ChunkMapGenerator {
         if (success) {
             // Clear any existing path when generating new points
             this.pathSegments = null;
-            this.pathfindingUIController.hideCalculatedSegments();
+            this.pathfindingUIController.resetSegments(); // Reset segment state when generating new points
             
             // Render map to show new points
             this.renderMap();
@@ -765,7 +765,7 @@ class ChunkMapGenerator {
     onClearPathfindingPoints() {
         this.pathfindingPointManager.clearPoints();
         this.pathSegments = null; // Also clear calculated path
-        this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments
+        this.pathfindingUIController.resetSegments(); // Reset segment state when clearing points
         this.pathfindingUIController.showSuccess('Cleared points');
         this.renderMap();
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
@@ -867,7 +867,7 @@ class ChunkMapGenerator {
             } else {
                 // Clear previous path
                 this.pathSegments = null;
-                this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments when no path found
+                this.pathfindingUIController.resetSegments(); // Reset segment state when no path found
                 this.renderMap();
                 this.pathfindingUIController.showError('Cannot find path between points');
             }
@@ -875,7 +875,7 @@ class ChunkMapGenerator {
         } catch (error) {
             console.error('❌ Error calculating path:', error);
             this.pathSegments = null; // Clear path on error
-            this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments on error
+            this.pathfindingUIController.resetSegments(); // Reset segment state on error
             this.pathfindingUIController.showError(`Error: ${error.message}`);
         }
     }
@@ -897,7 +897,7 @@ class ChunkMapGenerator {
                 if (success) {
                     // Clear calculated path because points changed
                     this.pathSegments = null;
-                    this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments when points are moved
+                    this.pathfindingUIController.resetSegments(); // Reset segment state when points are moved
                     this.renderMap();
                     this.pathfindingUIController.updateAll(this.pathfindingPointManager);
                 }
