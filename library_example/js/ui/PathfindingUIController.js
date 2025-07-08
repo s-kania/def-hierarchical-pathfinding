@@ -28,6 +28,9 @@ export class PathfindingUIController {
         // Callbacks
         this.onPrintData = null;
         this.onCalculateNextSegment = null;
+        
+        // Segment visibility flag
+        this.hideSegments = false;
     }
 
     /**
@@ -174,6 +177,7 @@ export class PathfindingUIController {
      */
     setHierarchicalPath(pathSegments, startPoint, endPoint) {
         this.segmentManager.setPath(pathSegments, startPoint, endPoint);
+        this.showCalculatedSegments(); // Show segments when new path is set
         this.updateSegmentButtonState();
     }
 
@@ -215,6 +219,9 @@ export class PathfindingUIController {
      * Gets calculated segments
      */
     getCalculatedSegments() {
+        if (this.hideSegments) {
+            return null; // Hide segments when flag is set
+        }
         return this.segmentManager.getCalculatedSegments();
     }
 
@@ -230,6 +237,7 @@ export class PathfindingUIController {
      */
     resetSegments() {
         this.segmentManager.reset();
+        this.hideCalculatedSegments(); // Hide segments when resetting
         this.updateSegmentButtonState();
     }
 
@@ -238,5 +246,19 @@ export class PathfindingUIController {
      */
     canCalculateNext() {
         return this.segmentManager.canCalculateNext();
+    }
+
+    /**
+     * Hides calculated segments (returns null from getCalculatedSegments)
+     */
+    hideCalculatedSegments() {
+        this.hideSegments = true;
+    }
+
+    /**
+     * Shows calculated segments (returns actual segments from getCalculatedSegments)
+     */
+    showCalculatedSegments() {
+        this.hideSegments = false;
     }
 } 

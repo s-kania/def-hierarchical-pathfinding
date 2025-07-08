@@ -276,6 +276,7 @@ class ChunkMapGenerator {
         // Clear pathfinding points and path when generating new map
         this.pathfindingPointManager.clearPoints();
         this.pathSegments = null;
+        this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
         
         // Generate map
@@ -342,6 +343,10 @@ class ChunkMapGenerator {
         if (this.gameDataManager.transitionPoints.length > 0) {
             this.gameDataManager.buildConnections(this.chunks);
         }
+        
+        // Clear path and segments after smoothing (they may be invalid now)
+        this.pathSegments = null;
+        this.pathfindingUIController.hideCalculatedSegments();
     }
     
     /**
@@ -374,6 +379,8 @@ class ChunkMapGenerator {
         
         // Update UI if any points were removed
         if (pointsRemoved) {
+            this.pathSegments = null; // Clear path when points are removed
+            this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments when points are removed
             this.pathfindingUIController.updateAll(this.pathfindingPointManager);
             
             // Automatically generate new points if all were removed
@@ -430,6 +437,10 @@ class ChunkMapGenerator {
             this.settings.chunkSize,  // chunkWidth
             this.settings.chunkSize   // chunkHeight (for square chunks)
         );
+        
+        // Clear path and segments when settings change (they may be invalid now)
+        this.pathSegments = null;
+        this.pathfindingUIController.hideCalculatedSegments();
     }
     
     /**
@@ -515,6 +526,7 @@ class ChunkMapGenerator {
     
     onSmoothingOnly() {
         this.applySmoothingToExistingMap();
+        this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments after smoothing
         this.renderMap();
         this.updateStats();
     }
@@ -522,12 +534,14 @@ class ChunkMapGenerator {
     onRenderOnly() {
         this.updateComponentSettings();
         this.transitionPointManager.calculateTransitionPointPixels(this.chunks);
+        this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments after render-only update
         this.renderMap();
     }
     
     onPathfindingUpdate() {
         this.transitionPointManager.generateTransitionPoints(this.chunks);
         this.transitionPointManager.calculateTransitionPointPixels(this.chunks);
+        this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments after pathfinding update
         this.renderMap();
         this.updateStats();
     }
@@ -547,7 +561,7 @@ class ChunkMapGenerator {
         // Reset pathfinding points and path
         this.pathfindingPointManager.clearPoints();
         this.pathSegments = null;
-        this.pathfindingUIController.resetSegments(); // Reset calculated segments
+        this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments
         
         // Reset UI settings
         this.uiController.resetToDefaults();
@@ -581,7 +595,7 @@ class ChunkMapGenerator {
     onClearPathfindingPoints() {
         this.pathfindingPointManager.clearPoints();
         this.pathSegments = null; // Also clear calculated path
-        this.pathfindingUIController.resetSegments(); // Reset segment manager and calculated segments
+        this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments
         this.pathfindingUIController.showSuccess('Cleared points');
         this.renderMap();
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
@@ -683,12 +697,15 @@ class ChunkMapGenerator {
             } else {
                 // Clear previous path
                 this.pathSegments = null;
+                this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments when no path found
                 this.renderMap();
                 this.pathfindingUIController.showError('Cannot find path between points');
             }
             
         } catch (error) {
             console.error('❌ Error calculating path:', error);
+            this.pathSegments = null; // Clear path on error
+            this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments on error
             this.pathfindingUIController.showError(`Error: ${error.message}`);
         }
     }
@@ -710,6 +727,7 @@ class ChunkMapGenerator {
                 if (success) {
                     // Clear calculated path because points changed
                     this.pathSegments = null;
+                    this.pathfindingUIController.hideCalculatedSegments(); // Hide calculated segments when points are moved
                     this.renderMap();
                     this.pathfindingUIController.updateAll(this.pathfindingPointManager);
                 }
