@@ -1748,3 +1748,147 @@ input[type="range"]::-moz-range-thumb:hover {
     justify-content: center;
   }
 }
+
+/* Settings Management Styles */
+.settings-management-content {
+  padding: var(--space-16);
+}
+
+.settings-management-content h3 {
+  margin: 0 0 var(--space-20) 0;
+  color: var(--color-text);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.settings-management-content h4 {
+  margin: var(--space-16) 0 var(--space-12) 0;
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Settings Status */
+.settings-status {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-16);
+  margin-bottom: var(--space-20);
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-12);
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-8) 0;
+}
+
+.status-label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.status-value {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+/* Settings Actions */
+.settings-actions {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-16);
+  margin-bottom: var(--space-20);
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-12);
+}
+
+.action-buttons .btn {
+  justify-content: center;
+  text-align: center;
+}
+
+/* Import/Export Area */
+.import-export-area {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-16);
+  margin-bottom: var(--space-20);
+}
+
+.import-export-area textarea {
+  font-family: 'Courier New', monospace;
+  font-size: var(--font-size-sm);
+  resize: vertical;
+  min-height: 200px;
+}
+
+.import-export-buttons {
+  display: flex;
+  gap: var(--space-12);
+  margin-top: var(--space-16);
+  flex-wrap: wrap;
+}
+
+/* Settings Info */
+.settings-info {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-16);
+}
+
+.info-text p {
+  margin: var(--space-8) 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.info-text strong {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Button variants */
+.btn--danger {
+  background: var(--color-error);
+  color: white;
+  border: 1px solid var(--color-error);
+}
+
+.btn--danger:hover {
+  background: var(--color-error-hover);
+  border-color: var(--color-error-hover);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
+  
+  .import-export-buttons {
+    flex-direction: column;
+  }
+  
+  .import-export-buttons .btn {
+    width: 100%;
+  }
+}

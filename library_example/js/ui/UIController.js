@@ -18,6 +18,13 @@ export class UIController {
         this.onPathfindingUpdate = null;
         this.onExportPNG = null;
         this.onReset = null;
+        this.onSaveSettings = null;
+        this.onClearSettings = null;
+        this.onExportSettings = null;
+        this.onImportSettings = null;
+        
+        // Debouncing for settings save
+        this.saveTimeout = null;
     }
 
     /**
@@ -28,6 +35,7 @@ export class UIController {
         this.setupIslandSettingsListeners();
         this.setupPathfindingListeners();
         this.setupButtonListeners();
+        this.setupSettingsManagementListeners();
     }
 
     /**
@@ -39,6 +47,7 @@ export class UIController {
         chunkSizeSlider?.addEventListener('input', (e) => {
             this.settings.chunkSize = parseInt(e.target.value);
             document.getElementById('chunkSizeValue').textContent = `${e.target.value}x${e.target.value}`;
+            this.autoSaveSettings();
             this.triggerFullRegeneration();
         });
 
@@ -47,6 +56,7 @@ export class UIController {
         chunkColsSlider?.addEventListener('input', (e) => {
             this.settings.chunkCols = parseInt(e.target.value);
             document.getElementById('chunkColsValue').textContent = e.target.value;
+            this.autoSaveSettings();
             this.triggerFullRegeneration();
         });
 
@@ -55,6 +65,7 @@ export class UIController {
         chunkRowsSlider?.addEventListener('input', (e) => {
             this.settings.chunkRows = parseInt(e.target.value);
             document.getElementById('chunkRowsValue').textContent = e.target.value;
+            this.autoSaveSettings();
             this.triggerFullRegeneration();
         });
 
@@ -63,6 +74,7 @@ export class UIController {
         tileSizeSlider?.addEventListener('input', (e) => {
             this.settings.tileSize = parseInt(e.target.value);
             document.getElementById('tileSizeValue').textContent = `${e.target.value}px`;
+            this.autoSaveSettings();
             this.triggerRenderOnly();
         });
     }
@@ -76,6 +88,7 @@ export class UIController {
         islandPresetSelect?.addEventListener('change', (e) => {
             this.islandSettings.preset = e.target.value;
             this.updatePresetValues();
+            this.autoSaveSettings();
             this.triggerFullRegeneration();
         });
 
@@ -85,6 +98,7 @@ export class UIController {
             this.islandSettings.landDensity = parseInt(e.target.value);
             this.markAsCustomPreset();
             document.getElementById('landDensityValue').textContent = `${e.target.value}%`;
+            this.autoSaveSettings();
             this.triggerFullRegeneration();
         });
 
@@ -94,6 +108,7 @@ export class UIController {
             this.islandSettings.iterations = parseInt(e.target.value);
             this.markAsCustomPreset();
             document.getElementById('iterationsValue').textContent = e.target.value;
+            this.autoSaveSettings();
             this.triggerSmoothingOnly();
         });
 
@@ -103,6 +118,7 @@ export class UIController {
             this.islandSettings.neighborThreshold = parseInt(e.target.value);
             this.markAsCustomPreset();
             document.getElementById('neighborThresholdValue').textContent = e.target.value;
+            this.autoSaveSettings();
             this.triggerSmoothingOnly();
         });
 
@@ -111,6 +127,7 @@ export class UIController {
         archipelagoModeCheckbox?.addEventListener('change', (e) => {
             this.islandSettings.archipelagoMode = e.target.checked;
             this.markAsCustomPreset();
+            this.autoSaveSettings();
             this.triggerSmoothingOnly();
         });
 
@@ -120,6 +137,7 @@ export class UIController {
             this.islandSettings.islandSize = e.target.value;
             this.markAsCustomPreset();
             document.getElementById('islandSizeValue').textContent = capitalizeFirst(e.target.value);
+            this.autoSaveSettings();
             this.triggerFullRegeneration();
         });
     }
@@ -133,6 +151,7 @@ export class UIController {
         maxTransitionPointsSlider?.addEventListener('input', (e) => {
             this.pathfindingSettings.maxTransitionPoints = parseInt(e.target.value);
             document.getElementById('maxTransitionPointsValue').textContent = e.target.value;
+            this.autoSaveSettings();
             this.triggerPathfindingUpdate();
         });
 
@@ -141,6 +160,7 @@ export class UIController {
         transitionPointScaleSlider?.addEventListener('input', (e) => {
             this.pathfindingSettings.transitionPointScale = parseFloat(e.target.value);
             document.getElementById('transitionPointScaleValue').textContent = e.target.value + 'x';
+            this.autoSaveSettings();
             this.triggerRenderOnly();
         });
 
@@ -149,6 +169,7 @@ export class UIController {
         pathfindingPointScaleSlider?.addEventListener('input', (e) => {
             this.pathfindingSettings.pathfindingPointScale = parseFloat(e.target.value);
             document.getElementById('pathfindingPointScaleValue').textContent = e.target.value + 'x';
+            this.autoSaveSettings();
             this.triggerRenderOnly();
         });
 
@@ -156,6 +177,7 @@ export class UIController {
         const showTransitionPointsCheckbox = document.getElementById('showTransitionPoints');
         showTransitionPointsCheckbox?.addEventListener('change', (e) => {
             this.pathfindingSettings.showTransitionPoints = e.target.checked;
+            this.autoSaveSettings();
             this.triggerRenderOnly();
         });
 
@@ -163,6 +185,7 @@ export class UIController {
         const showConnectionWeightsCheckbox = document.getElementById('showConnectionWeights');
         showConnectionWeightsCheckbox?.addEventListener('change', (e) => {
             this.pathfindingSettings.showConnectionWeights = e.target.checked;
+            this.autoSaveSettings();
             this.triggerRenderOnly();
         });
 
@@ -171,6 +194,7 @@ export class UIController {
         const localAlgorithmSelect = document.getElementById('localAlgorithm');
         localAlgorithmSelect?.addEventListener('change', (e) => {
             this.pathfindingSettings.localAlgorithm = e.target.value;
+            this.autoSaveSettings();
             this.triggerPathfindingUpdate();
         });
 
@@ -178,6 +202,7 @@ export class UIController {
         const localHeuristicSelect = document.getElementById('localHeuristic');
         localHeuristicSelect?.addEventListener('change', (e) => {
             this.pathfindingSettings.localHeuristic = e.target.value;
+            this.autoSaveSettings();
             this.triggerPathfindingUpdate();
         });
 
@@ -185,6 +210,7 @@ export class UIController {
         const hierarchicalHeuristicSelect = document.getElementById('hierarchicalHeuristic');
         hierarchicalHeuristicSelect?.addEventListener('change', (e) => {
             this.pathfindingSettings.hierarchicalHeuristic = e.target.value;
+            this.autoSaveSettings();
             this.triggerPathfindingUpdate();
         });
 
@@ -193,6 +219,7 @@ export class UIController {
         heuristicWeightSlider?.addEventListener('input', (e) => {
             this.pathfindingSettings.heuristicWeight = parseFloat(e.target.value);
             document.getElementById('heuristicWeightValue').textContent = e.target.value;
+            this.autoSaveSettings();
             this.triggerPathfindingUpdate();
         });
     }
@@ -303,23 +330,150 @@ export class UIController {
      * UPDATES UI BASED ON CURRENT SETTINGS
      */
     updateUIFromSettings() {
-        // Update sliders
-        document.getElementById('landDensity').value = this.islandSettings.landDensity;
-        document.getElementById('landDensityValue').textContent = `${this.islandSettings.landDensity}%`;
-        document.getElementById('iterations').value = this.islandSettings.iterations;
-        document.getElementById('iterationsValue').textContent = this.islandSettings.iterations;
-        document.getElementById('neighborThreshold').value = this.islandSettings.neighborThreshold;
-        document.getElementById('neighborThresholdValue').textContent = this.islandSettings.neighborThreshold;
-        document.getElementById('archipelagoMode').checked = this.islandSettings.archipelagoMode;
-        document.getElementById('islandSize').value = this.islandSettings.islandSize;
-        document.getElementById('islandSizeValue').textContent = capitalizeFirst(this.islandSettings.islandSize);
-        
-        // NEW: Update algorithm and heuristic settings
-        document.getElementById('localAlgorithm').value = this.pathfindingSettings.localAlgorithm;
-        document.getElementById('localHeuristic').value = this.pathfindingSettings.localHeuristic;
-        document.getElementById('hierarchicalHeuristic').value = this.pathfindingSettings.hierarchicalHeuristic;
-        document.getElementById('heuristicWeight').value = this.pathfindingSettings.heuristicWeight;
-        document.getElementById('heuristicWeightValue').textContent = this.pathfindingSettings.heuristicWeight;
+        console.log('🔄 Updating UI from settings:', {
+            map: this.settings,
+            island: this.islandSettings,
+            pathfinding: this.pathfindingSettings
+        });
+        console.log('🔄 DOM elements check:', {
+            chunkSize: !!document.getElementById('chunkSize'),
+            chunkSizeValue: !!document.getElementById('chunkSizeValue'),
+            islandPreset: !!document.getElementById('islandPreset'),
+            islandPresetValue: !!document.getElementById('islandPresetValue'),
+            maxTransitionPoints: !!document.getElementById('maxTransitionPoints'),
+            maxTransitionPointsValue: !!document.getElementById('maxTransitionPointsValue')
+        });
+
+        try {
+            // Update basic map settings
+            const chunkSizeEl = document.getElementById('chunkSize');
+            const chunkSizeValueEl = document.getElementById('chunkSizeValue');
+            if (chunkSizeEl && chunkSizeValueEl) {
+                chunkSizeEl.value = this.settings.chunkSize;
+                chunkSizeValueEl.textContent = `${this.settings.chunkSize}x${this.settings.chunkSize}`;
+            }
+
+            const chunkColsEl = document.getElementById('chunkCols');
+            const chunkColsValueEl = document.getElementById('chunkColsValue');
+            if (chunkColsEl && chunkColsValueEl) {
+                chunkColsEl.value = this.settings.chunkCols;
+                chunkColsValueEl.textContent = this.settings.chunkCols;
+            }
+
+            const chunkRowsEl = document.getElementById('chunkRows');
+            const chunkRowsValueEl = document.getElementById('chunkRowsValue');
+            if (chunkRowsEl && chunkRowsValueEl) {
+                chunkRowsEl.value = this.settings.chunkRows;
+                chunkRowsValueEl.textContent = this.settings.chunkRows;
+            }
+
+            const tileSizeEl = document.getElementById('tileSize');
+            const tileSizeValueEl = document.getElementById('tileSizeValue');
+            if (tileSizeEl && tileSizeValueEl) {
+                tileSizeEl.value = this.settings.tileSize;
+                tileSizeValueEl.textContent = `${this.settings.tileSize}px`;
+            }
+
+            // Update island settings
+            const islandPresetEl = document.getElementById('islandPreset');
+            const islandPresetValueEl = document.getElementById('islandPresetValue');
+            if (islandPresetEl && islandPresetValueEl) {
+                islandPresetEl.value = this.islandSettings.preset;
+                islandPresetValueEl.textContent = capitalizeFirst(this.islandSettings.preset);
+            }
+
+            const landDensityEl = document.getElementById('landDensity');
+            const landDensityValueEl = document.getElementById('landDensityValue');
+            if (landDensityEl && landDensityValueEl) {
+                landDensityEl.value = this.islandSettings.landDensity;
+                landDensityValueEl.textContent = `${this.islandSettings.landDensity}%`;
+            }
+
+            const iterationsEl = document.getElementById('iterations');
+            const iterationsValueEl = document.getElementById('iterationsValue');
+            if (iterationsEl && iterationsValueEl) {
+                iterationsEl.value = this.islandSettings.iterations;
+                iterationsValueEl.textContent = this.islandSettings.iterations;
+            }
+
+            const neighborThresholdEl = document.getElementById('neighborThreshold');
+            const neighborThresholdValueEl = document.getElementById('neighborThresholdValue');
+            if (neighborThresholdEl && neighborThresholdValueEl) {
+                neighborThresholdEl.value = this.islandSettings.neighborThreshold;
+                neighborThresholdValueEl.textContent = this.islandSettings.neighborThreshold;
+            }
+
+            const archipelagoModeEl = document.getElementById('archipelagoMode');
+            if (archipelagoModeEl) {
+                archipelagoModeEl.checked = this.islandSettings.archipelagoMode;
+            }
+
+            const islandSizeEl = document.getElementById('islandSize');
+            const islandSizeValueEl = document.getElementById('islandSizeValue');
+            if (islandSizeEl && islandSizeValueEl) {
+                islandSizeEl.value = this.islandSettings.islandSize;
+                islandSizeValueEl.textContent = capitalizeFirst(this.islandSettings.islandSize);
+            }
+            
+            // Update pathfinding settings
+            const maxTransitionPointsEl = document.getElementById('maxTransitionPoints');
+            const maxTransitionPointsValueEl = document.getElementById('maxTransitionPointsValue');
+            if (maxTransitionPointsEl && maxTransitionPointsValueEl) {
+                maxTransitionPointsEl.value = this.pathfindingSettings.maxTransitionPoints;
+                maxTransitionPointsValueEl.textContent = this.pathfindingSettings.maxTransitionPoints;
+            }
+
+            const transitionPointScaleEl = document.getElementById('transitionPointScale');
+            const transitionPointScaleValueEl = document.getElementById('transitionPointScaleValue');
+            if (transitionPointScaleEl && transitionPointScaleValueEl) {
+                transitionPointScaleEl.value = this.pathfindingSettings.transitionPointScale;
+                transitionPointScaleValueEl.textContent = `${this.pathfindingSettings.transitionPointScale}x`;
+            }
+
+            const pathfindingPointScaleEl = document.getElementById('pathfindingPointScale');
+            const pathfindingPointScaleValueEl = document.getElementById('pathfindingPointScaleValue');
+            if (pathfindingPointScaleEl && pathfindingPointScaleValueEl) {
+                pathfindingPointScaleEl.value = this.pathfindingSettings.pathfindingPointScale;
+                pathfindingPointScaleValueEl.textContent = `${this.pathfindingSettings.pathfindingPointScale}x`;
+            }
+
+            const showTransitionPointsEl = document.getElementById('showTransitionPoints');
+            if (showTransitionPointsEl) {
+                showTransitionPointsEl.checked = this.pathfindingSettings.showTransitionPoints;
+            }
+
+            const showConnectionWeightsEl = document.getElementById('showConnectionWeights');
+            if (showConnectionWeightsEl) {
+                showConnectionWeightsEl.checked = this.pathfindingSettings.showConnectionWeights;
+            }
+            
+            // Update algorithm and heuristic settings
+            const localAlgorithmEl = document.getElementById('localAlgorithm');
+            if (localAlgorithmEl) {
+                localAlgorithmEl.value = this.pathfindingSettings.localAlgorithm;
+            }
+
+            const localHeuristicEl = document.getElementById('localHeuristic');
+            if (localHeuristicEl) {
+                localHeuristicEl.value = this.pathfindingSettings.localHeuristic;
+            }
+
+            const hierarchicalHeuristicEl = document.getElementById('hierarchicalHeuristic');
+            if (hierarchicalHeuristicEl) {
+                hierarchicalHeuristicEl.value = this.pathfindingSettings.hierarchicalHeuristic;
+            }
+
+            const heuristicWeightEl = document.getElementById('heuristicWeight');
+            const heuristicWeightValueEl = document.getElementById('heuristicWeightValue');
+            if (heuristicWeightEl && heuristicWeightValueEl) {
+                heuristicWeightEl.value = this.pathfindingSettings.heuristicWeight;
+                heuristicWeightValueEl.textContent = this.pathfindingSettings.heuristicWeight;
+            }
+            
+            console.log('✅ UI updated from settings successfully');
+        } catch (error) {
+            console.error('❌ Error updating UI from settings:', error);
+        }
     }
 
     /**
@@ -480,7 +634,11 @@ export class UIController {
         onRenderOnlyNeeded,
         onPathfindingUpdate,
         onExportPNG,
-        onReset
+        onReset,
+        onSaveSettings,
+        onClearSettings,
+        onExportSettings,
+        onImportSettings
     }) {
         this.onFullRegenerationNeeded = onFullRegenerationNeeded;
         this.onSmoothingOnlyNeeded = onSmoothingOnlyNeeded;
@@ -488,6 +646,27 @@ export class UIController {
         this.onPathfindingUpdate = onPathfindingUpdate;
         this.onExportPNG = onExportPNG;
         this.onReset = onReset;
+        this.onSaveSettings = onSaveSettings;
+        this.onClearSettings = onClearSettings;
+        this.onExportSettings = onExportSettings;
+        this.onImportSettings = onImportSettings;
+    }
+
+    /**
+     * AUTOMATICALLY SAVES SETTINGS WITH DEBOUNCING
+     */
+    autoSaveSettings() {
+        // Clear existing timeout
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        
+        // Set new timeout for saving (500ms debounce)
+        this.saveTimeout = setTimeout(() => {
+            if (this.onSaveSettings) {
+                this.onSaveSettings();
+            }
+        }, 500);
     }
 
     /**
@@ -566,5 +745,180 @@ export class UIController {
         if (seedElement) {
             seedElement.textContent = seed != null ? seed : '-';
         }
+    }
+
+    /**
+     * SETS UP SETTINGS MANAGEMENT EVENT LISTENERS
+     */
+    setupSettingsManagementListeners() {
+        // Save settings button
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        saveSettingsBtn?.addEventListener('click', () => {
+            if (this.onSaveSettings) {
+                this.onSaveSettings();
+            }
+        });
+
+        // Load settings button
+        const loadSettingsBtn = document.getElementById('loadSettingsBtn');
+        loadSettingsBtn?.addEventListener('click', () => {
+            this.showLoadSettingsDialog();
+        });
+
+        // Export settings button
+        const exportSettingsBtn = document.getElementById('exportSettingsBtn');
+        exportSettingsBtn?.addEventListener('click', () => {
+            if (this.onExportSettings) {
+                this.onExportSettings();
+            }
+        });
+
+        // Import settings button
+        const importSettingsBtn = document.getElementById('importSettingsBtn');
+        importSettingsBtn?.addEventListener('click', () => {
+            this.showImportSettingsDialog();
+        });
+
+        // Clear settings button
+        const clearSettingsBtn = document.getElementById('clearSettingsBtn');
+        clearSettingsBtn?.addEventListener('click', () => {
+            this.showClearSettingsConfirmation();
+        });
+
+        // Import/Export area buttons
+        const applySettingsBtn = document.getElementById('applySettingsBtn');
+        applySettingsBtn?.addEventListener('click', () => {
+            this.applyImportedSettings();
+        });
+
+        const copySettingsBtn = document.getElementById('copySettingsBtn');
+        copySettingsBtn?.addEventListener('click', () => {
+            this.copySettingsToClipboard();
+        });
+
+        const closeImportExportBtn = document.getElementById('closeImportExportBtn');
+        closeImportExportBtn?.addEventListener('click', () => {
+            this.hideImportExportArea();
+        });
+    }
+
+    /**
+     * SHOWS LOAD SETTINGS DIALOG
+     */
+    showLoadSettingsDialog() {
+        if (confirm('Load saved settings? This will replace current settings.')) {
+            location.reload(); // Simple reload to load saved settings
+        }
+    }
+
+    /**
+     * SHOWS IMPORT SETTINGS DIALOG
+     */
+    showImportSettingsDialog() {
+        const importExportArea = document.querySelector('.import-export-area');
+        const settingsJson = document.getElementById('settingsJson');
+        
+        if (importExportArea && settingsJson) {
+            importExportArea.style.display = 'block';
+            settingsJson.value = '';
+            settingsJson.placeholder = 'Paste settings JSON here...';
+        }
+    }
+
+    /**
+     * SHOWS CLEAR SETTINGS CONFIRMATION
+     */
+    showClearSettingsConfirmation() {
+        if (confirm('Clear all saved settings? This action cannot be undone.')) {
+            if (this.onClearSettings) {
+                this.onClearSettings();
+            }
+        }
+    }
+
+    /**
+     * APPLIES IMPORTED SETTINGS
+     */
+    applyImportedSettings() {
+        const settingsJson = document.getElementById('settingsJson');
+        if (!settingsJson || !settingsJson.value.trim()) {
+            alert('Please paste settings JSON first.');
+            return;
+        }
+
+        try {
+            if (this.onImportSettings) {
+                const success = this.onImportSettings(settingsJson.value);
+                if (success) {
+                    this.hideImportExportArea();
+                    alert('Settings imported successfully! Page will reload.');
+                    location.reload();
+                } else {
+                    alert('Failed to import settings. Please check the JSON format.');
+                }
+            }
+        } catch (error) {
+            alert('Error importing settings: ' + error.message);
+        }
+    }
+
+    /**
+     * COPIES SETTINGS TO CLIPBOARD
+     */
+    copySettingsToClipboard() {
+        const settingsJson = document.getElementById('settingsJson');
+        if (settingsJson && settingsJson.value) {
+            navigator.clipboard.writeText(settingsJson.value).then(() => {
+                alert('Settings copied to clipboard!');
+            }).catch(() => {
+                alert('Failed to copy to clipboard. Please copy manually.');
+            });
+        } else {
+            alert('No settings to copy.');
+        }
+    }
+
+    /**
+     * HIDES IMPORT/EXPORT AREA
+     */
+    hideImportExportArea() {
+        const importExportArea = document.querySelector('.import-export-area');
+        if (importExportArea) {
+            importExportArea.style.display = 'none';
+        }
+    }
+
+    /**
+     * UPDATES SETTINGS STATUS DISPLAY
+     */
+    updateSettingsStatus() {
+        const savedStatus = document.getElementById('settingsSavedStatus');
+        const lastSavedTime = document.getElementById('lastSavedTime');
+        
+        if (savedStatus) {
+            const hasSettings = localStorage.getItem('settingsVersion') !== null;
+            savedStatus.textContent = hasSettings ? '✅ Yes' : '❌ No';
+        }
+        
+        if (lastSavedTime) {
+            const lastSaved = localStorage.getItem('lastSavedTime');
+            lastSavedTime.textContent = lastSaved ? new Date(parseInt(lastSaved)).toLocaleString() : '-';
+        }
+    }
+
+    /**
+     * SHOWS SUCCESS MESSAGE
+     */
+    showSuccess(message) {
+        // Simple alert for now, could be enhanced with toast notifications
+        console.log('✅ ' + message);
+    }
+
+    /**
+     * SHOWS ERROR MESSAGE
+     */
+    showError(message) {
+        // Simple alert for now, could be enhanced with toast notifications
+        console.error('❌ ' + message);
     }
 } 

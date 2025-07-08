@@ -88,6 +88,7 @@
                         <button class="tab-btn active" data-tab="map-config">🗺️ Map Config</button>
                         <button class="tab-btn" data-tab="island-config">🏝️ Islands</button>
                         <button class="tab-btn" data-tab="pathfinding">🚀 Pathfinding</button>
+                        <button class="tab-btn" data-tab="settings-management">💾 Settings</button>
                         <button class="tab-btn" data-tab="legend">📋 Legend</button>
                     </div>
 
@@ -146,10 +147,10 @@
                                         Preset: <span id="islandPresetValue">Archipelago</span>
                                     </label>
                                     <select id="islandPreset" class="form-control">
-                                        <option value="oceanic">🌊 Oceanic (few small islands)</option>
                                         <option value="archipelago" selected>🏝️ Archipelago (island chains)</option>
-                                        <option value="continental">🏔️ Continental (large landmasses)</option>
+                                        <option value="continent">🏔️ Continent (large landmasses)</option>
                                         <option value="scattered">⚡ Scattered (sparse islands)</option>
+                                        <option value="dense">🌊 Dense (many islands)</option>
                                         <option value="custom">⚙️ Custom Settings</option>
                                     </select>
                                 </div>
@@ -337,6 +338,87 @@
                                     <div class="stat">
                                         <span class="stat-label">Status:</span>
                                         <span id="pathfindingStatus" class="stat-value">Waiting for points</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings Management Tab -->
+                        <div id="settings-management" class="tab-pane">
+                            <div class="settings-management-content">
+                                <h3>💾 Settings Management</h3>
+                                
+                                <!-- Settings Status -->
+                                <div class="settings-status">
+                                    <h4>📊 Current Status</h4>
+                                    <div class="status-grid">
+                                        <div class="status-item">
+                                            <span class="status-label">Settings saved:</span>
+                                            <span id="settingsSavedStatus" class="status-value">Checking...</span>
+                                        </div>
+                                        <div class="status-item">
+                                            <span class="status-label">Last saved:</span>
+                                            <span id="lastSavedTime" class="status-value">-</span>
+                                        </div>
+                                        <div class="status-item">
+                                            <span class="status-label">Auto-save:</span>
+                                            <span id="autoSaveStatus" class="status-value">✅ Enabled</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Settings Actions -->
+                                <div class="settings-actions">
+                                    <h4>🔧 Actions</h4>
+                                    <div class="action-buttons">
+                                        <button class="btn btn--primary" id="saveSettingsBtn">
+                                            💾 Save Settings Now
+                                        </button>
+                                        <button class="btn btn--secondary" id="loadSettingsBtn">
+                                            📂 Load Settings
+                                        </button>
+                                        <button class="btn btn--outline" id="exportSettingsBtn">
+                                            📤 Export Settings
+                                        </button>
+                                        <button class="btn btn--outline" id="importSettingsBtn">
+                                            📥 Import Settings
+                                        </button>
+                                        <button class="btn btn--danger" id="clearSettingsBtn">
+                                            🗑️ Clear All Settings
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Import/Export Area -->
+                                <div class="import-export-area" style="display: none;">
+                                    <h4>📋 Import/Export</h4>
+                                    <div class="form-group">
+                                        <label class="form-label" for="settingsJson">
+                                            Settings JSON:
+                                        </label>
+                                        <textarea id="settingsJson" class="form-control" rows="10" placeholder="Paste settings JSON here..."></textarea>
+                                    </div>
+                                    <div class="import-export-buttons">
+                                        <button class="btn btn--primary" id="applySettingsBtn">
+                                            ✅ Apply Settings
+                                        </button>
+                                        <button class="btn btn--secondary" id="copySettingsBtn">
+                                            📋 Copy to Clipboard
+                                        </button>
+                                        <button class="btn btn--outline" id="closeImportExportBtn">
+                                            ❌ Close
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Settings Info -->
+                                <div class="settings-info">
+                                    <h4>ℹ️ Information</h4>
+                                    <div class="info-text">
+                                        <p><strong>Auto-save:</strong> Settings are automatically saved 500ms after any change.</p>
+                                        <p><strong>Local storage:</strong> Settings are stored in your browser's localStorage.</p>
+                                        <p><strong>Export/Import:</strong> You can export settings as JSON and import them on other devices.</p>
+                                        <p><strong>Reset:</strong> Use "Reset Settings" in Map Config tab to restore defaults.</p>
                                     </div>
                                 </div>
                             </div>

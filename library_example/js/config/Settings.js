@@ -29,8 +29,8 @@ export const DEFAULT_PATHFINDING_SETTINGS = {
     
     // NEW: Algorithm and heuristic settings
     localAlgorithm: 'astar',    // Local pathfinding algorithm: 'astar' or 'jps'
-    localHeuristic: 'euclidean', // Local heuristic: 'manhattan', 'euclidean'
-    hierarchicalHeuristic: 'euclidean', // Hierarchical heuristic: 'manhattan', 'euclidean'
+    localHeuristic: 'manhattan', // Local heuristic: 'manhattan', 'euclidean'
+    hierarchicalHeuristic: 'manhattan', // Hierarchical heuristic: 'manhattan', 'euclidean'
     heuristicWeight: 1.0        // Heuristic weight (1.0 = admissible, >1.0 = weighted A*)
 };
 
@@ -108,4 +108,164 @@ export function getIslandSizeMultiplier(islandSize) {
  */
 export function capitalizeFirst(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+/**
+ * LOCAL STORAGE SETTINGS MANAGEMENT
+ */
+
+// Storage keys
+const STORAGE_KEYS = {
+    MAP_SEED: 'mapSeed',
+    MAP_SETTINGS: 'mapSettings',
+    ISLAND_SETTINGS: 'islandSettings',
+    PATHFINDING_SETTINGS: 'pathfindingSettings',
+    SETTINGS_VERSION: 'settingsVersion'
+};
+
+// Current settings version for compatibility
+const CURRENT_SETTINGS_VERSION = '1.0';
+
+/**
+ * Saves all settings to localStorage
+ */
+export function saveSettingsToLocalStorage(settings, islandSettings, pathfindingSettings) {
+    try {
+        // Save individual settings
+        localStorage.setItem(STORAGE_KEYS.MAP_SETTINGS, JSON.stringify(settings));
+        localStorage.setItem(STORAGE_KEYS.ISLAND_SETTINGS, JSON.stringify(islandSettings));
+        localStorage.setItem(STORAGE_KEYS.PATHFINDING_SETTINGS, JSON.stringify(pathfindingSettings));
+        localStorage.setItem(STORAGE_KEYS.SETTINGS_VERSION, CURRENT_SETTINGS_VERSION);
+        
+        console.log('✅ Settings saved to localStorage');
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to save settings to localStorage:', error);
+        return false;
+    }
+}
+
+/**
+ * Loads all settings from localStorage
+ */
+export function loadSettingsFromLocalStorage() {
+    try {
+        const version = localStorage.getItem(STORAGE_KEYS.SETTINGS_VERSION);
+        
+        // Check if we have saved settings
+        if (!version) {
+            console.log('ℹ️ No saved settings found, using defaults');
+            return null;
+        }
+        
+        // Load settings
+        const mapSettings = JSON.parse(localStorage.getItem(STORAGE_KEYS.MAP_SETTINGS) || '{}');
+        const islandSettings = JSON.parse(localStorage.getItem(STORAGE_KEYS.ISLAND_SETTINGS) || '{}');
+        const pathfindingSettings = JSON.parse(localStorage.getItem(STORAGE_KEYS.PATHFINDING_SETTINGS) || '{}');
+        
+        console.log('✅ Settings loaded from localStorage:', {
+            mapSettings,
+            islandSettings,
+            pathfindingSettings,
+            version
+        });
+        
+        return {
+            mapSettings,
+            islandSettings,
+            pathfindingSettings,
+            version
+        };
+    } catch (error) {
+        console.error('❌ Failed to load settings from localStorage:', error);
+        return null;
+    }
+}
+
+/**
+ * Merges loaded settings with defaults to ensure all fields are present
+ */
+export function mergeSettingsWithDefaults(loadedSettings) {
+    if (!loadedSettings) {
+        console.log('🔄 Using default settings');
+        return {
+            mapSettings: { ...DEFAULT_SETTINGS },
+            islandSettings: { ...DEFAULT_ISLAND_SETTINGS },
+            pathfindingSettings: { ...DEFAULT_PATHFINDING_SETTINGS }
+        };
+    }
+    
+    const mergedSettings = {
+        mapSettings: { ...DEFAULT_SETTINGS, ...loadedSettings.mapSettings },
+        islandSettings: { ...DEFAULT_ISLAND_SETTINGS, ...loadedSettings.islandSettings },
+        pathfindingSettings: { ...DEFAULT_PATHFINDING_SETTINGS, ...loadedSettings.pathfindingSettings }
+    };
+    
+    console.log('🔄 Merged settings with defaults:', mergedSettings);
+    
+    return mergedSettings;
+}
+
+/**
+ * Clears all settings from localStorage
+ */
+export function clearSettingsFromLocalStorage() {
+    try {
+        localStorage.removeItem(STORAGE_KEYS.MAP_SETTINGS);
+        localStorage.removeItem(STORAGE_KEYS.ISLAND_SETTINGS);
+        localStorage.removeItem(STORAGE_KEYS.PATHFINDING_SETTINGS);
+        localStorage.removeItem(STORAGE_KEYS.SETTINGS_VERSION);
+        // Note: We keep mapSeed as it's handled separately
+        
+        console.log('🗑️ Settings cleared from localStorage');
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to clear settings from localStorage:', error);
+        return false;
+    }
+}
+
+/**
+ * Checks if settings are saved in localStorage
+ */
+export function hasSavedSettings() {
+    return localStorage.getItem(STORAGE_KEYS.SETTINGS_VERSION) !== null;
+}
+
+/**
+ * Exports current settings as JSON string
+ */
+export function exportSettingsAsJSON(settings, islandSettings, pathfindingSettings) {
+    const exportData = {
+        version: CURRENT_SETTINGS_VERSION,
+        timestamp: new Date().toISOString(),
+        mapSettings: settings,
+        islandSettings: islandSettings,
+        pathfindingSettings: pathfindingSettings
+    };
+    
+    return JSON.stringify(exportData, null, 2);
+}
+
+/**
+ * Imports settings from JSON string
+ */
+export function importSettingsFromJSON(jsonString) {
+    try {
+        const importData = JSON.parse(jsonString);
+        
+        // Validate structure
+        if (!importData.mapSettings || !importData.islandSettings || !importData.pathfindingSettings) {
+            throw new Error('Invalid settings format');
+        }
+        
+        return {
+            mapSettings: importData.mapSettings,
+            islandSettings: importData.islandSettings,
+            pathfindingSettings: importData.pathfindingSettings
+        };
+    } catch (error) {
+        console.error('❌ Failed to import settings from JSON:', error);
+        return null;
+    }
 } 

@@ -5,7 +5,13 @@
 import { 
     DEFAULT_SETTINGS, 
     DEFAULT_ISLAND_SETTINGS, 
-    DEFAULT_PATHFINDING_SETTINGS 
+    DEFAULT_PATHFINDING_SETTINGS,
+    loadSettingsFromLocalStorage,
+    mergeSettingsWithDefaults,
+    saveSettingsToLocalStorage,
+    clearSettingsFromLocalStorage,
+    exportSettingsAsJSON,
+    importSettingsFromJSON
 } from './config/Settings.js';
 
 import { MapGenerator } from './core/MapGenerator.js';
@@ -25,8 +31,12 @@ import { HierarchicalPathfinding } from '../hierarchical_pathfinding/src/index.j
  */
 class ChunkMapGenerator {
     constructor() {
+        // Load settings from localStorage or use defaults
+        const loadedSettings = loadSettingsFromLocalStorage();
+        const mergedSettings = mergeSettingsWithDefaults(loadedSettings);
+        
         // Settings
-        this.settings = { ...DEFAULT_SETTINGS };
+        this.settings = mergedSettings.mapSettings;
 
         // Seed handling - try to load from localStorage
         const savedSeed = localStorage.getItem('mapSeed');
@@ -36,8 +46,8 @@ class ChunkMapGenerator {
             this._useSavedSeedOnce = true; // use saved seed only for first generation
         }
         
-        this.islandSettings = { ...DEFAULT_ISLAND_SETTINGS };
-        this.pathfindingSettings = { ...DEFAULT_PATHFINDING_SETTINGS };
+        this.islandSettings = mergedSettings.islandSettings;
+        this.pathfindingSettings = mergedSettings.pathfindingSettings;
         
         // Main application data
         this.chunks = [];
@@ -81,6 +91,16 @@ class ChunkMapGenerator {
         // Initialize components
         this.initializeComponents();
         
+        // Update UI controller with loaded settings
+        this.updateUIControllerSettings();
+        
+        // Debug: log loaded settings
+        console.log('🔧 Loaded settings from localStorage:', {
+            map: this.settings,
+            island: this.islandSettings,
+            pathfinding: this.pathfindingSettings
+        });
+        
         // Configure UI
         this.setupUI();
         
@@ -97,6 +117,11 @@ class ChunkMapGenerator {
         
         // Initialize UI with current settings
         this.uiController.updateUIFromSettings();
+        
+        // Initialize settings status
+        if (this.uiController && this.uiController.updateSettingsStatus) {
+            this.uiController.updateSettingsStatus();
+        }
         
         // Make available globally for developer console
         window.mapGenerator = this;
@@ -128,6 +153,17 @@ class ChunkMapGenerator {
         );
         this.inspector = new Inspector(this.inspectorPanel, this.gameDataManager);
     }
+
+    /**
+     * UPDATES UI CONTROLLER SETTINGS REFERENCES
+     */
+    updateUIControllerSettings() {
+        if (this.uiController) {
+            this.uiController.settings = this.settings;
+            this.uiController.islandSettings = this.islandSettings;
+            this.uiController.pathfindingSettings = this.pathfindingSettings;
+        }
+    }
     
     /**
      * CONFIGURES USER INTERFACE
@@ -140,7 +176,11 @@ class ChunkMapGenerator {
             onRenderOnlyNeeded: () => this.onRenderOnly(),
             onPathfindingUpdate: () => this.onPathfindingUpdate(),
             onExportPNG: () => this.onExportPNG(),
-            onReset: () => this.onReset()
+            onReset: () => this.onReset(),
+            onSaveSettings: () => this.saveSettings(),
+            onClearSettings: () => this.clearSettings(),
+            onExportSettings: () => this.exportSettings(),
+            onImportSettings: (jsonString) => this.importSettings(jsonString)
         });
         
         // Set callbacks for pathfinding UI
@@ -573,6 +613,124 @@ class ChunkMapGenerator {
         
         // Update pathfinding UI after reset
         this.pathfindingUIController.updateAll(this.pathfindingPointManager);
+    }
+
+    /**
+     * SAVES CURRENT SETTINGS TO LOCALSTORAGE
+     */
+    saveSettings() {
+        console.log('💾 Saving settings to localStorage:', {
+            map: this.settings,
+            island: this.islandSettings,
+            pathfinding: this.pathfindingSettings
+        });
+
+        const success = saveSettingsToLocalStorage(
+            this.settings, 
+            this.islandSettings, 
+            this.pathfindingSettings
+        );
+        
+        if (success) {
+            console.log('✅ Settings saved successfully');
+            // Save timestamp
+            localStorage.setItem('lastSavedTime', Date.now().toString());
+            // Update UI status
+            if (this.uiController && this.uiController.updateSettingsStatus) {
+                this.uiController.updateSettingsStatus();
+            }
+            // Show success message in UI if available
+            if (this.uiController && this.uiController.showSuccess) {
+                this.uiController.showSuccess('Settings saved');
+            }
+        } else {
+            console.error('❌ Failed to save settings');
+            // Show error message in UI if available
+            if (this.uiController && this.uiController.showError) {
+                this.uiController.showError('Failed to save settings');
+            }
+        }
+        
+        return success;
+    }
+
+    /**
+     * CLEARS ALL SETTINGS FROM LOCALSTORAGE
+     */
+    clearSettings() {
+        const success = clearSettingsFromLocalStorage();
+        
+        if (success) {
+            console.log('🗑️ Settings cleared successfully');
+            // Update UI status
+            if (this.uiController && this.uiController.updateSettingsStatus) {
+                this.uiController.updateSettingsStatus();
+            }
+            // Show success message
+            if (this.uiController && this.uiController.showSuccess) {
+                this.uiController.showSuccess('Settings cleared');
+            }
+        } else {
+            console.error('❌ Failed to clear settings');
+            if (this.uiController && this.uiController.showError) {
+                this.uiController.showError('Failed to clear settings');
+            }
+        }
+        
+        return success;
+    }
+
+    /**
+     * EXPORTS SETTINGS AS JSON
+     */
+    exportSettings() {
+        const jsonString = exportSettingsAsJSON(
+            this.settings, 
+            this.islandSettings, 
+            this.pathfindingSettings
+        );
+        
+        // Show export dialog
+        const importExportArea = document.querySelector('.import-export-area');
+        const settingsJson = document.getElementById('settingsJson');
+        
+        if (importExportArea && settingsJson) {
+            importExportArea.style.display = 'block';
+            settingsJson.value = jsonString;
+            settingsJson.placeholder = 'Settings JSON (read-only)';
+            settingsJson.readOnly = true;
+        }
+        
+        console.log('📤 Settings exported');
+        return jsonString;
+    }
+
+    /**
+     * IMPORTS SETTINGS FROM JSON
+     */
+    importSettings(jsonString) {
+        const importedSettings = importSettingsFromJSON(jsonString);
+        
+        if (importedSettings) {
+            // Update current settings
+            this.settings = { ...this.settings, ...importedSettings.mapSettings };
+            this.islandSettings = { ...this.islandSettings, ...importedSettings.islandSettings };
+            this.pathfindingSettings = { ...this.pathfindingSettings, ...importedSettings.pathfindingSettings };
+            
+            // Save to localStorage
+            const success = this.saveSettings();
+            
+            if (success) {
+                console.log('📥 Settings imported successfully');
+                return true;
+            } else {
+                console.error('❌ Failed to save imported settings');
+                return false;
+            }
+        } else {
+            console.error('❌ Failed to parse imported settings');
+            return false;
+        }
     }
 
     /**
