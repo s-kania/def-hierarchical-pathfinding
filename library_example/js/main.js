@@ -467,6 +467,7 @@ class ChunkMapGenerator {
         this.mapGenerator.updateSettings(this.settings);
         this.mapGenerator.updateIslandSettings(this.islandSettings);
         this.pathfindingPointManager.updateSettings(this.settings);
+        this.transitionPointManager.updatePathfindingSettings(this.pathfindingSettings);
         this.renderer.updateSettings(this.settings);
         this.renderer.updatePathfindingSettings(this.pathfindingSettings);
         

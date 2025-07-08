@@ -90,7 +90,20 @@ export class TransitionPointManager {
         // Find continuous passable segments
         const segments = this.findPassableSegments(canPass);
         
-        // Process all segments and add points to each (up to maxPoints per segment)
+        // Process all segments based on selected method
+        if (this.pathfindingSettings.transitionPointMethod === 'margin') {
+            this.calculatePointsWithMargin(segments, chunkA, chunkB, direction, chunkSize, maxPoints, points);
+        } else {
+            this.calculatePointsWithCenter(segments, chunkA, chunkB, direction, chunkSize, maxPoints, points);
+        }
+        
+        return points;
+    }
+
+    /**
+     * CALCULATES POINTS USING CENTER PLACEMENT METHOD
+     */
+    calculatePointsWithCenter(segments, chunkA, chunkB, direction, chunkSize, maxPoints, points) {
         segments.forEach(segment => {
             const segmentLength = segment.end - segment.start + 1;
             
@@ -111,8 +124,27 @@ export class TransitionPointManager {
                 }
             }
         });
+    }
+
+    /**
+     * CALCULATES POINTS USING MARGIN-BASED PLACEMENT METHOD
+     */
+    calculatePointsWithMargin(segments, chunkA, chunkB, direction, chunkSize, maxPoints, points) {
+        const margin = this.pathfindingSettings.transitionPointMargin;
         
-        return points;
+        segments.forEach(segment => {
+            const segmentLength = segment.end - segment.start + 1;
+            
+            if (segmentLength < margin) {
+                // Segment too short for margin - skip
+                return;
+            }
+            
+            // Place points every 'margin' tiles starting from the beginning
+            for (let position = segment.start; position <= segment.end; position += margin) {
+                this.addTransitionPoint(points, chunkA, chunkB, direction, chunkSize, position, segmentLength);
+            }
+        });
     }
 
     /**
@@ -262,5 +294,12 @@ export class TransitionPointManager {
      */
     clearTransitionPoints() {
         this.transitionPoints = [];
+    }
+
+    /**
+     * UPDATES PATHFINDING SETTINGS
+     */
+    updatePathfindingSettings(pathfindingSettings) {
+        this.pathfindingSettings = pathfindingSettings;
     }
 } 

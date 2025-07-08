@@ -222,6 +222,25 @@ export class UIController {
             this.autoSaveSettings();
             this.triggerPathfindingUpdate();
         });
+
+        // NEW: Transition point method
+        const transitionPointMethodSelect = document.getElementById('transitionPointMethod');
+        transitionPointMethodSelect?.addEventListener('change', (e) => {
+            this.pathfindingSettings.transitionPointMethod = e.target.value;
+            this.toggleMarginGroup(e.target.value === 'margin');
+            this.toggleMaxPointsGroup(e.target.value !== 'margin');
+            this.autoSaveSettings();
+            this.triggerPathfindingUpdate();
+        });
+
+        // NEW: Transition point margin
+        const transitionPointMarginSlider = document.getElementById('transitionPointMargin');
+        transitionPointMarginSlider?.addEventListener('input', (e) => {
+            this.pathfindingSettings.transitionPointMargin = parseInt(e.target.value);
+            document.getElementById('transitionPointMarginValue').textContent = e.target.value;
+            this.autoSaveSettings();
+            this.triggerPathfindingUpdate();
+        });
     }
 
     /**
@@ -342,6 +361,26 @@ export class UIController {
             this.islandSettings.islandSize = preset.islandSize;
 
             this.updateUIFromSettings();
+        }
+    }
+
+    /**
+     * TOGGLES MARGIN GROUP VISIBILITY
+     */
+    toggleMarginGroup(show) {
+        const marginGroup = document.getElementById('marginGroup');
+        if (marginGroup) {
+            marginGroup.style.display = show ? 'block' : 'none';
+        }
+    }
+
+    /**
+     * TOGGLES MAX POINTS GROUP VISIBILITY
+     */
+    toggleMaxPointsGroup(show) {
+        const maxPointsGroup = document.getElementById('maxPointsGroup');
+        if (maxPointsGroup) {
+            maxPointsGroup.style.display = show ? 'block' : 'none';
         }
     }
 
@@ -488,6 +527,21 @@ export class UIController {
                 heuristicWeightEl.value = this.pathfindingSettings.heuristicWeight;
                 heuristicWeightValueEl.textContent = this.pathfindingSettings.heuristicWeight;
             }
+
+            // NEW: Update transition point method settings
+            const transitionPointMethodEl = document.getElementById('transitionPointMethod');
+            if (transitionPointMethodEl) {
+                transitionPointMethodEl.value = this.pathfindingSettings.transitionPointMethod;
+                this.toggleMarginGroup(this.pathfindingSettings.transitionPointMethod === 'margin');
+                this.toggleMaxPointsGroup(this.pathfindingSettings.transitionPointMethod !== 'margin');
+            }
+
+            const transitionPointMarginEl = document.getElementById('transitionPointMargin');
+            const transitionPointMarginValueEl = document.getElementById('transitionPointMarginValue');
+            if (transitionPointMarginEl && transitionPointMarginValueEl) {
+                transitionPointMarginEl.value = this.pathfindingSettings.transitionPointMargin;
+                transitionPointMarginValueEl.textContent = this.pathfindingSettings.transitionPointMargin;
+            }
             
             console.log('✅ UI updated from settings successfully');
         } catch (error) {
@@ -544,7 +598,7 @@ export class UIController {
         this.islandSettings.archipelagoMode = true;
         this.islandSettings.islandSize = 'medium';
 
-        this.pathfindingSettings.maxTransitionPoints = 3;
+        this.pathfindingSettings.maxTransitionPoints = 1;
         this.pathfindingSettings.showTransitionPoints = true;
         this.pathfindingSettings.showConnectionWeights = true;
         this.pathfindingSettings.transitionPointScale = 1.0;
@@ -555,6 +609,10 @@ export class UIController {
         this.pathfindingSettings.localHeuristic = 'manhattan';
         this.pathfindingSettings.hierarchicalHeuristic = 'manhattan';
         this.pathfindingSettings.heuristicWeight = 1.0;
+        
+        // NEW: Reset transition point method settings
+        this.pathfindingSettings.transitionPointMethod = 'center';
+        this.pathfindingSettings.transitionPointMargin = 2;
 
         this.resetUI();
     }
@@ -580,16 +638,22 @@ export class UIController {
         this.updatePresetValues();
 
         // Reset pathfinding controls
-        document.getElementById('maxTransitionPoints').value = 3;
+        document.getElementById('maxTransitionPoints').value = 1;
         document.getElementById('transitionPointScale').value = 1.0;
         document.getElementById('pathfindingPointScale').value = 2.0;
         document.getElementById('showTransitionPoints').checked = true;
         document.getElementById('showConnectionWeights').checked = true;
 
         // Reset pathfinding labels
-        document.getElementById('maxTransitionPointsValue').textContent = '3';
+        document.getElementById('maxTransitionPointsValue').textContent = '1';
         document.getElementById('transitionPointScaleValue').textContent = '1.0x';
         document.getElementById('pathfindingPointScaleValue').textContent = '2.0x';
+        
+        // NEW: Reset transition point method controls
+        document.getElementById('transitionPointMethod').value = 'center';
+        document.getElementById('transitionPointMargin').value = 2;
+        document.getElementById('transitionPointMarginValue').textContent = '2';
+        this.toggleMarginGroup(false);
         
         // NEW: Reset algorithm and heuristic controls
         document.getElementById('localAlgorithm').value = 'astar';

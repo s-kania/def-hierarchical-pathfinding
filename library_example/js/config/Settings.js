@@ -31,7 +31,11 @@ export const DEFAULT_PATHFINDING_SETTINGS = {
     localAlgorithm: 'astar',    // Local pathfinding algorithm: 'astar' or 'jps'
     localHeuristic: 'manhattan', // Local heuristic: 'manhattan', 'euclidean'
     hierarchicalHeuristic: 'manhattan', // Hierarchical heuristic: 'manhattan', 'euclidean'
-    heuristicWeight: 1.0        // Heuristic weight (1.0 = admissible, >1.0 = weighted A*)
+    heuristicWeight: 1.0,       // Heuristic weight (1.0 = admissible, >1.0 = weighted A*)
+    
+    // NEW: Transition point placement method
+    transitionPointMethod: 'center', // 'center' or 'margin'
+    transitionPointMargin: 2         // Margin size in tiles for margin method
 };
 
 // Available algorithms and heuristics
