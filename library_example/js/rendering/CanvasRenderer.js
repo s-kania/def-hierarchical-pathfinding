@@ -804,6 +804,9 @@ export class CanvasRenderer {
      * STARTS PAN DRAGGING
      */
     startPan(mouseX, mouseY) {
+        if (this.zoom <= 1.0) {
+            return; // Nie zezwalaj na panowanie przy domyślnym zoomie
+        }
         this.isDragging = true;
         this.lastMouseX = mouseX;
         this.lastMouseY = mouseY;
