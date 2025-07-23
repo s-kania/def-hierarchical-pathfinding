@@ -1,13 +1,13 @@
-import { CoordUtils } from '../utils/CoordUtils.js';
+import { CoordUtils } from './CoordUtils.js';
 
 /**
  * Builder for path segments in hierarchical pathfinding
  * Single function approach following KISS principle
  */
 export class PathSegmentBuilder {
-    constructor(config, transitionPathfinder = null) {
+    constructor(config, pathfinder = null) {
         this.config = config;
-        this.transitionPathfinder = transitionPathfinder;
+        this.pathfinder = pathfinder;
     }
 
     /**
@@ -19,8 +19,8 @@ export class PathSegmentBuilder {
      * @returns {Array} - Array of path segments
      */
     buildSegments(startPos, endPos, transitionPath) {
-        const startChunk = CoordUtils.globalToChunkId(startPos, this.config.chunkWidth, this.config.tileSize);
-        const endChunk = CoordUtils.globalToChunkId(endPos, this.config.chunkWidth, this.config.tileSize);
+        const startChunk = CoordUtils.globalToChunkId(startPos, this.config.chunkWidth, this.config.chunkHeight, this.config.tileSize);
+        const endChunk = CoordUtils.globalToChunkId(endPos, this.config.chunkWidth, this.config.chunkHeight, this.config.tileSize);
         
         // Direct path - no transitions needed
         if (transitionPath.length === 0) {
@@ -32,8 +32,8 @@ export class PathSegmentBuilder {
         
         // 🔥 FIRST NODE VERIFICATION - remove redundant first node
         if (effectivePath.length >= 2) {
-            const firstPoint = this.transitionPathfinder.getPoint(effectivePath[0]);
-            const secondPoint = this.transitionPathfinder.getPoint(effectivePath[1]);
+            const firstPoint = this.getPoint(effectivePath[0]);
+            const secondPoint = this.getPoint(effectivePath[1]);
             
             const connectionChunk = this.findConnectionChunk(firstPoint, secondPoint);
             if (secondPoint.chunks.includes(startChunk) && connectionChunk === startChunk) {
@@ -43,9 +43,9 @@ export class PathSegmentBuilder {
         
         // Add start segment (from startPos to first transition point)
         if (effectivePath.length > 0) {
-            const firstPoint = this.transitionPathfinder.getPoint(effectivePath[0]);
+            const firstPoint = this.getPoint(effectivePath[0]);
             const firstPointPos = CoordUtils.getTransitionGlobalPosition(
-                firstPoint, startChunk, this.config.chunkWidth, this.config.tileSize
+                firstPoint, startChunk, this.config.chunkWidth, this.config.chunkHeight, this.config.tileSize
             );
             
             if (firstPointPos) {
@@ -55,14 +55,14 @@ export class PathSegmentBuilder {
         
         // Build segments between transition points
         for (let i = 0; i < effectivePath.length - 1; i++) {
-            const currentPoint = this.transitionPathfinder.getPoint(effectivePath[i]);
-            const nextPoint = this.transitionPathfinder.getPoint(effectivePath[i + 1]);
+            const currentPoint = this.getPoint(effectivePath[i]);
+            const nextPoint = this.getPoint(effectivePath[i + 1]);
             
             const connectionChunk = this.findConnectionChunk(currentPoint, nextPoint);
             if (!connectionChunk) continue;
             
             const nextPointPos = CoordUtils.getTransitionGlobalPosition(
-                nextPoint, connectionChunk, this.config.chunkWidth, this.config.tileSize
+                nextPoint, connectionChunk, this.config.chunkWidth, this.config.chunkHeight, this.config.tileSize
             );
             if (!nextPointPos) continue;
             
@@ -83,6 +83,18 @@ export class PathSegmentBuilder {
         }
         
         return segments;
+    }
+
+    /**
+     * Get transition point by ID using HierarchicalPathfinder
+     * @param {string} pointId - Point ID
+     * @returns {Object|null} - Transition point or null
+     */
+    getPoint(pointId) {
+        if (this.pathfinder && this.pathfinder.getTransitionPointsMap) {
+            return this.pathfinder.getTransitionPointsMap().get(pointId) || null;
+        }
+        return null;
     }
 
     /**

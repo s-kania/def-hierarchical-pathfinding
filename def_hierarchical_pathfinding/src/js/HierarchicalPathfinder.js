@@ -1,17 +1,15 @@
-import { CoordUtils } from '../utils/CoordUtils.js';
-import { LocalPathfinder } from './LocalPathfinder.js';
-import { TransitionPathfinder } from './TransitionPathfinder.js';
-import { PathSegmentBuilder } from '../builders/PathSegmentBuilder.js';
+import { CoordUtils } from './CoordUtils.js';
+import { PathSegmentBuilder } from './PathSegmentBuilder.js';
 
 /**
  * Main hierarchical pathfinding class
- * Orchestrates local and hierarchical pathfinding
+ * Orchestrates local and hierarchical pathfinding using injected algorithms
  */
 export class HierarchicalPathfinder {
     constructor() {
         this.config = null;
-        this.localPathfinder = null;
-        this.transitionPathfinder = null;
+        this.localAlgorithmFn = null;
+        this.hierarchicalAlgorithmFn = null;
         this.segmentBuilder = null;
     }
 
@@ -24,33 +22,11 @@ export class HierarchicalPathfinder {
         this.validateConfig(config);
         
         this.config = config;
-        
-        // Create local pathfinder
-        this.localPathfinder = new LocalPathfinder(
-            config.localAlgorithm || 'astar',
-            config.localHeuristic || 'manhattan',
-            config.heuristicWeight || 1.0
-        );
-        
-        // Create transition pathfinder
-        this.transitionPathfinder = new TransitionPathfinder(
-            config.transitionPoints || [],
-            {
-                gridWidth: config.gridWidth,
-                gridHeight: config.gridHeight,
-                chunkSize: config.chunkWidth,
-                tileSize: config.tileSize
-            }
-        );
-        
-        // Set algorithm parameters for transition pathfinder
-        this.transitionPathfinder.setAlgorithmParams(
-            config.hierarchicalHeuristic || 'manhattan',
-            config.heuristicWeight || 1.0
-        );
+        this.localAlgorithmFn = config.localAlgorithmFn;
+        this.hierarchicalAlgorithmFn = config.hierarchicalAlgorithmFn;
         
         // Create segment builder
-        this.segmentBuilder = new PathSegmentBuilder(config, this.transitionPathfinder);
+        this.segmentBuilder = new PathSegmentBuilder(config, this);
     }
 
     /**
@@ -91,8 +67,12 @@ export class HierarchicalPathfinder {
             throw new Error('transitionPoints must be an array');
         }
         
-        if (config.heuristicWeight && config.heuristicWeight <= 0) {
-            throw new Error('heuristicWeight must be positive');
+        if (typeof config.localAlgorithmFn !== 'function') {
+            throw new Error('localAlgorithmFn must be a function');
+        }
+        
+        if (typeof config.hierarchicalAlgorithmFn !== 'function') {
+            throw new Error('hierarchicalAlgorithmFn must be a function');
         }
     }
 
@@ -116,8 +96,8 @@ export class HierarchicalPathfinder {
         }
 
         // Determine which chunks contain start and end
-        const startChunk = CoordUtils.globalToChunkId(startPos, this.config.chunkWidth, this.config.tileSize);
-        const endChunk = CoordUtils.globalToChunkId(endPos, this.config.chunkWidth, this.config.tileSize);
+        const startChunk = CoordUtils.globalToChunkId(startPos, this.config.chunkWidth, this.config.chunkHeight, this.config.tileSize);
+        const endChunk = CoordUtils.globalToChunkId(endPos, this.config.chunkWidth, this.config.chunkHeight, this.config.tileSize);
 
         // If same chunk - try local pathfinding first
         if (startChunk === endChunk) {
@@ -138,7 +118,7 @@ export class HierarchicalPathfinder {
             return null; // No available transition points
         }
         
-        const transitionPath = this.transitionPathfinder.findPath(startPoint.id, endPoint.id);
+        const transitionPath = this.findTransitionPath(startPoint.id, endPoint.id);
 
         if (!transitionPath) {
             return null; // No path between chunks
@@ -192,15 +172,20 @@ export class HierarchicalPathfinder {
         // Get chunk data (2D array)
         const chunkData = this.config.getChunkData(chunkId);
         if (!chunkData) {
+            console.log(`🔍 No chunk data for chunk ${chunkId}`);
             return null;
         }
 
         // Convert global positions to local positions in chunk
-        const localStart = CoordUtils.globalToLocal(startPos, chunkId, this.config.chunkWidth, this.config.tileSize);
-        const localEnd = CoordUtils.globalToLocal(endPos, chunkId, this.config.chunkWidth, this.config.tileSize);
+        const localStart = CoordUtils.globalToLocal(startPos, chunkId, this.config.chunkWidth, this.config.chunkHeight, this.config.tileSize);
+        const localEnd = CoordUtils.globalToLocal(endPos, chunkId, this.config.chunkWidth, this.config.chunkHeight, this.config.tileSize);
 
-        // Find path with local algorithm
-        const localPath = this.localPathfinder.findPath(chunkData, localStart, localEnd);
+
+
+        // Find path with injected local algorithm
+        const localPath = this.localAlgorithmFn(chunkData, localStart, localEnd);
+
+
 
         if (localPath) {
             // Return as single segment
@@ -214,6 +199,47 @@ export class HierarchicalPathfinder {
     }
 
     /**
+     * Find path between transition points using injected hierarchical algorithm
+     * @param {string} startId - Start point ID
+     * @param {string} endId - End point ID
+     * @returns {Array|null} - Array of point IDs or null
+     */
+    findTransitionPath(startId, endId) {
+        const graphData = {
+            nodes: this.getTransitionPointsMap(),
+            connections: this.getTransitionConnectionsMap()
+        };
+        
+        return this.hierarchicalAlgorithmFn(graphData, startId, endId, {
+            maxIterations: 1000
+        });
+    }
+
+    /**
+     * Get transition points as Map
+     * @returns {Map} - Map of transition points
+     */
+    getTransitionPointsMap() {
+        const points = new Map();
+        for (const point of this.config.transitionPoints) {
+            points.set(point.id, point);
+        }
+        return points;
+    }
+
+    /**
+     * Get transition connections as Map
+     * @returns {Map} - Map of connections
+     */
+    getTransitionConnectionsMap() {
+        const connections = new Map();
+        for (const point of this.config.transitionPoints) {
+            connections.set(point.id, point.connections || []);
+        }
+        return connections;
+    }
+
+    /**
      * Find nearest transition point in a given chunk
      * @param {Object} pos - Position for which we're looking for a point
      * @param {string} chunkId - Chunk ID
@@ -221,7 +247,7 @@ export class HierarchicalPathfinder {
      */
     findNearestTransition(pos, chunkId) {
         // Get all transition points in this chunk
-        const points = this.transitionPathfinder.getPointsInChunk(chunkId);
+        const points = this.getPointsInChunk(chunkId);
         
         if (points.length === 0) {
             return null;
@@ -234,7 +260,7 @@ export class HierarchicalPathfinder {
         for (const point of points) {
             // Calculate global position of transition point
             const pointPos = CoordUtils.getTransitionGlobalPosition(
-                point, chunkId, this.config.chunkWidth, this.config.tileSize
+                point, chunkId, this.config.chunkWidth, this.config.chunkHeight, this.config.tileSize
             );
 
             if (!pointPos) {
@@ -242,22 +268,43 @@ export class HierarchicalPathfinder {
             }
 
             // Check if we can reach this point with local path
-            const localPath = this.findLocalPath(chunkId, pos, pointPos);
+            try {
+                const localPath = this.findLocalPath(chunkId, pos, pointPos);
 
-            if (localPath) {
-                // Calculate Euclidean distance
-                const dx = pointPos.x - pos.x;
-                const dy = pointPos.y - pos.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearest = point;
+                if (localPath) {
+                    // Calculate Euclidean distance
+                    const dx = pointPos.x - pos.x;
+                    const dy = pointPos.y - pos.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nearest = point;
+                    }
                 }
+            } catch (error) {
+                console.warn(`⚠️ Error checking local path to transition point ${point.id}:`, error);
+                // Continue with next point instead of crashing
+                continue;
             }
         }
 
         return nearest;
+    }
+
+    /**
+     * Get all transition points in a chunk
+     * @param {string} chunkId - Chunk ID
+     * @returns {Array} - Array of transition points
+     */
+    getPointsInChunk(chunkId) {
+        const points = [];
+        for (const point of this.config.transitionPoints) {
+            if (point.chunks.includes(chunkId)) {
+                points.push(point);
+            }
+        }
+        return points;
     }
 
     /**
@@ -269,18 +316,18 @@ export class HierarchicalPathfinder {
     }
 
     /**
-     * Get local pathfinder
-     * @returns {LocalPathfinder} - Local pathfinder instance
+     * Get local algorithm function
+     * @returns {Function} - Local algorithm function
      */
-    getLocalPathfinder() {
-        return this.localPathfinder;
+    getLocalAlgorithmFn() {
+        return this.localAlgorithmFn;
     }
 
     /**
-     * Get transition pathfinder
-     * @returns {TransitionPathfinder} - Transition pathfinder instance
+     * Get hierarchical algorithm function
+     * @returns {Function} - Hierarchical algorithm function
      */
-    getTransitionPathfinder() {
-        return this.transitionPathfinder;
+    getHierarchicalAlgorithmFn() {
+        return this.hierarchicalAlgorithmFn;
     }
 } 

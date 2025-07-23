@@ -7,14 +7,16 @@ export class CoordUtils {
     /**
      * Convert global position to chunk ID
      * @param {Object} globalPos - Global position {x, y}
-     * @param {number} chunkSize - Chunk size in tiles
+     * @param {number} chunkWidth - Chunk width in tiles
+     * @param {number} chunkHeight - Chunk height in tiles
      * @param {number} tileSize - Tile size in world units
      * @returns {string} - Chunk ID "x,y"
      */
-    static globalToChunkId(globalPos, chunkSize, tileSize) {
-        const chunkWorldSize = chunkSize * tileSize;
-        const chunkX = Math.floor(globalPos.x / chunkWorldSize);
-        const chunkY = Math.floor(globalPos.y / chunkWorldSize);
+    static globalToChunkId(globalPos, chunkWidth, chunkHeight, tileSize) {
+        const chunkWorldWidth = chunkWidth * tileSize;
+        const chunkWorldHeight = chunkHeight * tileSize;
+        const chunkX = Math.floor(globalPos.x / chunkWorldWidth);
+        const chunkY = Math.floor(globalPos.y / chunkWorldHeight);
         return `${chunkX},${chunkY}`;
     }
     
@@ -22,20 +24,22 @@ export class CoordUtils {
      * Convert global position to local position within chunk
      * @param {Object} globalPos - Global position {x, y}
      * @param {string} chunkId - Chunk ID
-     * @param {number} chunkSize - Chunk size in tiles
+     * @param {number} chunkWidth - Chunk width in tiles
+     * @param {number} chunkHeight - Chunk height in tiles
      * @param {number} tileSize - Tile size in world units
      * @returns {Object} - Local position {x, y}
      */
-    static globalToLocal(globalPos, chunkId, chunkSize, tileSize) {
+    static globalToLocal(globalPos, chunkId, chunkWidth, chunkHeight, tileSize) {
         const chunkCoords = this.chunkIdToCoords(chunkId);
-        const chunkWorldSize = chunkSize * tileSize;
-        const localX = Math.floor((globalPos.x - chunkCoords.x * chunkWorldSize) / tileSize);
-        const localY = Math.floor((globalPos.y - chunkCoords.y * chunkWorldSize) / tileSize);
+        const chunkWorldWidth = chunkWidth * tileSize;
+        const chunkWorldHeight = chunkHeight * tileSize;
+        const localX = Math.floor((globalPos.x - chunkCoords.x * chunkWorldWidth) / tileSize);
+        const localY = Math.floor((globalPos.y - chunkCoords.y * chunkWorldHeight) / tileSize);
         
         // Clamp to chunk boundaries
         return {
-            x: Math.max(0, Math.min(chunkSize - 1, localX)),
-            y: Math.max(0, Math.min(chunkSize - 1, localY))
+            x: Math.max(0, Math.min(chunkWidth - 1, localX)),
+            y: Math.max(0, Math.min(chunkHeight - 1, localY))
         };
     }
     
@@ -43,17 +47,19 @@ export class CoordUtils {
      * Convert local position to global position
      * @param {Object} localPos - Local position {x, y}
      * @param {string} chunkId - Chunk ID
-     * @param {number} chunkSize - Chunk size in tiles
+     * @param {number} chunkWidth - Chunk width in tiles
+     * @param {number} chunkHeight - Chunk height in tiles
      * @param {number} tileSize - Tile size in world units
      * @returns {Object} - Global position {x, y}
      */
-    static localToGlobal(localPos, chunkId, chunkSize, tileSize) {
+    static localToGlobal(localPos, chunkId, chunkWidth, chunkHeight, tileSize) {
         const chunkCoords = this.chunkIdToCoords(chunkId);
-        const chunkWorldSize = chunkSize * tileSize;
+        const chunkWorldWidth = chunkWidth * tileSize;
+        const chunkWorldHeight = chunkHeight * tileSize;
         
         return {
-            x: chunkCoords.x * chunkWorldSize + localPos.x * tileSize + tileSize / 2,
-            y: chunkCoords.y * chunkWorldSize + localPos.y * tileSize + tileSize / 2
+            x: chunkCoords.x * chunkWorldWidth + localPos.x * tileSize + tileSize / 2,
+            y: chunkCoords.y * chunkWorldHeight + localPos.y * tileSize + tileSize / 2
         };
     }
     
@@ -68,23 +74,14 @@ export class CoordUtils {
     }
     
     /**
-     * Convert chunk coordinates to ID
-     * @param {number} x - Chunk X coordinate
-     * @param {number} y - Chunk Y coordinate
-     * @returns {string} - Chunk ID "x,y"
-     */
-    static coordsToChunkId(x, y) {
-        return `${x},${y}`;
-    }
-    
-    /**
      * Calculate transition point position in chunk
      * @param {Object} point - Transition point
      * @param {string} chunkId - Chunk ID
-     * @param {number} chunkSize - Chunk size
+     * @param {number} chunkWidth - Chunk width in tiles
+     * @param {number} chunkHeight - Chunk height in tiles
      * @returns {Object|null} - Local position {x, y} or null
      */
-    static getTransitionLocalPosition(point, chunkId, chunkSize) {
+    static getTransitionLocalPosition(point, chunkId, chunkWidth, chunkHeight) {
         if (!point.chunks.includes(chunkId)) {
             return null;
         }
@@ -101,9 +98,9 @@ export class CoordUtils {
         const dx = otherCoords.x - coords.x;
         const dy = otherCoords.y - coords.y;
         
-        if (dx > 0) return { x: chunkSize - 1, y: point.position };
+        if (dx > 0) return { x: chunkWidth - 1, y: point.position };
         if (dx < 0) return { x: 0, y: point.position };
-        if (dy > 0) return { x: point.position, y: chunkSize - 1 };
+        if (dy > 0) return { x: point.position, y: chunkHeight - 1 };
         if (dy < 0) return { x: point.position, y: 0 };
         
         return null;
@@ -113,16 +110,17 @@ export class CoordUtils {
      * Calculate global position of transition point
      * @param {Object} point - Transition point
      * @param {string} chunkId - Chunk ID
-     * @param {number} chunkSize - Chunk size in tiles
+     * @param {number} chunkWidth - Chunk width in tiles
+     * @param {number} chunkHeight - Chunk height in tiles
      * @param {number} tileSize - Tile size in world units
      * @returns {Object|null} - Global position {x, y} or null
      */
-    static getTransitionGlobalPosition(point, chunkId, chunkSize, tileSize) {
-        const localPos = this.getTransitionLocalPosition(point, chunkId, chunkSize);
+    static getTransitionGlobalPosition(point, chunkId, chunkWidth, chunkHeight, tileSize) {
+        const localPos = this.getTransitionLocalPosition(point, chunkId, chunkWidth, chunkHeight);
         if (!localPos) {
             return null;
         }
         
-        return this.localToGlobal(localPos, chunkId, chunkSize, tileSize);
+        return this.localToGlobal(localPos, chunkId, chunkWidth, chunkHeight, tileSize);
     }
 } 
