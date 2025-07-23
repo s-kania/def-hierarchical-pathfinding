@@ -7,6 +7,10 @@ local PathSegmentBuilder = require("def_hierarchical_pathfinding.src.path_segmen
 local HierarchicalPathfinder = {}
 HierarchicalPathfinder.__index = HierarchicalPathfinder
 
+-- Export helper components
+HierarchicalPathfinder.PathSegmentBuilder = PathSegmentBuilder
+HierarchicalPathfinder.CoordUtils = coord_utils
+
 -- Constructor
 -- @returns table - New HierarchicalPathfinder instance
 function HierarchicalPathfinder.new()
