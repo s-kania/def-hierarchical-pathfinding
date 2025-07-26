@@ -1,4 +1,4 @@
-local coord_utils = require("def_hierarchical_pathfinding.src.coord_utils")
+local coord_utils = require("def_hierarchical_pathfinding.coord_utils")
 
 -- Builder for path segments in hierarchical pathfinding
 -- Single function approach following KISS principle

@@ -1,5 +1,5 @@
-local coord_utils = require("def_hierarchical_pathfinding.src.coord_utils")
-local PathSegmentBuilder = require("def_hierarchical_pathfinding.src.path_segment_builder")
+local coord_utils = require("def_hierarchical_pathfinding.coord_utils")
+local PathSegmentBuilder = require("def_hierarchical_pathfinding.path_segment_builder")
 
 -- Main hierarchical pathfinding class
 -- Orchestrates local and hierarchical pathfinding using injected algorithms
