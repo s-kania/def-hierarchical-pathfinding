@@ -106,11 +106,12 @@ local end_pos = {x = 800, y = 600}
 local path_segments = pathfinder:find_path(start_pos, end_pos)
 
 if path_segments then
-    print("Path found!")
+    print("Path found with " .. #path_segments .. " segments!")
     for i, segment in ipairs(path_segments) do
         print("Segment " .. i .. ": chunk=" .. segment.chunk .. 
               ", position=(" .. segment.position.x .. "," .. segment.position.y .. ")")
     end
+    -- Each segment.position contains global coordinates to move to
 else
     print("Path not found")
 end
@@ -139,6 +140,45 @@ Finds path between two positions.
 - `end_pos` (`table`) - Target position `{x, y}`
 
 **Returns:** `table|nil` - Array of path segments or `nil`
+
+### Path Segment Format
+
+Each path segment returned by `find_path()` has the following structure:
+
+```lua
+{
+    chunk = "chunk_id",     -- String: chunk ID in format "x,y" (e.g., "0,0", "1,2")
+    position = {            -- Table: global position in world units
+        x = number,         -- X coordinate in world units
+        y = number          -- Y coordinate in world units
+    }
+}
+```
+
+**Example path result:**
+```lua
+local path_segments = pathfinder:find_path({x = 100, y = 200}, {x = 800, y = 600})
+-- Returns:
+-- {
+--     {chunk = "0,0", position = {x = 240, y = 200}},  -- First transition point
+--     {chunk = "1,0", position = {x = 400, y = 200}},  -- Second transition point
+--     {chunk = "2,1", position = {x = 800, y = 600}}   -- Final destination
+-- }
+```
+
+**Path Interpretation:**
+- Each segment represents a waypoint in the path
+- The `chunk` field indicates which chunk contains this waypoint
+- The `position` field gives the exact global coordinates to move to
+- Segments are ordered from start to destination
+- Move through segments sequentially to follow the complete path
+
+**Segment Creation:**
+- If start and end are in the same chunk with direct path: returns single segment to destination
+- If hierarchical pathfinding is needed: returns multiple segments through transition points
+- First segment: from start position to first transition point
+- Middle segments: between transition points
+- Last segment: from final transition point to destination
 
 #### `pathfinder:validate_config(config)`
 Validates configuration object.
